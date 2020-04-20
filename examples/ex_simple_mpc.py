@@ -43,7 +43,7 @@ def main():
 
 	# Actual health status transition function.
 	mu = 0
-	sigma = 0.025
+	sigma = 0.05   # 0.025
 	h_noise = mu + sigma*np.random.randn(T,K)
 	# health_map = lambda h,t: h
 	def health_map(h,t):
@@ -78,18 +78,20 @@ def main():
 
 	# Dose constraints.
 	dose_lower = np.zeros((T,K))
-	# dose_upper = np.full((T,K), 25)   # Upper bound on doses.
-	dose_upper = np.full((T,K), np.inf)
+	dose_upper = np.full((T,K), 25)   # Upper bound on doses.
+	# dose_upper = np.full((T,K), np.inf)
 	patient_rx["dose_constrs"] = {"lower": dose_lower, "upper": dose_upper}
 
 	# Health constraints.
 	health_lower = np.zeros((T,K))
 	health_upper = np.zeros((T,K))
 	# health_lower[:,1:] = -np.inf    # Lower bound on OARs.
-	# health_lower[:,1] = -0.5
+	health_lower[:,1] = -0.5
 	health_lower[:,2] = -0.5
-	health_lower[:,3] = -0.75   # -0.95
-	health_lower[:,4] = -1.15   # -1.25
+	health_lower[:,3] = -0.95
+	# health_lower[:,3] = -0.75
+	health_lower[:,4] = -1.25
+	# health_lower[:,4] = -1.15
 	health_upper[:15,0] = 1.5    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 	patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
