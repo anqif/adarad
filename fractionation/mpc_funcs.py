@@ -1,8 +1,25 @@
-from warnings import warn
+import sys
+import warnings
+
+import cvxpy
+import cvxpy.settings as cvxpy_s
+from cvxpy import *
 
 from fractionation.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
 from fractionation.dyn_prob import *
 from fractionation.slack_prob import build_dyn_slack_prob
+
+def print_status(prob, slack_dict=None):
+	print("Status:", prob.status)
+	print("Objective:", prob.value)
+	print("Solve Time:", prob.solver_stats.solve_time)
+	if slack_dict is not None:
+		func_ss = lambda v: [np.sum(vi.value ** 2) for vi in v]
+		print("Sum-of-Squares of Slacks:")
+		print("\tHealth (Lower, Upper):", func_ss(slack_dict["health"]))
+		print("\tDose (Lower, Upper):", func_ss(slack_dict["dose"]))
+		if "health_recov" in slack_dict:
+			print("\tHealth Recovery (Lower, Upper):", func_ss(slack_dict["health_recov"]))
 
 def single_treatment(A, patient_rx, *args, **kwargs):
 	K, n = A.shape
@@ -46,7 +63,7 @@ def dynamic_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_reco
 	obj = dyn_objective(d.value, health_all[:(T_treat+1)], patient_rx).value
 	return {"obj": obj, "status": prob.status, "solve_time": prob.solver_stats.solve_time, "beams": beams_all, "doses": doses_all, "health": health_all}
 
-def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, mpc_verbose = False, *args, **kwargs):
+def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, use_slack = True, mpc_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	F_list, G_list, r_list = check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov)
@@ -55,9 +72,9 @@ def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 
 	beams = np.zeros((T_treat,n))
 	doses = np.zeros((T_treat,K))
 	solve_time = 0
-	s_vars = []
 	
 	h_cur = h_init
+	# warnings.simplefilter("always", RuntimeWarning)
 	for t_s in range(T_treat):
 		# Drop prescription for previous periods.
 		rx_cur = rx_slice(patient_rx, t_s, T_treat, squeeze = False)
@@ -67,22 +84,28 @@ def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 
 		prob, b, h, d = build_dyn_prob(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], h_cur, rx_cur, T_recov)
 		# prob, b, h, d = build_dyn_prob(A_list[t_s:], F_list[t_s:], G_list[t_s:], r_list[t_s:], h_cur, rx_cur, T_recov)
 		prob.solve(*args, **kwargs)
-		if prob.status not in ["optimal", "optimal_inaccurate"]:
-			# raise RuntimeError("Solver failed with status {0}".format(prob.status))
+
+		# If not optimal, re-solve with slack constraints.
+		if prob.status not in cvxpy_s.SOLUTION_PRESENT:
+			if not use_slack:
+				raise RuntimeError("Solver failed with status {0}".format(prob.status))
+			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(prob.status), RuntimeWarning)
 			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(prob.status))
 			prob, b, h, d, s_vars = build_dyn_slack_prob(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], h_cur, rx_cur, T_recov)
 			prob.solve(*args, **kwargs)
-
-			if mpc_verbose:
-				s_var_sums = [np.sum(var.value**2) for var in s_vars]
-				print("Total Slack Variables:", s_var_sums)   # TODO: Make this printout more informative.
+			if prob.status not in cvxpy_s.SOLUTION_PRESENT:
+				raise RuntimeError("Solver failed on slack problem with status {0}".format(prob.status))
+			has_slack = True
+		else:
+			has_slack = False
 		solve_time += prob.solver_stats.solve_time
 		
 		if mpc_verbose:
 			print("\nStart Time:", t_s)
-			print("Status:", prob.status)
-			print("Objective:", prob.value)
-			print("Solve Time:", prob.solver_stats.solve_time)
+			if has_slack:
+				print_status(prob, slack_dict=s_vars)
+			else:
+				print_status(prob)
 		
 		# Save beams, doses, and penalties for current period.
 		status = prob.status   # TODO: Save "weakest" status over all iterations?
