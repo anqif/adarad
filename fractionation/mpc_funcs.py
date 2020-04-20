@@ -1,5 +1,6 @@
 import sys
 import warnings
+from collections import Counter
 
 import cvxpy
 import cvxpy.settings as cvxpy_s
@@ -9,7 +10,7 @@ from fractionation.data_utils import pad_matrix, check_dyn_matrices, health_prog
 from fractionation.dyn_prob import *
 from fractionation.slack_prob import build_dyn_slack_prob
 
-def print_status(prob, slack_dict=None):
+def print_results(prob, slack_dict=None):
 	print("Status:", prob.status)
 	print("Objective:", prob.value)
 	print("Solve Time:", prob.solver_stats.solve_time)
@@ -72,6 +73,7 @@ def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 
 	beams = np.zeros((T_treat,n))
 	doses = np.zeros((T_treat,K))
 	solve_time = 0
+	status_list = []
 	
 	h_cur = h_init
 	# warnings.simplefilter("always", RuntimeWarning)
@@ -103,12 +105,12 @@ def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 
 		if mpc_verbose:
 			print("\nStart Time:", t_s)
 			if has_slack:
-				print_status(prob, slack_dict=s_vars)
+				print_results(prob, slack_dict=s_vars)
 			else:
-				print_status(prob)
+				print_results(prob)
 		
 		# Save beams, doses, and penalties for current period.
-		status = prob.status   # TODO: Save "weakest" status over all iterations?
+		status_list.append(prob.status)
 		beams[t_s] = b.value[0]
 		doses[t_s] = d.value[0]
 		
@@ -122,4 +124,5 @@ def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 
 	G_list_pad = G_list + T_recov*[np.zeros(G_list[0].shape)]
 	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, r_list, doses_all, health_map)
 	obj_treat = dyn_objective(doses, health_all[:(T_treat+1)], patient_rx).value
+	status, status_count = Counter(status_list).most_common(1)[0]   # Take majority as final status.
 	return {"obj": obj_treat, "status": status, "solve_time": solve_time, "beams": beams_all, "doses": doses_all, "health": health_all}
