@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib.colors import ListedColormap, BoundaryNorm
-from fractionation.data_utils import circle, ellipse, cardioid, limacon
+from fractionation.utilities.data_utils import circle, ellipse, cardioid
+
 
 def simple_structures(m_grid, n_grid, xlim = (-1,1), ylim = (-1,1)):
 	# Create polar grid.

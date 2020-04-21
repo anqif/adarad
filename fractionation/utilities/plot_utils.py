@@ -1,10 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from copy import copy
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
 
-from fractionation.data_utils import line_segments
+from fractionation.utilities.data_utils import line_segments
 
 savepath = "/home/anqi/Dropbox/Research/Fractionation/Figures/"
 

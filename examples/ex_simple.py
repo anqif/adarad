@@ -1,13 +1,10 @@
-import numpy as np
 import matplotlib
 matplotlib.use("TKAgg")
-import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from fractionation.plot_utils import *
-from fractionation.data_utils import line_integral_mat, health_prognosis
+from fractionation.utilities.plot_utils import *
+from fractionation.utilities.data_utils import line_integral_mat, health_prognosis
 from fractionation.mpc_funcs import dynamic_treatment
-from fractionation.admm_funcs import dynamic_treatment_admm
 
 from example_utils import simple_structures, simple_colormap
 

@@ -1,8 +1,6 @@
-import cvxpy
 import numpy as np
-from cvxpy import *
 
-from fractionation.data_utils import pad_matrix
+from fractionation.utilities.data_utils import pad_matrix
 from fractionation.mpc_funcs import build_dyn_prob, dyn_objective
 
 def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda h,t: h):

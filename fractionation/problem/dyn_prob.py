@@ -24,7 +24,6 @@ def rx_slice(patient_rx, t_start, t_end, t_step=1, squeeze=True):
                     rx_cur[constr_key][lu_key] = rx_old_slice
     return rx_cur
 
-
 # Dose penalty per period.
 def dose_penalty(dose, goal=None, weights=None):
     if goal is None:
@@ -38,7 +37,6 @@ def dose_penalty(dose, goal=None, weights=None):
 def health_penalty(health, goal, weights):
     w_under, w_over = weights
     return w_under * neg(health - goal) + w_over * pos(health - goal)
-
 
 # Full objective function.
 def dyn_objective(d_var, h_var, patient_rx):
