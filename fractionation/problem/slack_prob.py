@@ -95,7 +95,7 @@ def build_dyn_slack_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_r
     if "beam_constrs" in patient_rx:
         # b_slack_lo = Variable((T_treat, n), pos=True, name="beam lower slack")  # Slack for beam constraints.
         # b_slack_hi = Variable((T_treat, n), pos=True, name="beam upper slack")
-        # s_vars["beams"] = [b_slack_lo, b_slack_hi]
+        # s_vars["beam"] = [b_slack_lo, b_slack_hi]
         # constrs += rx_to_slack_constrs(b, patient_rx["beam_constrs"], s_vars["beam"])
         constrs += rx_to_constrs(b, patient_rx["beam_constrs"])
 

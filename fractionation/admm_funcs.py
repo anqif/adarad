@@ -168,7 +168,7 @@ def mpc_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T_rec
 		# Solve optimal control problem from current period forward.
 		# TODO: Warm start next ADMM solve, or better yet, rewrite code so no teardown/rebuild process between ADMM solves.
 		T_left = T_treat - t_s
-		result = dynamic_treatment_admm(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], h_cur, rx_cur, T_recov, partial_results = True, *args, **kwargs)
+		result = dynamic_treatment_admm(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], h_cur, rx_cur, T_recov, partial_results=True, *args, **kwargs)
 		# result = dynamic_treatment_admm(A_list[t_s:], F_list[t_s:], G_list[t_s:], r_list[t_s:], h_cur, rx_cur, T_recov, partial_results = True, *args, **kwargs)
 		solve_time += result["solve_time"]
 		num_iters += result["num_iters"]

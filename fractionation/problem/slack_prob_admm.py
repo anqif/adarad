@@ -27,7 +27,7 @@ def build_dyn_slack_prob_dose(A_list, patient_rx, s_weights=defaultdict(lambda: 
     if "beam_constrs" in patient_rx:
         # b_slack_lo = Variable((T_treat, n), pos=True, name="beam lower slack")  # Slack for beam constraints.
         # b_slack_hi = Variable((T_treat, n), pos=True, name="beam upper slack")
-        # s_vars["beams"] = [b_slack_lo, b_slack_hi]
+        # s_vars["beam"] = [b_slack_lo, b_slack_hi]
         # constrs += rx_to_slack_constrs(b, patient_rx["beam_constrs"], s_vars["beam"])
         constrs += rx_to_constrs(b, patient_rx["beam_constrs"])
 
@@ -43,7 +43,7 @@ def build_dyn_slack_prob_dose(A_list, patient_rx, s_weights=defaultdict(lambda: 
     prob = prob_main + prob_slack
     return prob, b, d, s_vars
 
-def build_dyn_slack_prob_dose_period(A, patient_rx):
+def build_dyn_slack_prob_dose_period(A, patient_rx, s_weights=defaultdict(lambda: 1.0), s_final=False):
     K, n = A.shape
 
     # Define variables for period.
@@ -52,19 +52,29 @@ def build_dyn_slack_prob_dose_period(A, patient_rx):
 
     # Dose penalty current period.
     obj = dose_penalty(d_t, patient_rx["dose_goal"], patient_rx["dose_weights"])
-
-    # Additional beam constraints in period.
     # constrs = [b >= 0]
     constrs = []
+
+    # Additional beam constraints in period.
+    s_t_vars = dict()
     if "beam_constrs" in patient_rx:
+        # b_t_slack_lo = Variable(n, pos=True, name="beam lower slack")  # Slack for beam constraints.
+        # b_t_slack_hi = Variable(n, pos=True, name="beam upper slack")
+        # s_t_vars["beam"] = [b_t_slack_lo, b_t_slack_hi]
+        # constrs += rx_to_slack_constrs(b_t, patient_rx["beam_constrs"], s_t_vars["beam"])
         constrs += rx_to_constrs(b_t, patient_rx["beam_constrs"])
 
     # Additional dose constraints in period.
     if "dose_constrs" in patient_rx:
-        constrs += rx_to_constrs(d_t, patient_rx["dose_constrs"])
+        d_t_slack_lo = Variable(K, pos=True, name="dose lower slack")  # Slack for dose constraints.
+        d_t_slack_hi = Variable(K, pos=True, name="dose upper slack")
+        s_t_vars["dose"] = [d_t_slack_lo, d_t_slack_hi]
+        constrs += rx_to_constrs(d_t, patient_rx["dose_constrs"], s_t_vars["dose"])
 
-    prob_t = Problem(Minimize(obj), constrs)
-    return prob_t, b_t, d_t
+    prob_t_main = Problem(Minimize(obj), constrs)
+    prob_t_slack = dyn_slack_problem(s_t_vars, s_weights, s_final)
+    prob_t = prob_t_main + prob_t_slack
+    return prob_t, b_t, d_t, s_t_vars
 
 def build_dyn_slack_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T_recov=0, s_weights=defaultdict(lambda: 1.0), s_final=False):
     K = h_init.shape[0]
@@ -86,11 +96,9 @@ def build_dyn_slack_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_tr
     # Additional health constraints.
     s_vars = dict()
     if "health_constrs" in patient_rx:
-        # Slack for health status constraints.
-        h_slack_lo = Variable((T_treat, K), pos=True, name="health lower slack")
+        h_slack_lo = Variable((T_treat, K), pos=True, name="health lower slack")  # Slack for health status constraints.
         h_slack_hi = Variable((T_treat, K), pos=True, name="health upper slack")
         s_vars["health"] = [h_slack_lo, h_slack_hi]
-        # constrs += rx_to_constrs(h[1:], patient_rx["health_constrs"])
         constrs += rx_to_slack_constrs(h[1:], patient_rx["health_constrs"], s_vars["health"])
 
     # Health dynamics for recovery stage.
@@ -106,10 +114,9 @@ def build_dyn_slack_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_tr
 
         # Additional health constraints during recovery.
         if "recov_constrs" in patient_rx:
-            h_r_slack_lo = Variable((T_recov, K), pos=True, name="health recovery lower slack")
+            h_r_slack_lo = Variable((T_recov, K), pos=True, name="health recovery lower slack")  # Slack for health status constraints in recovery phase.
             h_r_slack_hi = Variable((T_recov, K), pos=True, name="health recovery upper slack")
             s_vars["health_recov"] = [h_r_slack_lo, h_r_slack_hi]
-            # constrs_r += rx_to_constrs(h_r, patient_rx["recov_constrs"])
             constrs_r += rx_to_slack_constrs(h_r, patient_rx["recov_constrs"], s_vars["health_recov"])
         constrs += constrs_r
 
