@@ -157,7 +157,7 @@ def dynamic_treatment_admm_slack(A_list, F_list, G_list, r_list, h_init, patient
 	# Add penalty on all slack variables/values.
 	s_vars = h_slacks.copy()
 	for key, val_list in d_slack_vals.items():
-		if key not in s_vars.keys():
+		if key not in s_vars:
 			s_vars[key] = []
 		s_vars[key].append(val_list)
 	obj += slack_penalty(s_vars, s_weights).value

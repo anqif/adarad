@@ -32,10 +32,11 @@ def build_dyn_slack_prob_dose(A_list, patient_rx, s_weights=None, s_final=False)
 
     # Additional dose constraints.
     if "dose_constrs" in patient_rx:
-        d_slack_lo = Variable((T_treat, K), nonneg=True, name="dose lower slack")  # Slack for dose constraints.
-        d_slack_hi = Variable((T_treat, K), nonneg=True, name="dose upper slack")
-        s_vars["dose"] = [d_slack_lo, d_slack_hi]
-        constrs += rx_to_slack_constrs(d, patient_rx["dose_constrs"], s_vars["dose"])
+        # d_slack_lo = Variable((T_treat, K), nonneg=True, name="dose lower slack")  # Slack for dose constraints.
+        # d_slack_hi = Variable((T_treat, K), nonneg=True, name="dose upper slack")
+        # s_vars["dose"] = [d_slack_lo, d_slack_hi]
+        # constrs += rx_to_slack_constrs(d, patient_rx["dose_constrs"], s_vars["dose"])
+        constrs += rx_to_constrs(d, patient_rx["dose_constrs"])
 
     # Final dose problem.
     obj += slack_penalty(s_vars, s_weights)
@@ -66,10 +67,11 @@ def build_dyn_slack_prob_dose_period(A, patient_rx, s_weights=None, s_final=Fals
 
     # Additional dose constraints in period.
     if "dose_constrs" in patient_rx:
-        d_t_slack_lo = Variable(K, nonneg=True, name="dose lower slack")  # Slack for dose constraints.
-        d_t_slack_hi = Variable(K, nonneg=True, name="dose upper slack")
-        s_t_vars["dose"] = [d_t_slack_lo, d_t_slack_hi]
-        constrs += rx_to_slack_constrs(d_t, patient_rx["dose_constrs"], s_t_vars["dose"])
+        # d_t_slack_lo = Variable(K, nonneg=True, name="dose lower slack")  # Slack for dose constraints.
+        # d_t_slack_hi = Variable(K, nonneg=True, name="dose upper slack")
+        # s_t_vars["dose"] = [d_t_slack_lo, d_t_slack_hi]
+        # constrs += rx_to_slack_constrs(d_t, patient_rx["dose_constrs"], s_t_vars["dose"])
+        constrs += rx_to_constrs(d_t, patient_rx["dose_constrs"])
 
     # Final dose problem for period.
     obj += slack_penalty(s_t_vars, s_weights)
