@@ -10,7 +10,7 @@ def build_dyn_prob_dose(A_list, patient_rx):
         raise ValueError("dose_goal must have dimensions ({0},{1})".format(T_treat, K))
 
     # Define variables.
-    b = Variable((T_treat, n), pos=True, name="beams")  # Beams.
+    b = Variable((T_treat, n), nonneg=True, name="beams")  # Beams.
     d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
 
     # Dose penalty function.
@@ -33,7 +33,7 @@ def build_dyn_prob_dose_period(A, patient_rx):
     K, n = A.shape
 
     # Define variables for period.
-    b_t = Variable(n, pos=True, name="beams")  # Beams.
+    b_t = Variable(n, nonneg=True, name="beams")  # Beams.
     d_t = A * b_t
 
     # Dose penalty current period.
@@ -59,7 +59,7 @@ def build_dyn_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T
 
     # Define variables.
     h = Variable((T_treat + 1, K), name="health")  # Health statuses.
-    d = Variable((T_treat, K), pos=True, name="doses")  # Doses.
+    d = Variable((T_treat, K), nonneg=True, name="doses")  # Doses.
 
     # Health penalty function.
     obj = sum([health_penalty(h[t + 1], patient_rx["health_goal"][t], patient_rx["health_weights"]) for t in range(T_treat)])

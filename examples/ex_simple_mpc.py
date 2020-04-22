@@ -5,6 +5,7 @@ from matplotlib.colors import LogNorm
 from fractionation.utilities.plot_utils import *
 from fractionation.utilities.data_utils import line_integral_mat, health_prognosis
 from fractionation.mpc_funcs import dynamic_treatment, mpc_treatment
+from fractionation.admm_funcs import dynamic_treatment_admm, mpc_treatment_admm
 
 from example_utils import simple_structures, simple_colormap
 
@@ -104,7 +105,7 @@ def main():
 
 	# Calculate actual health constraint violation.
 	h_viol_dyn = health_viol(res_dynamic["health"][1:], (health_lower, health_upper))
-	print("Average Health Violation", h_viol_dyn)
+	print("Average Health Violation:", h_viol_dyn)
 
 	# Set beam colors on logarithmic scale.
 	b_min = np.min(res_dynamic["beams"][res_dynamic["beams"] > 0])
@@ -130,7 +131,7 @@ def main():
 
 	# Calculate actual health constraint violation.
 	h_viol_mpc = health_viol(res_mpc["health"][1:], (health_lower, health_upper))
-	print("Average Health Violation", h_viol_mpc)
+	print("Average Health Violation:", h_viol_mpc)
 
 	# Set beam colors on logarithmic scale.
 	b_min = np.min(res_mpc["beams"][res_mpc["beams"] > 0])

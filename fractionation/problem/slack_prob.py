@@ -7,17 +7,30 @@ from collections import defaultdict
 
 from fractionation.mpc_funcs import dyn_objective, rx_to_constrs
 
-def dyn_slack_problem(slack_vars, slack_weights=defaultdict(lambda: 1.0), slack_final=False):
+# Total slack penalty across periods.
+def slack_penalty(slack_vars, slack_weights=None):
+    if slack_weights is None:
+        slack_weights = defaultdict(lambda: 1.0)
+
     # Objective = \sum_{i=1}^N w_i*||s_i||_2^2, where N = number of slack constraint categories.
     slack_wss = []
     for key, slack in slack_vars.items():
         if isinstance(slack, list):
             slack = hstack(slack)
         slack_wss += [slack_weights[key]*sum_squares(slack)]
-    obj = sum(slack_wss)
+    return sum(slack_wss)
 
-    # Disable slack for final session.
+# Constraints on slack variables.
+def slack_constrs(slack_vars, slack_final=False):
     constrs = []
+    for slack_list in slack_vars.values():
+        if not isinstance(slack_list, list):
+            slack_list = [slack_list]
+        for slack in slack_list:
+            if not slack.is_nonneg():
+                constrs += [slack >= 0]
+
+    # No slack for constraints in final period.
     if not slack_final:
         if "dose" in slack_vars:
             constrs += [slack[-1] == 0 for slack in slack_vars["dose"]]
@@ -25,7 +38,7 @@ def dyn_slack_problem(slack_vars, slack_weights=defaultdict(lambda: 1.0), slack_
             constrs += [slack[-1] == 0 for slack in slack_vars["health_recov"]]
         elif "health" in slack_vars:
             constrs += [slack[-1] == 0 for slack in slack_vars["health"]]
-    return Problem(Minimize(obj), constrs)
+    return constrs
 
 # Extract constraints from patient prescription and add slack.
 def rx_to_slack_constrs(expr, rx_dict, slack):
@@ -70,14 +83,14 @@ def rx_to_slack_constrs(expr, rx_dict, slack):
     return constrs
 
 # Construct optimal control problem with slack health/dose constraints.
-def build_dyn_slack_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov=0, s_weights=defaultdict(lambda: 1.0), s_final=False):
+def build_dyn_slack_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov=0, s_weights=None, s_final=False):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     if h_init.shape[0] != K:
         raise ValueError("h_init must be a vector of {0} elements".format(K))
 
     # Main variables.
-    b = Variable((T_treat, n), pos=True, name="beams")  # Beams.
+    b = Variable((T_treat, n), nonneg=True, name="beams")  # Beams.
     h = Variable((T_treat + 1, K), name="health")  # Health statuses.
     d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
 
@@ -101,15 +114,16 @@ def build_dyn_slack_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_r
 
     # Additional dose constraints.
     if "dose_constrs" in patient_rx:
-        d_slack_lo = Variable((T_treat, K), pos=True, name="dose lower slack")  # Slack for dose constraints.
-        d_slack_hi = Variable((T_treat, K), pos=True, name="dose upper slack")
-        s_vars["dose"] = [d_slack_lo, d_slack_hi]
-        constrs += rx_to_slack_constrs(d, patient_rx["dose_constrs"], s_vars["dose"])
+        # d_slack_lo = Variable((T_treat, K), nonneg=True, name="dose lower slack")  # Slack for dose constraints.
+        # d_slack_hi = Variable((T_treat, K), nonneg=True, name="dose upper slack")
+        # s_vars["dose"] = [d_slack_lo, d_slack_hi]
+        # constrs += rx_to_slack_constrs(d, patient_rx["dose_constrs"], s_vars["dose"])
+        constrs += rx_to_constrs(d, patient_rx["dose_constrs"])
 
     # Additional health constraints.
     if "health_constrs" in patient_rx:
-        h_slack_lo = Variable((T_treat, K), pos=True, name="health lower slack")  # Slack for health status constraints.
-        h_slack_hi = Variable((T_treat, K), pos=True, name="health upper slack")
+        h_slack_lo = Variable((T_treat, K), nonneg=True, name="health lower slack")  # Slack for health status constraints.
+        h_slack_hi = Variable((T_treat, K), nonneg=True, name="health upper slack")
         s_vars["health"] = [h_slack_lo, h_slack_hi]
         constrs += rx_to_slack_constrs(h[1:], patient_rx["health_constrs"], s_vars["health"])
 
@@ -126,14 +140,14 @@ def build_dyn_slack_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_r
 
         # Additional health constraints during recovery.
         if "recov_constrs" in patient_rx:
-            h_r_slack_lo = Variable((T_recov, K), pos=True, name="health recovery lower slack")  # Slack for health status constraints in recovery phase.
-            h_r_slack_hi = Variable((T_recov, K), pos=True, name="health recovery upper slack")
+            h_r_slack_lo = Variable((T_recov, K), nonneg=True, name="health recovery lower slack")  # Slack for health status constraints in recovery phase.
+            h_r_slack_hi = Variable((T_recov, K), nonneg=True, name="health recovery upper slack")
             s_vars["health_recov"] = [h_r_slack_lo, h_r_slack_hi]
             constrs_r += rx_to_slack_constrs(h_r, patient_rx["recov_constrs"], s_vars["health_recov"])
         constrs += constrs_r
 
     # Final problem.
-    prob_main = Problem(Minimize(obj), constrs)
-    prob_slack = dyn_slack_problem(s_vars, s_weights, s_final)
-    prob = prob_main + prob_slack
+    obj += slack_penalty(s_vars, s_weights)
+    constrs += slack_constrs(s_vars, s_final)
+    prob = Problem(Minimize(obj), constrs)
     return prob, b, h, d, s_vars

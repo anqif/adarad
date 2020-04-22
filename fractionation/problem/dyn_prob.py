@@ -32,7 +32,6 @@ def dose_penalty(dose, goal=None, weights=None):
         weights = np.ones(dose.shape)
     return weights * square(dose - goal)
 
-
 # Health status penalty per period.
 def health_penalty(health, goal, weights):
     w_under, w_over = weights
@@ -54,7 +53,6 @@ def dyn_objective(d_var, h_var, patient_rx):
         h_penalty = health_penalty(h_var[t + 1], patient_rx["health_goal"][t], patient_rx["health_weights"])
         penalties.append(d_penalty + h_penalty)
     return sum(penalties)
-
 
 # Extract constraints from patient prescription.
 def rx_to_constrs(expr, rx_dict):
@@ -102,7 +100,7 @@ def build_dyn_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov=0
         raise ValueError("h_init must be a vector of {0} elements".format(K))
 
     # Define variables.
-    b = Variable((T_treat, n), pos=True, name="beams")  # Beams.
+    b = Variable((T_treat, n), nonneg=True, name="beams")  # Beams.
     h = Variable((T_treat + 1, K), name="health")  # Health statuses.
     d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
 

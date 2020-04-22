@@ -1,10 +1,9 @@
+import cvxpy.settings as cvxpy_s
 from collections import Counter
 
-import cvxpy.settings as cvxpy_s
-
-from fractionation.utilities.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
 from fractionation.problem.dyn_prob import *
 from fractionation.problem.slack_prob import build_dyn_slack_prob
+from fractionation.utilities.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
 
 def print_results(prob, slack_dict=dict()):
 	print("Status:", prob.status)
@@ -21,8 +20,8 @@ def single_treatment(A, patient_rx, *args, **kwargs):
 	if patient_rx["dose_goal"].shape not in [(K,), (K,1)]:
 		raise ValueError("dose_goal must have dimensions ({0},)".format(K))
 	
-	b = Variable(n, pos = True)   # Beams.
-	d = Variable(K, pos = True)   # Doses.
+	b = Variable(n, nonneg = True)   # Beams.
+	d = Variable(K, nonneg = True)   # Doses.
 	
 	obj = dose_penalty(d, patient_rx["dose_goal"], patient_rx["dose_weights"])
 	# constrs = [d == A*b, b >= 0]
@@ -94,14 +93,16 @@ def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 
 				raise RuntimeError("Solver failed on slack problem with status {0}".format(prob.status))
 		else:
 			s_vars = dict()
-		solve_time += prob.solver_stats.solve_time
 		
 		if mpc_verbose:
 			print("\nStart Time:", t_s)
-			print_results(prob, slack_dict=s_vars)
-		
-		# Save beams, doses, and penalties for current period.
+			print_results(prob, slack_dict = s_vars)
+
+		# Save solver statistics.
+		solve_time += prob.solver_stats.solve_time
 		status_list.append(prob.status)
+
+		# Save beams and doses for current period.
 		beams[t_s] = b.value[0]
 		doses[t_s] = d.value[0]
 		
@@ -115,5 +116,6 @@ def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 
 	G_list_pad = G_list + T_recov*[np.zeros(G_list[0].shape)]
 	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, r_list, doses_all, health_map)
 	obj_treat = dyn_objective(doses, health_all[:(T_treat+1)], patient_rx).value
+	# TODO: How should we handle constraint violations?
 	status, status_count = Counter(status_list).most_common(1)[0]   # Take majority as final status.
 	return {"obj": obj_treat, "status": status, "solve_time": solve_time, "beams": beams_all, "doses": doses_all, "health": health_all}
