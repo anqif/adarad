@@ -6,7 +6,7 @@ from collections import defaultdict
 from fractionation.problem.dyn_prob import dose_penalty, health_penalty, rx_to_constrs
 from fractionation.problem.slack_prob import slack_penalty, slack_constrs, rx_to_slack_constrs
 
-def build_dyn_slack_prob_dose(A_list, patient_rx, s_weights=None, s_final=False):
+def build_dyn_slack_prob_dose(A_list, patient_rx, s_weights = None, s_final = True):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     if patient_rx["dose_goal"].shape != (T_treat, K):
@@ -44,7 +44,7 @@ def build_dyn_slack_prob_dose(A_list, patient_rx, s_weights=None, s_final=False)
     prob = Problem(Minimize(obj), constrs)
     return prob, b, d, s_vars
 
-def build_dyn_slack_prob_dose_period(A, patient_rx, s_weights=None, s_final=False):
+def build_dyn_slack_prob_dose_period(A, patient_rx, s_weights = None, s_final = True):
     K, n = A.shape
 
     # Define variables for period.
@@ -79,7 +79,7 @@ def build_dyn_slack_prob_dose_period(A, patient_rx, s_weights=None, s_final=Fals
     prob = Problem(Minimize(obj), constrs)
     return prob, b_t, d_t, s_t_vars
 
-def build_dyn_slack_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T_recov=0, s_weights=None, s_final=False):
+def build_dyn_slack_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T_recov = 0, s_weights = None, s_final = True):
     K = h_init.shape[0]
     if patient_rx["health_goal"].shape != (T_treat, K):
         raise ValueError("health_goal must have dimensions ({0},{1})".format(T_treat, K))

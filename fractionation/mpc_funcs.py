@@ -5,7 +5,9 @@ from fractionation.problem.dyn_prob import *
 from fractionation.problem.slack_prob import build_dyn_slack_prob
 from fractionation.utilities.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
 
-def print_results(prob, slack_dict=dict()):
+def print_results(prob, slack_dict=None):
+	if slack_dict is None:
+		slack_dict = dict()
 	print("Status:", prob.status)
 	print("Objective:", prob.value)
 	print("Solve Time:", prob.solver_stats.solve_time)
@@ -57,7 +59,8 @@ def dynamic_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_reco
 	obj = dyn_objective(d.value, health_all[:(T_treat+1)], patient_rx).value
 	return {"obj": obj, "status": prob.status, "solve_time": prob.solver_stats.solve_time, "beams": beams_all, "doses": doses_all, "health": health_all}
 
-def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, use_slack = True, mpc_verbose = False, *args, **kwargs):
+def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
+				  use_slack = True, slack_weights = None, slack_final = True, mpc_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	F_list, G_list, r_list = check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov)
@@ -87,7 +90,8 @@ def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 
 			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(prob.status), RuntimeWarning)
 			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(prob.status))
 
-			prob, b, h, d, s_vars = build_dyn_slack_prob(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], h_cur, rx_cur, T_recov)
+			prob, b, h, d, s_vars = build_dyn_slack_prob(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], \
+														 h_cur, rx_cur, T_recov, slack_weights, slack_final)
 			prob.solve(*args, **kwargs)
 			if prob.status not in cvxpy_s.SOLUTION_PRESENT:
 				raise RuntimeError("Solver failed on slack problem with status {0}".format(prob.status))

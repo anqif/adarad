@@ -6,6 +6,7 @@ from time import time
 from multiprocessing import Process, Pipe
 from collections import Counter
 
+from fractionation.admm_slack_funcs import dynamic_treatment_admm_slack
 from fractionation.problem.dyn_prob import rx_slice, dyn_objective
 from fractionation.problem.dyn_prob_admm import *
 from fractionation.utilities.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
@@ -22,9 +23,13 @@ def run_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
 	finished = False
 	while not finished:
 		# Compute and send d_t^k.
-		prox.solve(*args, **kwargs)
-		if prox.status not in cvxpy_s.SOLUTION_PRESENT:
-			raise RuntimeError("Solver failed with status {0}".format(prox.status))
+		try:
+			prox.solve(*args, **kwargs)
+		except SolverError:
+			pipe.send((d.value, prox.solver_stats.solve_time, "SolverError"))
+			break
+		# if prox.status not in cvxpy_s.SOLUTION_PRESENT:
+		#	raise RuntimeError("Solver failed with status {0}".format(prox.status))
 		pipe.send((d.value, prox.solver_stats.solve_time, prox.status))
 
 		# Receive \tilde d_t^k.
@@ -88,6 +93,7 @@ def dynamic_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T
 
 	start = time()
 	solve_time = 0
+	has_failed = False
 	while not finished:
 		if admm_verbose and k % 10 == 0:
 			print("Iteration:", k)
@@ -95,6 +101,13 @@ def dynamic_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T
 		# Collect and stack d_t^k for t = 1,...,T.
 		dt_update = [pipe.recv() for pipe in pipes]
 		d_rows, d_times, d_statuses = map(list, zip(*dt_update))
+
+		# Stop if any process failed to produce a d_t^k for t = 1,...,T.
+		d_failed = np.setdiff1d(d_statuses, cvxpy_s.SOLUTION_PRESENT)
+		if len(d_failed) > 0:
+			status, status_count = Counter(d_failed).most_common(1)[0]
+			has_failed = True
+			break
 		d_new.value = np.row_stack(d_rows)
 		solve_time += np.max(d_times)
 		d_status, d_status_count = Counter(d_statuses).most_common(1)[0]
@@ -102,9 +115,17 @@ def dynamic_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T
 
 		# Compute and send \tilde d_t^k.
 		d_tld_prev = np.zeros((T_treat,K)) if k == 0 else d_tld.value
-		prox.solve(*args, **kwargs)
+		try:
+			prox.solve(*args, **kwargs)
+		except SolverError:
+			status = "SolverError"
+			has_failed = True
+			break
 		if prox.status not in cvxpy_s.SOLUTION_PRESENT:
-			raise RuntimeError("Solver failed with status {0}".format(prox.status))
+			# raise RuntimeError("Solver failed with status {0}".format(prox.status))
+			status = prox.status
+			has_failed = True
+			break
 		solve_time += prox.solver_stats.solve_time
 		status_list.append(prox.status)
 		for t in range(T_treat):
@@ -127,6 +148,10 @@ def dynamic_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T
 		k = k + 1
 		for pipe in pipes:
 			pipe.send(finished)
+
+	if has_failed:
+		[proc.terminate() for proc in procs]
+		return {"status": status, "num_iters": k}
 
 	# Receive final values of b_t^k and d_t^k = A*b_t^k for t = 1,...,T.
 	bd_final = [pipe.recv() for pipe in pipes]
@@ -155,7 +180,8 @@ def dynamic_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T
 	return {"obj": obj, "status": status, "num_iters": k, "total_time": end - start, "solve_time": solve_time,
 			"beams": beams_all, "doses": doses_all, "health": health_all, "primal": np.array(r_prim[:k]), "dual": np.array(r_dual[:k])}
 
-def mpc_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, mpc_verbose = False, *args, **kwargs):
+def mpc_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
+					   use_slack = True, slack_weights = None, slack_final = True, mpc_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	F_list, G_list, r_list = check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov)
@@ -168,6 +194,7 @@ def mpc_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T_rec
 	status_list = []
 
 	h_cur = h_init
+	# warnings.simplefilter("always", RuntimeWarning)
 	for t_s in range(T_treat):
 		# Drop prescription for previous periods.
 		rx_cur = rx_slice(patient_rx, t_s, T_treat, squeeze = False)
@@ -176,9 +203,16 @@ def mpc_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T_rec
 		# TODO: Warm start next ADMM solve, or better yet, rewrite so no teardown/rebuild process between ADMM solves.
 		T_left = T_treat - t_s
 		result = dynamic_treatment_admm(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], \
-										h_cur, rx_cur, T_recov, health_map, partial_results = True, *args, **kwargs)
-		# result = dynamic_treatment_admm(A_list[t_s:], F_list[t_s:], G_list[t_s:], r_list[t_s:], h_cur, rx_cur, T_recov, \
-		#								partial_results = True, *args, **kwargs)
+										h_cur, rx_cur, T_recov, partial_results = True, *args, **kwargs)
+
+		# If not optimal, re-solve with slack constraints.
+		if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
+			if not use_slack:
+				raise RuntimeError("Solver failed with status {0}".format(result["status"]))
+			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(result["status"]), RuntimeWarning)
+			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(result["status"]))
+			result = dynamic_treatment_admm_slack(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], \
+						h_cur, rx_cur, T_recov, slack_weights = slack_weights, slack_final = slack_final, partial_results = True, *args, **kwargs)
 
 		if mpc_verbose:
 			print("\nStart Time:", t_s)

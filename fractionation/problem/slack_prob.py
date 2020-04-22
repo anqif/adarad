@@ -5,10 +5,10 @@ import itertools
 from cvxpy import *
 from collections import defaultdict
 
-from fractionation.mpc_funcs import dyn_objective, rx_to_constrs
+from fractionation.problem.dyn_prob import dyn_objective, rx_to_constrs
 
 # Total slack penalty across periods.
-def slack_penalty(slack_vars, slack_weights=None):
+def slack_penalty(slack_vars, slack_weights = None):
     if slack_weights is None:
         slack_weights = defaultdict(lambda: 1.0)
 
@@ -21,7 +21,7 @@ def slack_penalty(slack_vars, slack_weights=None):
     return sum(slack_wss)
 
 # Constraints on slack variables.
-def slack_constrs(slack_vars, slack_final=False):
+def slack_constrs(slack_vars, slack_final = True):
     constrs = []
     for slack_list in slack_vars.values():
         if not isinstance(slack_list, list):
@@ -83,7 +83,7 @@ def rx_to_slack_constrs(expr, rx_dict, slack):
     return constrs
 
 # Construct optimal control problem with slack health/dose constraints.
-def build_dyn_slack_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov=0, s_weights=None, s_final=False):
+def build_dyn_slack_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, s_weights = None, s_final = True):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     if h_init.shape[0] != K:

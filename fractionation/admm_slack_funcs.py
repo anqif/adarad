@@ -11,7 +11,7 @@ from fractionation.problem.slack_prob import slack_penalty
 from fractionation.problem.slack_prob_admm import *
 from fractionation.utilities.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
 
-def run_slack_dose_worker(pipe, A, patient_rx, rho, s_weights=None, s_final=False, *args, **kwargs):
+def run_slack_dose_worker(pipe, A, patient_rx, rho, s_weights = None, s_final = True, *args, **kwargs):
 	# Construct proximal dose problem.
 	prob_dose, b, d, s_vars = build_dyn_slack_prob_dose_period(A, patient_rx, s_weights, s_final)
 	d_new = Parameter(d.shape, value = np.zeros(d.shape))
@@ -44,7 +44,7 @@ def run_slack_dose_worker(pipe, A, patient_rx, rho, s_weights=None, s_final=Fals
 	pipe.send((b.value, d_val, s_vals))
 
 def dynamic_treatment_admm_slack(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
-								 partial_results = False, admm_verbose = False, s_weights = None, s_final = False, *args, **kwargs):
+								 slack_weights = None, slack_final = True, partial_results = False, admm_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	F_list, G_list, r_list = check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov)
@@ -72,11 +72,11 @@ def dynamic_treatment_admm_slack(A_list, F_list, G_list, r_list, h_init, patient
 		rx_cur = rx_slice(patient_rx, t, t+1)   # Get prescription at time t.
 		local, remote = Pipe()
 		pipes += [local]
-		procs += [Process(target=run_slack_dose_worker, args=(remote, A_list[t], rx_cur, rho, s_weights, s_final) + args, kwargs=kwargs)]
+		procs += [Process(target=run_slack_dose_worker, args=(remote, A_list[t], rx_cur, rho, slack_weights, slack_final) + args, kwargs=kwargs)]
 		procs[-1].start()
 
 	# Proximal health problem.
-	prob_health, h, d_tld, h_slacks = build_dyn_slack_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T_recov, s_weights, s_final)
+	prob_health, h, d_tld, h_slacks = build_dyn_slack_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T_recov, slack_weights, slack_final)
 	d_new = Parameter(d_tld.shape, value = np.zeros(d_tld.shape))
 	u = Parameter(d_tld.shape, value = np.zeros(d_tld.shape))
 	penalty = (rho/2)*sum_squares(d_tld - d_new + u)
@@ -156,10 +156,11 @@ def dynamic_treatment_admm_slack(A_list, F_list, G_list, r_list, h_init, patient
 
 	# Add penalty on all slack variables/values.
 	s_vars = h_slacks.copy()
-	for key, val_list in d_slack_vals.items():
-		if key not in s_vars:
-			s_vars[key] = []
-		s_vars[key].append(val_list)
-	obj += slack_penalty(s_vars, s_weights).value
+	for d_t_slacks in d_slack_vals:
+		for key, val_list in d_t_slacks.items():
+			if key not in s_vars:
+				s_vars[key] = []
+			s_vars[key].append(val_list)
+	obj += slack_penalty(s_vars, slack_weights).value
 	return {"obj": obj, "status": status, "num_iters": k, "total_time": end - start, "solve_time": solve_time, \
 			"beams": beams_all, "doses": doses_all, "health": health_all, "primal": np.array(r_prim[:k]), "dual": np.array(r_dual[:k])}
