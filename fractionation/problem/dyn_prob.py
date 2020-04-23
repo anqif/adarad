@@ -33,9 +33,15 @@ def dose_penalty(dose, goal=None, weights=None):
     return weights * square(dose - goal)
 
 # Health status penalty per period.
-def health_penalty(health, goal, weights):
-    w_under, w_over = weights
-    return w_under * neg(health - goal) + w_over * pos(health - goal)
+def health_penalty(health, goal=None, weights=None):
+    if goal is None:
+        goal = np.zeros(health.shape)
+    if weights is None:
+        # weights = [np.ones(health.shape), np.ones(health.shape)]
+        weights = np.ones(health.shape)
+    # w_under, w_over = weights
+    # return w_under * neg(health - goal) + w_over * pos(health - goal)
+    return weights * square(health - goal)
 
 # Full objective function.
 def dyn_objective(d_var, h_var, patient_rx):

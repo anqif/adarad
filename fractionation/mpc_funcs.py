@@ -5,10 +5,12 @@ from fractionation.problem.dyn_prob import *
 from fractionation.problem.slack_prob import build_dyn_slack_prob
 from fractionation.utilities.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
 
-def print_results(prob, slack_dict=None):
+def print_results(prob, status=None, slack_dict=None):
+	if status is None:
+		status = prob.status
 	if slack_dict is None:
 		slack_dict = dict()
-	print("Status:", prob.status)
+	print("Status:", status)
 	print("Objective:", prob.value)
 	print("Solve Time:", prob.solver_stats.solve_time)
 	if len(slack_dict.items()) > 0:
@@ -81,26 +83,31 @@ def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 
 		T_left = T_treat - t_s
 		prob, b, h, d = build_dyn_prob(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], h_cur, rx_cur, T_recov)
 		# prob, b, h, d = build_dyn_prob(A_list[t_s:], F_list[t_s:], G_list[t_s:], r_list[t_s:], h_cur, rx_cur, T_recov)
-		prob.solve(*args, **kwargs)
+		try:
+			prob.solve(*args, **kwargs)
+			status = prob.status
+		except SolverError:
+			status = "SolverError"
 
 		# If not optimal, re-solve with slack constraints.
-		if prob.status not in cvxpy_s.SOLUTION_PRESENT:
+		if status not in cvxpy_s.SOLUTION_PRESENT:
 			if not use_slack:
-				raise RuntimeError("Solver failed with status {0}".format(prob.status))
-			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(prob.status), RuntimeWarning)
-			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(prob.status))
+				raise RuntimeError("Solver failed with status {0}".format(status))
+			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(status), RuntimeWarning)
+			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(status))
 
 			prob, b, h, d, s_vars = build_dyn_slack_prob(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], \
 														 h_cur, rx_cur, T_recov, slack_weights, slack_final)
 			prob.solve(*args, **kwargs)
 			if prob.status not in cvxpy_s.SOLUTION_PRESENT:
 				raise RuntimeError("Solver failed on slack problem with status {0}".format(prob.status))
+			status = prob.status
 		else:
 			s_vars = dict()
 		
 		if mpc_verbose:
 			print("\nStart Time:", t_s)
-			print_results(prob, slack_dict = s_vars)
+			print_results(prob, status = status, slack_dict = s_vars)
 
 		# Save solver statistics.
 		solve_time += prob.solver_stats.solve_time
