@@ -7,9 +7,9 @@ from fractionation.utilities.data_utils import line_integral_mat, health_prognos
 from fractionation.mpc_funcs import dynamic_treatment
 from fractionation.admm_funcs import dynamic_treatment_admm
 
-from example_utils import simple_structures, simple_colormap
+from example_utils import simple_structures, simple_colormap, save_data
 
-def main():
+def main(figpath = "", datapath = ""):
 	T = 20           # Length of treatment.
 	n_grid = 1000
 	offset = 5       # Displacement between beams (pixels).
@@ -21,7 +21,7 @@ def main():
 	x_grid, y_grid, regions = simple_structures(n_grid, n_grid)
 	struct_kw = simple_colormap(one_idx = True)
 	plot_structures(x_grid, y_grid, regions, title = "Anatomical Structures", one_idx = True, **struct_kw)
-	# plot_structures(x_grid, y_grid, regions, one_idx = True, filename = "ex_cardioid5_structures.png", **struct_kw)
+	# plot_structures(x_grid, y_grid, regions, one_idx = True, filename = figpath + "ex_cardioid5_structures.png", **struct_kw)
 
 	# Problem data.
 	K = np.unique(regions).size   # Number of structures.
@@ -82,6 +82,7 @@ def main():
 	print("Objective:", res_dynamic["obj"])
 	print("Solve Time:", res_dynamic["solve_time"])
 	print("Iterations:", res_dynamic["num_iters"])
+	# save_data(res_dynamic, datapath, "ex1_")
 
 	# Set beam colors on logarithmic scale.
 	b_min = np.min(res_dynamic["beams"][res_dynamic["beams"] > 0])
@@ -95,11 +96,12 @@ def main():
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", one_idx = True)
 	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", one_idx = True)
 
-	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = "ex_cardioid5_Dmax25_admm_residuals.png")
+	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_cardioid5_Dmax25_admm_residuals.png")
 	# plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
-	#			one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, filename = "ex_cardioid5_Dmax25_admm_beams.png")
-	# plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), one_idx = True, filename = "ex_cardioid5_Dmax25_admm_health.png")
-	# plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, filename = "ex_cardioid5_Dmax25_admm_doses.png")
+	#			one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, filename = figpath + "ex_cardioid5_Dmax25_admm_beams.png")
+	# plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), one_idx = True, filename = figpath + "ex_cardioid5_Dmax25_admm_health.png")
+	# plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, filename = figpath + "ex_cardioid5_Dmax25_admm_doses.png")
 
 if __name__ == '__main__':
-	main()
+	main(figpath = "/home/anqi/Dropbox/Research/Fractionation/Figures/", \
+		 datapath = "/home/anqi/Documents/software/fractionation/examples/output/")

@@ -1,0 +1,13 @@
+Iteration: 0
+Iteration: 10
+Iteration: 20
+Iteration: 30
+Iteration: 40
+Iteration: 50
+Iteration: 60
+Dynamic Treatment
+Status: optimal
+Objective: 107.65085577545125
+Solve Time: 11.920699119567871
+Iterations: 61
+Average Health Violation: 0.03101285206819886

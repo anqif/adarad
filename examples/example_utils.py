@@ -2,6 +2,13 @@ import numpy as np
 from matplotlib.colors import ListedColormap, BoundaryNorm
 from fractionation.utilities.data_utils import circle, ellipse, cardioid
 
+def save_data(result, savepath = "", fileprefix = ""):
+	if "primal" in result and "dual" in result:
+		residuals = np.column_stack([result["primal"], result["dual"]])
+		np.save(savepath + fileprefix + "admm_residuals.npy", residuals)
+	np.save(savepath + fileprefix + "beams.npy", result["beams"])
+	np.save(savepath + fileprefix + "health.npy", result["health"])
+	np.save(savepath + fileprefix + "doses.npy", result["doses"])
 
 def simple_structures(m_grid, n_grid, xlim = (-1,1), ylim = (-1,1)):
 	# Create polar grid.

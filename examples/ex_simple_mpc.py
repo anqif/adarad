@@ -7,9 +7,9 @@ from fractionation.utilities.data_utils import line_integral_mat, health_prognos
 from fractionation.mpc_funcs import dynamic_treatment, mpc_treatment
 from fractionation.admm_funcs import dynamic_treatment_admm, mpc_treatment_admm
 
-from example_utils import simple_structures, simple_colormap
+from example_utils import simple_structures, simple_colormap, save_data
 
-def main():
+def main(figpath = "", datapath = ""):
 	np.random.seed(1)
 
 	T = 20           # Length of treatment.
@@ -25,8 +25,8 @@ def main():
 	# Display structures.
 	x_grid, y_grid, regions = simple_structures(n_grid, n_grid)
 	struct_kw = simple_colormap(one_idx = True)
-	# plot_structures(x_grid, y_grid, regions, title = "Anatomical Structures", one_idx = True, **struct_kw)
-	# plot_structures(x_grid, y_grid, regions, one_idx = True, filename = "ex_cardioid5_structures.png", **struct_kw)
+	plot_structures(x_grid, y_grid, regions, title = "Anatomical Structures", one_idx = True, **struct_kw)
+	# plot_structures(x_grid, y_grid, regions, one_idx = True, filename = figpath + "ex_cardioid5_structures.png", **struct_kw)
 
 	# Problem data.
 	K = np.unique(regions).size   # Number of structures.
@@ -103,6 +103,7 @@ def main():
 	print("Objective:", res_dynamic["obj"])
 	print("Solve Time:", res_dynamic["solve_time"])
 	print("Iterations:", res_dynamic["num_iters"])
+	save_data(res_dynamic, datapath, "ex2_naive_")
 
 	# Calculate actual health constraint violation.
 	h_viol_dyn = health_viol(res_dynamic["health"][1:], (health_lower, health_upper))
@@ -129,6 +130,7 @@ def main():
 	print("Objective:", res_mpc["obj"])
 	print("Solve Time:", res_mpc["solve_time"])
 	print("Iterations:", res_mpc["num_iters"])
+	save_data(res_mpc, datapath, "ex2_mpc_")
 
 	# Calculate actual health constraint violation.
 	h_viol_mpc = health_viol(res_mpc["health"][1:], (health_lower, health_upper))
@@ -153,11 +155,12 @@ def main():
 				title = "Treatment Dose vs. Time", label = "MPC", color = colors[2], one_idx = True)
 
 	# plot_beams(res_mpc["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
-	#		  	one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, filename = "ex_noisy2_mpc_admm_beams.png")
+	#		  	one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, filename = figpath + "ex_noisy2_mpc_admm_beams.png")
 	# plot_health(res_mpc["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), \
-	#			label = "Treated (MPC)", color = colors[2], one_idx = True, filename = "ex_noisy2_mpc_admm_health.png")
+	#			label = "Treated (MPC)", color = colors[2], one_idx = True, filename = figpath + "ex_noisy2_mpc_admm_health.png")
 	# plot_treatment(res_mpc["doses"], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper), \
-	#			label = "MPC", color = colors[2], one_idx = True, filename = "ex_noisy2_mpc_admm_doses.png")
+	#			label = "MPC", color = colors[2], one_idx = True, filename = figpath + "ex_noisy2_mpc_admm_doses.png")
 
 if __name__ == '__main__':
-	main()
+	main(figpath = "/home/anqi/Dropbox/Research/Fractionation/Figures/", \
+		 datapath = "/home/anqi/Documents/software/fractionation/examples/output/")

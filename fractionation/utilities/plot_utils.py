@@ -5,8 +5,6 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
 
 from fractionation.utilities.data_utils import line_segments
 
-savepath = "/home/anqi/Dropbox/Research/Fractionation/Figures/"
-
 # Extract subset of a colormap.
 # http://stackoverflow.com/questions/18926031/how-to-extract-a-subset-of-a-colormap-as-a-new-colormap-in-matplotlib
 def truncate_cmap(cmap, minval = 0.0, maxval = 1.0, n = 100):
@@ -51,7 +49,7 @@ def plot_structures(x, y, structures, title = None, one_idx = False, filename = 
 	cbar.solids.set(alpha = 1)
 	plt.show()
 	if filename is not None:
-		fig.savefig(savepath + filename, bbox_inches = "tight", dpi = 300)
+		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot beams.
 def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardize = False, title = None, one_idx = False, filename = None, structures = None, struct_kw = dict(), *args, **kwargs):
@@ -137,10 +135,10 @@ def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardi
 		plt.suptitle(title)
 	plt.show()
 	if filename is not None:
-		fig.savefig(savepath + filename, bbox_inches = "tight", dpi = 300)
+		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot health curves.
-def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treated", one_idx = False, filename = None, *args, **kwargs):
+def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treated", ylim = None, one_idx = False, filename = None, *args, **kwargs):
 	T = h.shape[0] - 1
 	m = h.shape[1]
 	
@@ -155,6 +153,8 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 	
 	fig, axs = plt.subplots(rows, cols, sharey = True)
 	fig.set_size_inches(16,8)
+	if ylim is not None:
+		plt.setp(axs, ylim = ylim)
 	for i in range(m):
 		if rows == 1:
 			ax = axs if cols == 1 else axs[i]
@@ -196,10 +196,10 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 		plt.suptitle(title)
 	plt.show()
 	if filename is not None:
-		fig.savefig(savepath + filename, bbox_inches = "tight", dpi = 300)
+		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot treatment curves.
-def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treatment", one_idx = False, filename = None, *args, **kwargs):
+def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treatment", ylim = None, one_idx = False, filename = None, *args, **kwargs):
 	T = d.shape[0]
 	n = d.shape[1]
 	
@@ -214,6 +214,8 @@ def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, b
 	
 	fig, axs = plt.subplots(rows, cols, sharey = True)
 	fig.set_size_inches(16,8)
+	if ylim is not None:
+		plt.setp(axs, ylim = ylim)
 	for j in range(n):
 		if rows == 1:
 			ax = axs if cols == 1 else axs[j]
@@ -253,7 +255,7 @@ def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, b
 		plt.suptitle(title)
 	plt.show()
 	if filename is not None:
-		fig.savefig(savepath + filename, bbox_inches = "tight", dpi = 300)
+		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot primal and dual residuals.
 def plot_residuals(r_primal, r_dual, normalize = False, show = True, title = None, semilogy = False, filename = None, *args, **kwargs):
@@ -279,4 +281,4 @@ def plot_residuals(r_primal, r_dual, normalize = False, show = True, title = Non
 	if show:
 		plt.show()
 	if filename is not None:
-		fig.savefig(savepath + filename, bbox_inches = "tight", dpi = 300)
+		fig.savefig(filename, bbox_inches = "tight", dpi = 300)

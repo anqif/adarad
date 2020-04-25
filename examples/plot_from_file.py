@@ -6,10 +6,7 @@ from fractionation.utilities.data_utils import health_prognosis
 
 from example_utils import simple_structures, simple_colormap
 
-load_path = "/home/anqi/Documents/software/conrad/conrad/fractionation/output/"
-ex_prefix = "ex_simple_noisy_"
-
-def main():
+def main(savepath = "", loadpath = "", fileprefix = ""):
 	np.random.seed(1)
 
 	T = 20          # Length of treatment.
@@ -32,8 +29,8 @@ def main():
 	angles = np.linspace(0, np.pi, n_angle+1)[:-1]
 	offs_vec = offset*np.arange(-n_bundle//2, n_bundle//2)
 
-	F = np.diag([1.02, 0.90, 0.75, 0.80, 0.95])
-	G = -np.diag([0.01, 0.95, 0.25, 0.15, 0.0065])
+	F = np.diag([1.05, 0.90, 0.75, 0.80, 0.95])
+	G = -np.diag([0.01, 0.50, 0.25, 0.15, 0.0075])
 	r = np.zeros(K)
 	h_init = np.array([1] + (K-1)*[0])
 
@@ -53,27 +50,27 @@ def main():
 
 	# Dose constraints.
 	dose_lower = np.zeros((T,K))
-	dose_upper = np.full((T,K), 50)   # Upper bound on doses.
+	dose_upper = np.full((T,K), 25)   # Upper bound on doses.
 
 	# Health constraints.
 	health_lower = np.zeros((T,K))
 	health_upper = np.zeros((T,K))
 	health_lower[:,1] = -0.5
-	health_lower[:,2] = -0.75
-	health_lower[:,3] = -0.75
-	health_lower[:,4] = -0.9
+	health_lower[:,2] = -0.5
+	health_lower[:,3] = -0.95
+	health_lower[:,4] = -0.25
 	health_upper[:15,0] = 1.5    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 
 	# Load results of one-shot naive plan.
-	naive_beams = np.load(load_path + ex_prefix + "beams.npy")
-	naive_health = np.load(load_path + ex_prefix + "health.npy")
-	naive_doses = np.load(load_path + ex_prefix + "doses.npy")
+	naive_beams = np.load(loadpath + fileprefix + "beams.npy")
+	naive_health = np.load(loadpath + fileprefix + "health.npy")
+	naive_doses = np.load(loadpath + fileprefix + "doses.npy")
 
 	# Load results of MPC plan.
-	mpc_beams = np.load(load_path + ex_prefix + "mpc_beams.npy")
-	mpc_health = np.load(load_path + ex_prefix + "mpc_health.npy")
-	mpc_doses = np.load(load_path + ex_prefix + "mpc_doses.npy")
+	mpc_beams = np.load(loadpath + fileprefix + "mpc_beams.npy")
+	mpc_health = np.load(loadpath + fileprefix + "mpc_health.npy")
+	mpc_doses = np.load(loadpath + fileprefix + "mpc_doses.npy")
 
 	# Set beam colors on logarithmic scale.
 	b_min_naive = np.min(naive_beams[naive_beams > 0])
@@ -92,7 +89,8 @@ def main():
 	plot_treatment(naive_doses, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", one_idx = True)
 
 	# plot_beams(naive_beams, angles = angles, offsets = offs_vec, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
-	#			one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, norm = b_col_norm, filename = "ex_noisy_dyn_beams.png")
+	#			one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, norm = b_col_norm, \
+	#			filename = savepath + fileprefix + "dyn_beams.png")
 
 	# Compare one-shot dynamic and MPC treatment results.
 	d_curves = [{"d": naive_doses, "label": "Naive", "kwargs": {"color": colors[0]}}]
@@ -106,8 +104,10 @@ def main():
 	plot_treatment(mpc_doses, curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper), \
 				title = "Treatment Dose vs. Time", label = "MPC", color = colors[2], one_idx = True)
 
-	# plot_beams(res_mpc["beams"], angles = angles, offsets = offs_vec, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
-	#		  	one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, norm = b_col_norm, filename = "ex_noisy_mpc_admm_beams.png")
+	# plot_beams(mpc_beams, angles = angles, offsets = offs_vec, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
+	#		  	one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, norm = b_col_norm, \
+	#		  	filename = savepath + fileprefix + "mpc_admm_beams.png")
 
 if __name__ == '__main__':
-	main()
+	main(savepath = "/home/anqi/Documents/software/fractionation/fractionation/output/", \
+		 loadpath = "/home/anqi/Documents/software/fractionation/fractionation/output/", fileprefix = "ex_simple_noisy_")
