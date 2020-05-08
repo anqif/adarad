@@ -200,12 +200,14 @@ def beam_to_dose_block(A_full, indices_or_sections):
 	return A
 
 # Check dynamics matrices are correct dimension.
-def check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov = 0):
+def check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov = 0):
 	T_total = T_treat + T_recov
 	if not isinstance(F_list, list):
 		F_list = T_total*[F_list]
 	if not isinstance(G_list, list):
 		G_list = T_treat*[G_list]
+	if not isinstance(q_list, list):
+		q_list = T_treat*[q_list]
 	if not isinstance(r_list, list):
 		r_list = T_total*[r_list]
 	
@@ -213,6 +215,8 @@ def check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov = 0):
 		raise ValueError("F_list must be a list of length {0}".format(T_total))
 	if len(G_list) != T_treat:
 		raise ValueError("G_list must be a list of length {0}".format(T_treat))
+	if len(q_list) != T_treat:
+		raise ValueError("q_list must be a list of length {0}".format(T_treat))
 	if len(r_list) != T_total:
 		raise ValueError("r_list must be a list of length {0}".format(T_total))
 	
@@ -222,28 +226,42 @@ def check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov = 0):
 	for G in G_list:
 		if G.shape != (K,K):
 			raise ValueError("G_t must have dimensions ({0},{0})".format(K))
+	for q in q_list:
+		if q.shape not in [(K,), (K,1)]:
+			raise ValueError("r_t must have dimensions ({0},)".format(K))
 	for r in r_list:
 		# if r.shape != (K,) and r.shape != (K,1):
 		if r.shape not in [(K,), (K,1)]:
 			raise ValueError("r_t must have dimensions ({0},)".format(K))
-	return F_list, G_list, r_list
+	return F_list, G_list, q_list, r_list
 
 # Health prognosis with a given treatment.
-def health_prognosis(h_init, T, F_list, G_list = None, r_list = None, doses = None, health_map = lambda h,t: h):
+def health_prognosis(h_init, T, F_list, G_list = None, q_list = None, r_list = None, doses = None, health_map = lambda h,t: h):
 	K = h_init.shape[0]
 	h_prog = np.zeros((T+1,K))
 	h_prog[0] = h_init
-	
+
 	# Defaults to no treatment.
-	if G_list is None and doses is None:
-		G_list = T*[np.zeros((K,K))]
-		doses = np.zeros((T,K))
-	elif not (G_list is not None and doses is not None):
-		raise ValueError("Both G_list and doses must be provided.")
+	if doses is None:
+		if G_list is None and q_list is None:
+			G_list = T*[np.zeros((K,K))]
+			q_list = T*[np.zeros(K)]
+			doses = np.zeros((T,K))
+		else:
+			raise ValueError("doses must be provided.")
+	else:
+		if G_list is None and q_list is not None:
+			G_list = T*[np.zeros((K,K))]
+		elif G_list is not None and q_list is None:
+			q_list = T*[np.zeros(K)]
+		elif G_list is None and q_list is None:
+			raise ValueError("G_list or q_list must be provided.")
+		if doses.shape != (T,K):
+			raise ValueError("doses must have dimensions ({0},{1})".format(T,K))
 	if r_list is None:
 		r_list = T*[np.zeros(K)]
 	
-	F_list, G_list, r_list = check_dyn_matrices(F_list, G_list, r_list, K, T, T_recov = 0)
+	F_list, G_list, q_list, r_list = check_dyn_matrices(F_list, G_list, q_list, r_list, K, T, T_recov = 0)
 	for t in range(T):
-		h_prog[t+1] = health_map(F_list[t].dot(h_prog[t]) + G_list[t].dot(doses[t]) + r_list[t], t)
+		h_prog[t+1] = health_map(F_list[t].dot(h_prog[t]) + G_list[t].dot(doses[t]) + q_list[t]*doses[t]**2 + r_list[t], t)
 	return h_prog

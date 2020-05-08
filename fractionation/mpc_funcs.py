@@ -42,10 +42,10 @@ def single_treatment(A, patient_rx, *args, **kwargs):
 	# h = F.dot(h_init) + G.dot(d.value)
 	return {"obj": prob.value, "status": prob.status, "beams": b.value, "doses": d.value}
 
-def dynamic_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, *args, **kwargs):
+def dynamic_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
-	F_list, G_list, r_list = check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov)
+	F_list, G_list, q_list, r_list = check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov)
 	
 	# Build problem for treatment stage.
 	prob, b, h, d = build_dyn_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov)
@@ -57,15 +57,16 @@ def dynamic_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_reco
 	beams_all = pad_matrix(b.value, T_recov)
 	doses_all = pad_matrix(d.value, T_recov)
 	G_list_pad = G_list + T_recov*[np.zeros(G_list[0].shape)]
-	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, r_list, doses_all, health_map)
+	q_list_pad = q_list + T_recov*[np.zeros(q_list[0].shape)]
+	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, q_list_pad, r_list, doses_all, health_map)
 	obj = dyn_objective(d.value, health_all[:(T_treat+1)], patient_rx).value
 	return {"obj": obj, "status": prob.status, "solve_time": prob.solver_stats.solve_time, "beams": beams_all, "doses": doses_all, "health": health_all}
 
-def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
+def mpc_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
 				  use_slack = True, slack_weights = None, slack_final = True, mpc_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
-	F_list, G_list, r_list = check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov)
+	F_list, G_list, q_list, r_list = check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov)
 	
 	# Initialize values.
 	beams = np.zeros((T_treat,n))
@@ -125,7 +126,8 @@ def mpc_treatment(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 
 	beams_all = pad_matrix(beams, T_recov)
 	doses_all = pad_matrix(doses, T_recov)
 	G_list_pad = G_list + T_recov*[np.zeros(G_list[0].shape)]
-	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, r_list, doses_all, health_map)
+	q_list_pad = q_list + T_recov*[np.zeros(q_list[0].shape)]
+	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, q_list_pad, r_list, doses_all, health_map)
 	obj_treat = dyn_objective(doses, health_all[:(T_treat+1)], patient_rx).value
 	# TODO: How should we handle constraint violations?
 	status, status_count = Counter(status_list).most_common(1)[0]   # Take majority as final status.

@@ -43,11 +43,11 @@ def run_slack_dose_worker(pipe, A, patient_rx, rho, s_weights = None, s_final = 
 	s_vals = {key: slack.value for key, slack in s_vars.items()}
 	pipe.send((b.value, d_val, s_vals))
 
-def dynamic_treatment_admm_slack(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
+def dynamic_treatment_admm_slack(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
 								 slack_weights = None, slack_final = True, partial_results = False, admm_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
-	F_list, G_list, r_list = check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov)
+	F_list, G_list, q_list, r_list = check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov)
 
 	# Problem parameters.
 	max_iter = kwargs.pop("max_iter", 1000) # Maximum iterations.
@@ -151,7 +151,8 @@ def dynamic_treatment_admm_slack(A_list, F_list, G_list, r_list, h_init, patient
 	beams_all = pad_matrix(b_val, T_recov)
 	doses_all = pad_matrix(d_val, T_recov)
 	G_list_pad = G_list + T_recov*[np.zeros(G_list[0].shape)]
-	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, r_list, doses_all, health_map)
+	q_list_pad = q_list + T_recov*[np.zeros(q_list[0].shape)]
+	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, q_list_pad, r_list, doses_all, health_map)
 	obj = dyn_objective(d_val, health_all[:(T_treat+1)], patient_rx).value
 
 	# Add penalty on all slack variables/values.

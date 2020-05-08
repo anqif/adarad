@@ -26,7 +26,6 @@ def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda 
 		h_prog[t+1] = health_map(h_prog[t] - doses[t] - R_mat.dot(doses[t]**2), t)
 	return h_prog
 
-
 def bed_lin(d, d_k, R_mat):
 	g = d_k + R_mat.dot(d_k**2)
 	g_prime = np.eye(d_k.shape[0]) + 2*R_mat.dot(d_k)

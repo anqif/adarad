@@ -36,6 +36,7 @@ def main(figpath = "", datapath = ""):
 
 	F = np.diag([1.05, 0.90, 0.75, 0.80, 0.95])
 	G = -np.diag([0.01, 0.5, 0.25, 0.15, 0.0075])
+	q = np.zeros(K)
 	r = np.zeros(K)
 	h_init = np.array([1] + (K-1)*[0])
 
@@ -96,8 +97,8 @@ def main(figpath = "", datapath = ""):
 	patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
 
 	# Dynamic treatment.
-	# res_dynamic = dynamic_treatment(A_list, F, G, r, h_init, patient_rx, health_map = health_map, solver = "MOSEK")
-	res_dynamic = dynamic_treatment_admm(A_list, F, G, r, h_init, patient_rx, health_map = health_map, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
+	# res_dynamic = dynamic_treatment(A_list, F, G, q, r, h_init, patient_rx, health_map = health_map, solver = "MOSEK")
+	res_dynamic = dynamic_treatment_admm(A_list, F, G, q, r, h_init, patient_rx, health_map = health_map, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])
@@ -115,7 +116,7 @@ def main(figpath = "", datapath = ""):
 	lc_norm = LogNorm(vmin = b_min, vmax = b_max)
 
 	# Plot dynamic beam, health, and treatment curves.
-	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True)
+	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True)
 	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
 				title = "Beam Intensities vs. Time", one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
 	plot_health(res_dynamic["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", one_idx = True)
@@ -123,8 +124,8 @@ def main(figpath = "", datapath = ""):
 
 	# Dynamic treatment with MPC.
 	print("\nStarting MPC algorithm...")
-	# res_mpc = mpc_treatment(A_list, F, G, r, h_init, patient_rx, health_map = health_map, solver = "MOSEK", mpc_verbose = True)
-	res_mpc = mpc_treatment_admm(A_list, F, G, r, h_init, patient_rx, health_map = health_map, rho = 1, max_iter = 1000, solver = "MOSEK", mpc_verbose = True)
+	# res_mpc = mpc_treatment(A_list, F, G, q, r, h_init, patient_rx, health_map = health_map, solver = "MOSEK", mpc_verbose = True)
+	res_mpc = mpc_treatment_admm(A_list, F, G, q, r, h_init, patient_rx, health_map = health_map, rho = 1, max_iter = 1000, solver = "MOSEK", mpc_verbose = True)
 	print("\nMPC Treatment")
 	print("Status:", res_mpc["status"])
 	print("Objective:", res_mpc["obj"])

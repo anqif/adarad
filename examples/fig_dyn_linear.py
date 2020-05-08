@@ -20,7 +20,7 @@ def main(savepath = ""):
     doses[:t_off,:] = 1.0
     doses[t_off:,:] = 0.15
     h_init = np.array([0.8] + (K-1)*[0])
-    h_prog = health_prognosis(h_init, T, F, G, r, doses)
+    h_prog = health_prognosis(h_init, T, F, G, r_list = r, doses = doses)
 
     # Health constraints.
     health_lower = np.zeros((T, K))

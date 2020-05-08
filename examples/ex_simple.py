@@ -32,6 +32,7 @@ def main(figpath = "", datapath = ""):
 	F = np.diag([1.05, 0.90, 0.75, 0.80, 0.95])
 	# G = -np.diag([0.01, 0.95, 0.25, 0.15, 0.0075])
 	G = -np.diag([0.01, 0.50, 0.25, 0.15, 0.0075])
+	q = np.zeros(K)
 	r = np.zeros(K)
 	h_init = np.array([1] + (K-1)*[0])
 
@@ -75,8 +76,8 @@ def main(figpath = "", datapath = ""):
 	patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
 
 	# Dynamic treatment.
-	# res_dynamic = dynamic_treatment(A_list, F, G, r, h_init, patient_rx, solver = "MOSEK")
-	res_dynamic = dynamic_treatment_admm(A_list, F, G, r, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
+	# res_dynamic = dynamic_treatment(A_list, F, G, q, r, h_init, patient_rx, solver = "MOSEK")
+	res_dynamic = dynamic_treatment_admm(A_list, F, G, q, r, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])

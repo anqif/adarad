@@ -46,10 +46,10 @@ def run_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
 	d_val = A.dot(b.value)
 	pipe.send((b.value, d_val))
 
-def dynamic_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, partial_results = False, admm_verbose = False, *args, **kwargs):
+def dynamic_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, partial_results = False, admm_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
-	F_list, G_list, r_list = check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov)
+	F_list, G_list, q_list, r_list = check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov)
 
 	# Problem parameters.
 	max_iter = kwargs.pop("max_iter", 1000) # Maximum iterations.
@@ -175,16 +175,17 @@ def dynamic_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T
 	beams_all = pad_matrix(b_val, T_recov)
 	doses_all = pad_matrix(d_val, T_recov)
 	G_list_pad = G_list + T_recov*[np.zeros(G_list[0].shape)]
-	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, r_list, doses_all, health_map)
+	q_list_pad = q_list + T_recov*[np.zeros(q_list[0].shape)]
+	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, q_list_pad, r_list, doses_all, health_map)
 	obj = dyn_objective(d_val, health_all[:(T_treat+1)], patient_rx).value
 	return {"obj": obj, "status": status, "num_iters": k, "total_time": end - start, "solve_time": solve_time,
 			"beams": beams_all, "doses": doses_all, "health": health_all, "primal": np.array(r_prim[:k]), "dual": np.array(r_dual[:k])}
 
-def mpc_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
+def mpc_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
 					   use_slack = True, slack_weights = None, slack_final = True, mpc_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
-	F_list, G_list, r_list = check_dyn_matrices(F_list, G_list, r_list, K, T_treat, T_recov)
+	F_list, G_list, q_list, r_list = check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov)
 
 	# Initialize values.
 	beams = np.zeros((T_treat,n))
@@ -202,7 +203,7 @@ def mpc_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T_rec
 		# Solve optimal control problem from current period forward.
 		# TODO: Warm start next ADMM solve, or better yet, rewrite so no teardown/rebuild process between ADMM solves.
 		T_left = T_treat - t_s
-		result = dynamic_treatment_admm(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], \
+		result = dynamic_treatment_admm(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[q_list[t_s]], T_left*[r_list[t_s]], \
 										h_cur, rx_cur, T_recov, partial_results = True, *args, **kwargs)
 
 		# If not optimal, re-solve with slack constraints.
@@ -211,7 +212,7 @@ def mpc_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T_rec
 				raise RuntimeError("Solver failed with status {0}".format(result["status"]))
 			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(result["status"]), RuntimeWarning)
 			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(result["status"]))
-			result = dynamic_treatment_admm_slack(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], \
+			result = dynamic_treatment_admm_slack(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[q_list[t_s]], T_left*[r_list[t_s]], \
 						h_cur, rx_cur, T_recov, slack_weights = slack_weights, slack_final = slack_final, partial_results = True, *args, **kwargs)
 
 		if mpc_verbose:
@@ -232,13 +233,15 @@ def mpc_treatment_admm(A_list, F_list, G_list, r_list, h_init, patient_rx, T_rec
 		doses[t_s] = A_list[t_s].dot(beams[t_s])
 
 		# Update health for next period.
-		h_cur = health_map(F_list[t_s].dot(h_cur) + G_list[t_s].dot(doses[t_s]) + r_list[t_s], t_s)
+		h_start = F_list[t_s].dot(h_cur) + G_list[t_s].dot(doses[t_s]) + q_list[t_s]*doses[t_s]**2 + r_list[t_s]
+		h_cur = health_map(h_start, t_s)
 
 	# Construct full results.
 	beams_all = pad_matrix(beams, T_recov)
 	doses_all = pad_matrix(doses, T_recov)
 	G_list_pad = G_list + T_recov*[np.zeros(G_list[0].shape)]
-	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, r_list, doses_all, health_map)
+	q_list_pad = q_list + T_recov*[np.zeros(q_list[0].shape)]
+	health_all = health_prognosis(h_init, T_treat + T_recov, F_list, G_list_pad, q_list_pad, r_list, doses_all, health_map)
 	obj = dyn_objective(doses, health_all[:(T_treat+1)], patient_rx).value
 	status, status_count = Counter(status_list).most_common(1)[0]   # Take majority as final status.
 	return {"obj": obj, "status": status, "num_iters": num_iters, "solve_time": solve_time, "beams": beams_all, "doses": doses_all, "health": health_all}
