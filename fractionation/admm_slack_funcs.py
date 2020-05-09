@@ -76,7 +76,8 @@ def dynamic_treatment_admm_slack(A_list, F_list, G_list, q_list, r_list, h_init,
 		procs[-1].start()
 
 	# Proximal health problem.
-	prob_health, h, d_tld, h_slacks = build_dyn_slack_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T_recov, slack_weights, slack_final)
+	prob_health, h, d_tld, d_parm, h_slacks = build_dyn_slack_prob_health(F_list, G_list, q_list, r_list, h_init, patient_rx, \
+																		  T_treat, T_recov, slack_weights, slack_final)
 	d_new = Parameter(d_tld.shape, value = np.zeros(d_tld.shape))
 	u = Parameter(d_tld.shape, value = np.zeros(d_tld.shape))
 	penalty = (rho/2)*sum_squares(d_tld - d_new + u)

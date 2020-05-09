@@ -34,6 +34,7 @@ def bed_lin(d, d_k, R_mat):
 def bed_lin_dyn_mats(d_k, R_mat, T_treat, T_recov = 0):
 	K = d_k.shape[1]
 	F_list = (T_treat + T_recov)*[np.eye(K)]
+	q_list = (T_treat + T_recov)*[np.zeros(K)]
 	
 	G_list = []
 	r_list = []
@@ -41,7 +42,7 @@ def bed_lin_dyn_mats(d_k, R_mat, T_treat, T_recov = 0):
 		G_list.append(-np.eye(K) - 2*np.diag(R_mat.dot(d_k[t])))
 		r_list.append(R_mat.dot(d_k[t]**2))	
 	r_list += T_recov*[np.zeros(K)]
-	return F_list, G_list, r_list
+	return F_list, G_list, q_list, r_list
 
 def bed_ccp_dyn_treat(A_list, alphas, betas, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None, *args, **kwargs):
 	T_treat = len(A_list)
@@ -70,8 +71,8 @@ def bed_ccp_dyn_treat(A_list, alphas, betas, h_init, patient_rx, T_recov = 0, he
 	
 	while not finished:
 		# Formulate and solve problem.
-		F_list, G_list, r_list = bed_lin_dyn_mats(d_cur, R_mat, T_treat, T_recov)
-		prob, b, h, d = build_dyn_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov)
+		F_list, G_list, q_list, r_list = bed_lin_dyn_mats(d_cur, R_mat, T_treat, T_recov)
+		prob, b, h, d, d_parm = build_dyn_prob(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov)
 		prob.solve(*args, **kwargs)
 		if prob.status not in ["optimal", "optimal_inaccurate"]:
 			raise RuntimeError("Solver failed with status {0}".format(prob.status))

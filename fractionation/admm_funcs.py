@@ -78,7 +78,7 @@ def dynamic_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patie
 		procs[-1].start()
 
 	# Proximal health problem.
-	prob_health, h, d_tld = build_dyn_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T_recov)
+	prob_health, h, d_tld, d_parm = build_dyn_prob_health(F_list, G_list, q_list, r_list, h_init, patient_rx, T_treat, T_recov)
 	d_new = Parameter(d_tld.shape, value = np.zeros(d_tld.shape))
 	u = Parameter(d_tld.shape, value = np.zeros(d_tld.shape))
 	penalty = (rho/2)*sum_squares(d_tld - d_new + u)
@@ -233,6 +233,7 @@ def mpc_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patient_r
 		doses[t_s] = A_list[t_s].dot(beams[t_s])
 
 		# Update health for next period.
+		# h_cur = health_map(result["health"][1], t_s)
 		h_start = F_list[t_s].dot(h_cur) + G_list[t_s].dot(doses[t_s]) + q_list[t_s]*doses[t_s]**2 + r_list[t_s]
 		h_cur = health_map(h_start, t_s)
 

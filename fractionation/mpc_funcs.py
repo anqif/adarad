@@ -48,7 +48,7 @@ def dynamic_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx
 	F_list, G_list, q_list, r_list = check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov)
 	
 	# Build problem for treatment stage.
-	prob, b, h, d = build_dyn_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov)
+	prob, b, h, d, d_parm = build_dyn_prob(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov)
 	prob.solve(*args, **kwargs)
 	if prob.status not in ["optimal", "optimal_inaccurate"]:
 		raise RuntimeError("Solver failed with status {0}".format(prob.status))
@@ -82,8 +82,8 @@ def mpc_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_
 		
 		# Solve optimal control problem from current period forward.
 		T_left = T_treat - t_s
-		prob, b, h, d = build_dyn_prob(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], h_cur, rx_cur, T_recov)
-		# prob, b, h, d = build_dyn_prob(A_list[t_s:], F_list[t_s:], G_list[t_s:], r_list[t_s:], h_cur, rx_cur, T_recov)
+		prob, b, h, d, d_parm = build_dyn_prob(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[q_list[t_s]], T_left*[r_list[t_s]], h_cur, rx_cur, T_recov)
+		# prob, b, h, d, d_parm = build_dyn_prob(A_list[t_s:], F_list[t_s:], G_list[t_s:], q_list[t_s:], r_list[t_s:], h_cur, rx_cur, T_recov)
 		try:
 			prob.solve(*args, **kwargs)
 			status = prob.status
@@ -97,8 +97,8 @@ def mpc_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_
 			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(status), RuntimeWarning)
 			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(status))
 
-			prob, b, h, d, s_vars = build_dyn_slack_prob(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[r_list[t_s]], \
-														 h_cur, rx_cur, T_recov, slack_weights, slack_final)
+			prob, b, h, d, d_parm, s_vars = build_dyn_slack_prob(T_left*[A_list[t_s]], T_left*[F_list[t_s]], T_left*[G_list[t_s]], T_left*[q_list[t_s]], T_left*[r_list[t_s]], \
+														 			h_cur, rx_cur, T_recov, slack_weights, slack_final)
 			prob.solve(*args, **kwargs)
 			if prob.status not in cvxpy_s.SOLUTION_PRESENT:
 				raise RuntimeError("Solver failed on slack problem with status {0}".format(prob.status))
@@ -120,7 +120,7 @@ def mpc_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_
 		
 		# Update health for next period.
 		h_cur = health_map(h.value[1], t_s)
-		# h_cur = health_map(F_list[t_s].dot(h_cur) + G_list[t_s].dot(doses[t_s]) + r_list[t_s], t_s)
+		# h_cur = health_map(F_list[t_s].dot(h_cur) + G_list[t_s].dot(doses[t_s]) + q_list[t_s]*doses[t_s]**2 + r_list[t_s], t_s)
 	
 	# Construct full results.
 	beams_all = pad_matrix(beams, T_recov)

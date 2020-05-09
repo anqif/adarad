@@ -97,9 +97,8 @@ def rx_to_constrs(expr, rx_dict):
                 constrs.append(expr[is_finite] <= rx_upper[is_finite])
     return constrs
 
-
 # Construct optimal control problem.
-def build_dyn_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov=0):
+def build_dyn_prob(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov=0):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     if h_init.shape[0] != K:
@@ -109,6 +108,7 @@ def build_dyn_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov=0
     b = Variable((T_treat, n), nonneg=True, name="beams")  # Beams.
     h = Variable((T_treat + 1, K), name="health")  # Health statuses.
     d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
+    d_parm = Parameter(d.shape, nonneg=True, name="dose parameter")  # Dose point around which to linearize dynamics.
 
     # Objective function.
     obj = dyn_objective(d, h, patient_rx)
@@ -117,7 +117,17 @@ def build_dyn_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov=0
     # constrs = [h[0] == h_init, b >= 0]
     constrs = [h[0] == h_init]
     for t in range(T_treat):
-        constrs.append(h[t + 1] == F_list[t] * h[t] + G_list[t] * d[t] + r_list[t])
+        if np.all(q_list[t] == 0):
+            constrs.append(h[t + 1] == F_list[t] * h[t] + G_list[t] * d[t] + r_list[t])
+        else:
+            # For PTV, approximate dynamics via a first-order Taylor expansion.
+            h_lin = F_list[t] * h[t] + G_list[t] * d[t] + r_list[t]
+            h_taylor = h_lin + multiply(q_list[t], square(d_parm[t])) + 2 * q_list[t] * d_parm[t] * (d[t] - d_parm[t])
+            constrs.append(h[t + 1, patient_rx["is_target"]] == h_taylor[patient_rx["is_target"]])
+
+            # For OAR, relax dynamics constraint to an upper bound that is always tight at optimum.
+            h_quad = h_lin + multiply(q_list[t], square(d[t]))
+            constrs.append(h[t + 1, ~patient_rx["is_target"]] <= h_quad[~patient_rx["is_target"]])
 
     # Additional beam constraints.
     if "beam_constrs" in patient_rx:
@@ -148,4 +158,4 @@ def build_dyn_prob(A_list, F_list, G_list, r_list, h_init, patient_rx, T_recov=0
         constrs += constrs_r
 
     prob = Problem(Minimize(obj), constrs)
-    return prob, b, h, d
+    return prob, b, h, d, d_parm

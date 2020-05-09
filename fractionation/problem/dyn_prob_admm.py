@@ -1,3 +1,4 @@
+import numpy as np
 import cvxpy
 from cvxpy import *
 
@@ -52,7 +53,7 @@ def build_dyn_prob_dose_period(A, patient_rx):
     prob_t = Problem(Minimize(obj), constrs)
     return prob_t, b_t, d_t
 
-def build_dyn_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T_recov=0):
+def build_dyn_prob_health(F_list, G_list, q_list, r_list, h_init, patient_rx, T_treat, T_recov=0):
     K = h_init.shape[0]
     if patient_rx["health_goal"].shape != (T_treat, K):
         raise ValueError("health_goal must have dimensions ({0},{1})".format(T_treat, K))
@@ -60,6 +61,7 @@ def build_dyn_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T
     # Define variables.
     h = Variable((T_treat + 1, K), name="health")  # Health statuses.
     d = Variable((T_treat, K), nonneg=True, name="doses")  # Doses.
+    d_parm = Parameter(d.shape, nonneg=True, name="dose parameter")  # Dose point around which to linearize dynamics.
 
     # Health penalty function.
     obj = sum([health_penalty(h[t + 1], patient_rx["health_goal"][t], patient_rx["health_weights"]) for t in range(T_treat)])
@@ -67,7 +69,17 @@ def build_dyn_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T
     # Health dynamics for treatment stage.
     constrs = [h[0] == h_init]
     for t in range(T_treat):
-        constrs.append(h[t + 1] == F_list[t] * h[t] + G_list[t] * d[t] + r_list[t])
+        if np.all(q_list[t] == 0):
+            constrs.append(h[t + 1] == F_list[t] * h[t] + G_list[t] * d[t] + r_list[t])
+        else:
+            # For PTV, approximate dynamics via a first-order Taylor expansion.
+            h_lin = F_list[t] * h[t] + G_list[t] * d[t] + r_list[t]
+            h_taylor = h_lin + multiply(q_list[t], square(d_parm[t])) + 2 * q_list[t] * d_parm[t] * (d[t] - d_parm[t])
+            constrs.append(h[t + 1, patient_rx["is_target"]] == h_taylor[patient_rx["is_target"]])
+
+            # For OAR, relax dynamics constraint to an upper bound that is always tight at optimum.
+            h_quad = h_lin + multiply(q_list[t], square(d[t]))
+            constrs.append(h[t + 1, ~patient_rx["is_target"]] <= h_quad[~patient_rx["is_target"]])
 
     # Additional health constraints.
     if "health_constrs" in patient_rx:
@@ -90,4 +102,4 @@ def build_dyn_prob_health(F_list, G_list, r_list, h_init, patient_rx, T_treat, T
         constrs += constrs_r
 
     prob = Problem(Minimize(obj), constrs)
-    return prob, h, d
+    return prob, h, d, d_parm
