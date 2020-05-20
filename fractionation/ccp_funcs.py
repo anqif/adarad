@@ -67,7 +67,6 @@ def bed_ccp_dyn_treat(A_list, alphas, betas, h_init, patient_rx, T_recov = 0, he
 	finished = False
 	d_cur = d_init
 	obj_cur = np.inf
-	obj_diff = 2*eps
 	
 	while not finished:
 		# Formulate and solve problem.

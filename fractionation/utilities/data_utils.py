@@ -237,6 +237,26 @@ def check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov = 0):
 			raise ValueError("r_t must have dimensions ({0},)".format(K))
 	return F_list, G_list, q_list, r_list
 
+def check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov = 0):
+	T_total = T_treat + T_recov
+	if alpha is None:
+		alpha = np.zeros((T_treat,K))
+	if beta is None:
+		beta = np.zeros((T_treat,K))
+	if gamma is None:
+		gamma = np.zeros((T_total,K))
+
+	if alpha.shape != (T_treat,K):
+		raise ValueError("alpha must have dimensions ({0},{1})".format(T_treat,K))
+	if beta.shape != (T_treat,K):
+		raise ValueError("beta must have dimensions ({0},{1})".format(T_treat,K))
+	if gamma.shape != (T_total,K):
+		raise ValueError("gamma must have dimensions ({0},{1})".format(T_total,K))
+
+	if np.any(beta < 0):
+		raise ValueError("beta can only contain nonnegative values")
+	return alpha, beta, gamma
+
 # Health prognosis with a given treatment.
 def health_prognosis(h_init, T, F_list, G_list = None, q_list = None, r_list = None, doses = None, health_map = lambda h,t: h):
 	K = h_init.shape[0]
@@ -292,12 +312,7 @@ def health_prog_quad(h_init, T, alpha = None, beta = None, gamma = None, doses =
 	if gamma is None:
 		gamma = np.zeros((T,K))
 
-	if alpha.shape != (T,K):
-		raise ValueError("alpha must have dimensions ({0},{1})".format(T,K))
-	if beta.shape != (T,K):
-		raise ValueError("beta must have dimensions ({0},{1})".format(T,K))
-	if gamma.shape != (T,K):
-		raise ValueError("gamma must have dimensions ({0},{1})".format(T,K))
+	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T, T_recov = 0)
 
 	h_prog = np.zeros((T+1,K))
 	h_prog[0] = h_init
