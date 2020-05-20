@@ -10,15 +10,15 @@ def main(savepath = ""):
     K = 2    # Number of structures.
 
     # Health dynamics matrices.
-    alpha = np.array([1.0, 1.5])
-    beta = np.array([0.5, 1.0])
-    gamma = np.array([1.0, 2.0])
+    alpha = np.array(T*[[1.75, 1.1]])
+    beta = np.array(T*[[0.75, 0.5]])
+    gamma = np.array(T*[[1.5, 1.0]])
 
     # Health prognosis.
     t_off = int(T/2)
     doses = np.zeros((T,K))
-    doses[:t_off,:] = 1.0
-    doses[t_off:,:] = 0.15
+    doses[:t_off,:] = 0.75
+    doses[t_off:,:] = 0.6665
     h_init = np.array([0.8] + (K-1)*[0])
     h_prog = health_prog_quad(h_init, T, alpha, beta, gamma, doses)
 
@@ -30,7 +30,7 @@ def main(savepath = ""):
 
     # Plot health trajectory.
     plot_health(h_prog, stepsize = 5, bounds = (health_lower, health_upper), title = "Health Status vs. Time", one_idx = True)
-    # plot_health(h_prog, stepsize = 5, bounds = (health_lower, health_upper), one_idx = True, ylim = (-0.5, 1.0), filename = savepath + "fig_health_dyn_quad.png")
+    # plot_health(h_prog, stepsize = 5, bounds = (health_lower, health_upper), one_idx = True, ylim = (-2.0, 1.0), filename = savepath + "fig_health_dyn_quad.png")
 
 if __name__ == '__main__':
 	main(savepath = "/home/anqi/Dropbox/Research/Fractionation/Figures/")
