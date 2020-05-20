@@ -240,8 +240,6 @@ def check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov = 0):
 # Health prognosis with a given treatment.
 def health_prognosis(h_init, T, F_list, G_list = None, q_list = None, r_list = None, doses = None, health_map = lambda h,t: h):
 	K = h_init.shape[0]
-	h_prog = np.zeros((T+1,K))
-	h_prog[0] = h_init
 
 	# Defaults to no treatment.
 	if doses is None:
@@ -264,6 +262,45 @@ def health_prognosis(h_init, T, F_list, G_list = None, q_list = None, r_list = N
 		r_list = T*[np.zeros(K)]
 	
 	F_list, G_list, q_list, r_list = check_dyn_matrices(F_list, G_list, q_list, r_list, K, T, T_recov = 0)
+
+	h_prog = np.zeros((T+1,K))
+	h_prog[0] = h_init
 	for t in range(T):
 		h_prog[t+1] = health_map(F_list[t].dot(h_prog[t]) + G_list[t].dot(doses[t]) + q_list[t]*doses[t]**2 + r_list[t], t)
+	return h_prog
+
+def health_prog_quad(h_init, T, alpha = None, beta = None, gamma = None, doses = None, health_map = lambda h,t: h):
+	K = h_init.shape[0]
+
+	# Defaults to no treatment.
+	if doses is None:
+		if alpha is None and beta is None:
+			alpha = np.zeros((T,K))
+			beta = np.zeros((T,K))
+			doses = np.zeros((T,K))
+		else:
+			raise ValueError("doses must be provided.")
+	else:
+		if alpha is None and beta is not None:
+			alpha = np.zeros((T,K))
+		elif alpha is not None and beta is None:
+			beta = np.zeros((T,K))
+		elif alpha is None and beta is None:
+			raise ValueError("alpha or beta must be provided.")
+		if doses.shape != (T,K):
+			raise ValueError("doses must have dimensions ({0},{1})".format(T,K))
+	if gamma is None:
+		gamma = np.zeros((T,K))
+
+	if alpha.shape != (T,K):
+		raise ValueError("alpha must have dimensions ({0},{1})".format(T,K))
+	if beta.shape != (T,K):
+		raise ValueError("beta must have dimensions ({0},{1})".format(T,K))
+	if gamma.shape != (T,K):
+		raise ValueError("gamma must have dimensions ({0},{1})".format(T,K))
+
+	h_prog = np.zeros((T+1,K))
+	h_prog[0] = h_init
+	for t in range(T):
+		h_prog[t+1] = health_map(h_prog[t] - alpha[t]*doses[t] - beta[t]*(doses[t]**2) + gamma[t], t)
 	return h_prog
