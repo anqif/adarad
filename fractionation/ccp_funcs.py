@@ -1,7 +1,41 @@
+import cvxpy.settings as cvxpy_s
 import numpy as np
 
 from fractionation.utilities.data_utils import pad_matrix
 from fractionation.mpc_funcs import build_dyn_prob, dyn_objective
+
+def ccp_solve(prob, d, d_parm, d_init = None, max_iter = 1000, eps_ccp = 1e-4, *args, **kwargs):
+	if d_init is None:
+		d_init = np.zeros(d_parm.shape)
+	
+	k = 0
+	solve_time = 0
+	finished = False
+	obj_cur = np.inf
+	d_cur = d_init
+	status_list = []
+
+	while not finished:
+		# Solve linearized problem.
+		d_parm.value = d_cur
+		prob.solve(*args, **kwargs)
+		if prob.status not in cvxpy_s.SOLUTION_PRESENT:
+			raise RuntimeError("Solver failed with status {0}".format(prob.status))
+		solve_time += prob.solver_stats.solve_time
+		status_list.append(prob.status)
+
+		# Check stopping criterion.
+		obj_diff = obj_cur - prob.value
+		finished = (k + 1) >= max_iter or obj_diff <= eps
+
+		# Update objective and linearization point.
+		obj_cur = prob.value
+		d_cur = d.value
+		k = k + 1
+
+	# Take majority as final status.
+	status, status_count = Counter(status_list).most_common(1)[0]
+	return {"obj": obj_cur, "status": status, "num_iters": k, "solve_time": solve_time}
 
 def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda h,t: h):
 	K = h_init.shape[0]

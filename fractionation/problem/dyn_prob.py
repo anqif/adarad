@@ -2,6 +2,52 @@ import cvxpy
 import numpy as np
 from cvxpy import *
 
+# Sum-of-squares penalty function.
+def square_penalty(var, goal=None, weights=None):
+    if goal is None:
+        goal = np.zeros(dose.shape)
+    if weights is None:
+        weights = np.ones(dose.shape)
+    if np.any(weights < 0):
+        raise ValueError("weights must all be nonnegative")
+    return weights * square(dose - goal)
+
+# Hinge penalty function.
+def hinge_penalty(var, goal=None, weights=None):
+    if goal is None:
+        goal = np.zeros(var.shape)
+    if weights is None:
+        weights = [np.ones(var.shape), np.ones(var.shape)]
+    if len(weights) != 2:
+        raise ValueError("weights must be a list of two arrays")
+    for w in weights:
+        if np.any(w < 0):
+            raise ValueError("weights must all be nonnegative")
+
+    w_under, w_over = weights
+    return w_under*neg(var - goal) + w_over*pos(var - goal)
+
+# Penalty functions.
+dose_penalty = square_penalty
+health_penalty = square_penalty
+
+# Full objective function.
+def dyn_objective(d_var, h_var, patient_rx):
+    T, K = d_var.shape
+    if h_var.shape[0] != T + 1:
+        raise ValueError("h_var must have exactly {0} rows".format(T + 1))
+    if patient_rx["dose_goal"].shape != (T, K):
+        raise ValueError("dose_goal must have dimensions ({0},{1})".format(T, K))
+    if patient_rx["health_goal"].shape != (T, K):
+        raise ValueError("health_goal must have dimensions ({0},{1})".format(T, K))
+
+    penalties = []
+    for t in range(T):
+        d_penalty = dose_penalty(d_var[t], patient_rx["dose_goal"][t], patient_rx["dose_weights"])
+        h_penalty = health_penalty(h_var[t + 1], patient_rx["health_goal"][t], patient_rx["health_weights"])
+        penalties.append(d_penalty + h_penalty)
+    return sum(penalties)
+
 def rx_slice(patient_rx, t_start, t_end, t_step=1, squeeze=True):
     t_slice = slice(t_start, t_end, t_step)
 
@@ -23,42 +69,6 @@ def rx_slice(patient_rx, t_start, t_end, t_step=1, squeeze=True):
                         rx_old_slice = np.squeeze(rx_old_slice)
                     rx_cur[constr_key][lu_key] = rx_old_slice
     return rx_cur
-
-# Dose penalty per period.
-def dose_penalty(dose, goal=None, weights=None):
-    if goal is None:
-        goal = np.zeros(dose.shape)
-    if weights is None:
-        weights = np.ones(dose.shape)
-    return weights * square(dose - goal)
-
-# Health status penalty per period.
-def health_penalty(health, goal=None, weights=None):
-    if goal is None:
-        goal = np.zeros(health.shape)
-    if weights is None:
-        # weights = [np.ones(health.shape), np.ones(health.shape)]
-        weights = np.ones(health.shape)
-    # w_under, w_over = weights
-    # return w_under * neg(health - goal) + w_over * pos(health - goal)
-    return weights * square(health - goal)
-
-# Full objective function.
-def dyn_objective(d_var, h_var, patient_rx):
-    T, K = d_var.shape
-    if h_var.shape[0] != T + 1:
-        raise ValueError("h_var must have exactly {0} rows".format(T + 1))
-    if patient_rx["dose_goal"].shape != (T, K):
-        raise ValueError("dose_goal must have dimensions ({0},{1})".format(T, K))
-    if patient_rx["health_goal"].shape != (T, K):
-        raise ValueError("health_goal must have dimensions ({0},{1})".format(T, K))
-
-    penalties = []
-    for t in range(T):
-        d_penalty = dose_penalty(d_var[t], patient_rx["dose_goal"][t], patient_rx["dose_weights"])
-        h_penalty = health_penalty(h_var[t + 1], patient_rx["health_goal"][t], patient_rx["health_weights"])
-        penalties.append(d_penalty + h_penalty)
-    return sum(penalties)
 
 # Extract constraints from patient prescription.
 def rx_to_constrs(expr, rx_dict):

@@ -50,7 +50,7 @@ def dynamic_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx
 	# Build problem for treatment stage.
 	prob, b, h, d, d_parm = build_dyn_prob(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov)
 	prob.solve(*args, **kwargs)
-	if prob.status not in ["optimal", "optimal_inaccurate"]:
+	if prob.status not in cvxpy_s.SOLUTION_PRESENT:
 		raise RuntimeError("Solver failed with status {0}".format(prob.status))
 	
 	# Construct full results.

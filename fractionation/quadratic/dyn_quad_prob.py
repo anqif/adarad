@@ -2,6 +2,68 @@ import cvxpy
 import numpy as np
 from cvxpy import *
 
+from fractionation.problem.dyn_prob import square_penalty, hinge_penalty, rx_to_constrs
+
+# Penalty functions.
+dose_penalty = square_penalty
+health_penalty = hinge_penalty
+
+# Full objective function.
+def dyn_quad_obj(d_var, h_var, patient_rx):
+    T, K = d_var.shape
+    if h_var.shape[0] != T + 1:
+        raise ValueError("h_var must have exactly {0} rows".format(T + 1))
+    if patient_rx["dose_goal"].shape != (T, K):
+        raise ValueError("dose_goal must have dimensions ({0},{1})".format(T, K))
+    if patient_rx["health_goal"].shape != (T, K):
+        raise ValueError("health_goal must have dimensions ({0},{1})".format(T, K))
+
+    penalties = []
+    for t in range(T):
+        d_penalty = dose_penalty(d_var[t], patient_rx["dose_goal"][t], patient_rx["dose_weights"])
+        h_penalty = health_penalty(h_var[t + 1], patient_rx["health_goal"][t], patient_rx["health_weights"])
+        penalties.append(d_penalty + h_penalty)
+    return sum(penalties)
+
+# Extract constraints from patient prescription.
+def rx_to_quad_constrs(expr, rx_dict):
+    constrs = []
+
+    # Lower bound.
+    if "lower" in rx_dict:
+        rx_lower = rx_dict["lower"]
+        expr_oar = expr[:,~rx_dict["is_target"]]
+        if np.any(rx_lower == np.inf):
+            raise ValueError("Lower bound cannot be infinity")
+
+        if np.isscalar(rx_lower):
+            if np.isfinite(rx_lower):
+                constrs.append(expr_oar >= rx_lower)
+        else:
+            if rx_lower.shape != expr_oar.shape:
+                raise ValueError("rx_lower must have dimensions {0}".format(expr_oar.shape))
+            is_finite = np.isfinite(rx_lower)
+            if np.any(is_finite):
+                constrs.append(expr_oar[is_finite] >= rx_lower[is_finite])
+
+    # Upper bound.
+    if "upper" in rx_dict:
+        rx_upper = rx_dict["upper"]
+        expr_ptv = expr[:,rx_dict["is_target"]]
+        if np.any(rx_upper == -np.inf):
+            raise ValueError("Upper bound cannot be negative infinity")
+
+        if np.isscalar(rx_upper):
+            if np.isfinite(rx_upper):
+                constrs.append(expr_ptv <= rx_upper)
+        else:
+            if rx_upper.shape != expr_ptv.shape:
+                raise ValueError("rx_upper must have dimensions {0}".format(expr_ptv.shape))
+            is_finite = np.isfinite(rx_upper)
+            if np.any(is_finite):
+                constrs.append(expr_ptv[is_finite] <= rx_upper[is_finite])
+    return constrs
+
 # Construct optimal control problem.
 def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=0):
     T_treat = len(A_list)
@@ -55,7 +117,7 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=
 
         # Additional health constraints during recovery.
         if "recov_constrs" in patient_rx:
-            constrs_r += rx_to_quad_constrs(h_r, patient_rx["recov_constrs"])
+            constrs_r += rx_to_constrs(h_r, patient_rx["recov_constrs"])
         constrs += constrs_r
 
     prob = Problem(Minimize(obj), constrs)

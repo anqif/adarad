@@ -2,9 +2,9 @@ import matplotlib
 matplotlib.use("TKAgg")
 from matplotlib.colors import LogNorm
 
+from fractionation.quad_funcs import dyn_quad_treat
 from fractionation.utilities.plot_utils import *
 from fractionation.utilities.data_utils import line_integral_mat, health_prog_quad
-from fractionation.quad_funcs import dyn_treat_quad
 
 from example_utils import simple_structures, simple_colormap, save_data
 
@@ -72,8 +72,8 @@ def main(figpath = "", datapath = ""):
 									"ptv_upper": health_upper[:,is_target]}
 
 	# Dynamic treatment.
-	# res_dynamic = dyn_treat_quad(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK")
-	res_dynamic = dyn_treat_quad(A_list, alpha, beta, gamma, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
+	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK")
+	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])
