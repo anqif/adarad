@@ -51,7 +51,7 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 
 		# Solve optimal control problem from current period forward.
 		T_left = T_treat - t_s
-		prob, b, h, d, d_parm = build_dyn_quad_prob(T_left*[A_list[t_s]], T_left*[alpha[t_s]], T_left*[beta[t_s]], T_left*[gamma[t_s]], h_cur, rx_cur, T_recov)
+		prob, b, h, d, d_parm = build_dyn_quad_prob(T_left*[A_list[t_s]], np.tile(alpha[t_s], T_left), np.tile(beta[t_s], T_left), np.tile(gamma[t_s], T_left), h_cur, rx_cur, T_recov)
 		# prob, b, h, d, d_parm = build_dyn_quad_prob(A_list[t_s:], alpha[t_s:], beta[t_s:], gamma[t_s:], h_cur, rx_cur, T_recov)
 		try:
 			result = ccp_solve(prob, d, d_parm, d_init, *args, **kwargs)
@@ -66,8 +66,8 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(status), RuntimeWarning)
 			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(status))
 
-			prob, b, h, d, d_parm, s_vars = build_dyn_quad_slack_prob(T_left*[A_list[t_s]], T_left*[alpha[t_s]], T_left*[beta[t_s]], T_left*[gamma[t_s]], \
-														 			h_cur, rx_cur, T_recov, slack_weights, slack_final)
+			prob, b, h, d, d_parm, s_vars = build_dyn_quad_slack_prob(T_left*[A_list[t_s]], np.tile(alpha[t_s], T_left), np.tile(beta[t_s], T_left), np.tile(gamma[t_s], T_left), \
+														 				h_cur, rx_cur, T_recov, slack_weights, slack_final)
 			result = ccp_solve(prob, d, d_parm, d_init, *args, **kwargs)
 			status = result["status"]
 			if status not in cvxpy_s.SOLUTION_PRESENT:

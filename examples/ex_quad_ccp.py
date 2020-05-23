@@ -59,17 +59,16 @@ def main(figpath = "", datapath = ""):
 	# Health constraints.
 	health_lower = np.full((T,K), -np.inf)
 	health_upper = np.full((T,K), np.inf)
-	health_lower[:,1] = -0.5     # Lower bound on OARs.
-	health_lower[:,2] = -0.5
-	health_lower[:,3] = -0.95
-	health_lower[:,4] = -1.25
-	health_upper[:15,0] = 1.5    # Upper bound on PTV for t = 1,...,15.
-	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
+	health_lower[:,1] = -20      # Lower bound on OARs.
+	health_lower[:,2] = -10
+	health_lower[:,3] = -10
+	health_lower[:,4] = -30
+	health_upper[:15,0] = 25    # Upper bound on PTV for t = 1,...,15.
+	health_upper[15:,0] = 5     # Upper bound on PTV for t = 16,...,20.
 
 	is_target = np.array([True] + (K-1)*[False])
 	patient_rx["is_target"] = is_target
-	patient_rx["health_constrs"] = {"oar_lower": health_lower[:,~is_target], \
-									"ptv_upper": health_upper[:,is_target]}
+	patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
 	# Dynamic treatment.
 	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK")

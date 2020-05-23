@@ -26,13 +26,13 @@ def dyn_quad_obj(d_var, h_var, patient_rx):
     return sum(penalties)
 
 # Extract constraints from patient prescription.
-def rx_to_quad_constrs(expr, rx_dict):
+def rx_to_quad_constrs(expr, rx_dict, is_target):
     constrs = []
 
     # Lower bound.
     if "lower" in rx_dict:
         rx_lower = rx_dict["lower"]
-        expr_oar = expr[:,~rx_dict["is_target"]]
+        expr_oar = expr[:,~is_target]
         if np.any(rx_lower == np.inf):
             raise ValueError("Lower bound cannot be infinity")
 
@@ -49,7 +49,7 @@ def rx_to_quad_constrs(expr, rx_dict):
     # Upper bound.
     if "upper" in rx_dict:
         rx_upper = rx_dict["upper"]
-        expr_ptv = expr[:,rx_dict["is_target"]]
+        expr_ptv = expr[:,is_target]
         if np.any(rx_upper == -np.inf):
             raise ValueError("Upper bound cannot be negative infinity")
 
@@ -103,7 +103,7 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=
 
     # Additional health constraints.
     if "health_constrs" in patient_rx:
-        constrs += rx_to_quad_constrs(h[1:], patient_rx["health_constrs"])
+        constrs += rx_to_quad_constrs(h[1:], patient_rx["health_constrs"], patient_rx["is_target"])
 
     # Health dynamics for recovery stage.
     # TODO: Should we return h_r or calculate it later?
