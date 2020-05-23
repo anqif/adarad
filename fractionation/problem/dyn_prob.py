@@ -5,12 +5,12 @@ from cvxpy import *
 # Sum-of-squares penalty function.
 def square_penalty(var, goal=None, weights=None):
     if goal is None:
-        goal = np.zeros(dose.shape)
+        goal = np.zeros(var.shape)
     if weights is None:
-        weights = np.ones(dose.shape)
+        weights = np.ones(var.shape)
     if np.any(weights < 0):
         raise ValueError("weights must all be nonnegative")
-    return weights * square(dose - goal)
+    return weights * square(var - goal)
 
 # Hinge penalty function.
 def hinge_penalty(var, goal=None, weights=None):

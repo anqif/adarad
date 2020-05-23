@@ -42,10 +42,10 @@ def main(figpath = "", datapath = ""):
 
 	# Penalty function.
 	# rx_health_weights = [K*[1], K*[1]]
-	rx_health_weights = K*[1]
+	rx_health_weights = np.ones(K)
 	rx_health_goal = np.zeros((T,K))
-	# rx_dose_weights = K*[1]
-	rx_dose_weights = [0.01, 1, 1, 1, 0.001]
+	# rx_dose_weights = np.ones(K)
+	rx_dose_weights = np.array([0.01, 1, 1, 1, 0.001])
 	rx_dose_goal = np.zeros((T,K))
 	# rx_dose_goal[:15,0] = 25
 	patient_rx = {"dose_goal": rx_dose_goal, "dose_weights": rx_dose_weights, \

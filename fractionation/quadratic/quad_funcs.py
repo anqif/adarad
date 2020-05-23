@@ -1,4 +1,6 @@
+import numpy as np
 import cvxpy.settings as cvxpy_s
+from cvxpy import SolverError
 from collections import Counter
 
 from fractionation.ccp_funcs import ccp_solve
@@ -6,7 +8,7 @@ from fractionation.mpc_funcs import print_results
 from fractionation.problem.dyn_prob import rx_slice
 
 from fractionation.quadratic.dyn_quad_prob import build_dyn_quad_prob, dyn_quad_obj
-from fractionation.quadratic.slack_quad_prob import build_dyn_slack_quad_prob
+# from fractionation.quadratic.slack_quad_prob import build_dyn_slack_quad_prob
 from fractionation.utilities.data_utils import pad_matrix, check_quad_vectors, health_prog_quad
 
 def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None, *args, **kwargs):
@@ -27,7 +29,8 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	beta_pad  = np.vstack([alpha, np.zeros((T_recov,K))])
 	health_all = health_prog_quad(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, health_map)
 	obj = dyn_quad_obj(d.value, health_all[:(T_treat+1)], patient_rx).value
-	return {"obj": obj, "status": result["status"], "solve_time": result["solve_time"], "beams": beams_all, "doses": doses_all, "health": health_all}
+	return {"obj": obj, "status": result["status"], "solve_time": result["solve_time"], "num_iters": result["num_iters"], \
+			"beams": beams_all, "doses": doses_all, "health": health_all}
 
 def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None, \
 					use_slack = True, slack_weights = None, slack_final = True, mpc_verbose = False, *args, **kwargs):

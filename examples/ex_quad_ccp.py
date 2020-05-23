@@ -2,7 +2,7 @@ import matplotlib
 matplotlib.use("TKAgg")
 from matplotlib.colors import LogNorm
 
-from fractionation.quad_funcs import dyn_quad_treat
+from fractionation.quadratic.quad_funcs import dyn_quad_treat
 from fractionation.utilities.plot_utils import *
 from fractionation.utilities.data_utils import line_integral_mat, health_prog_quad
 
@@ -29,20 +29,20 @@ def main(figpath = "", datapath = ""):
 	A_list = T*[A]
 
 	alpha = np.array(T*[[0.01, 0.50, 0.25, 0.15, 0.0075]])
-    beta = np.array(T*[[0.001, 0.05, 0.025, 0.015, 0.001]])
-    gamma = np.array(T*[[1.05, 0.90, 0.75, 0.80, 0.95]])
-    h_init = np.array([1] + (K-1)*[0])
+	beta = np.array(T*[[0.001, 0.05, 0.025, 0.015, 0.001]])
+	gamma = np.array(T*[[1.05, 0.90, 0.75, 0.80, 0.95]])
+	h_init = np.array([1] + (K-1)*[0])
 
     # Health prognosis.
-	h_prog = health_prog_quad(h_init, T, F, gamma = gamma)
+	h_prog = health_prog_quad(h_init, T, gamma = gamma)
 	curves = [{"h": h_prog, "label": "Untreated"}]
 
 	# Penalty functions.
-	w_lo = [0] + (K-1)*[1]
-	w_hi = [1] + (K-1)*[0]
+	w_lo = np.array([0] + (K-1)*[1])
+	w_hi = np.array([1] + (K-1)*[0])
 	rx_health_weights = [w_lo, w_hi]
 	rx_health_goal = np.zeros((T,K))
-	rx_dose_weights = [0.01, 1, 1, 1, 0.001]
+	rx_dose_weights = np.array([0.01, 1, 1, 1, 0.001])
 	rx_dose_goal = np.zeros((T,K))
 	patient_rx = {"dose_goal": rx_dose_goal, "dose_weights": rx_dose_weights, \
 				  "health_goal": rx_health_goal, "health_weights": rx_health_weights}
@@ -73,7 +73,7 @@ def main(figpath = "", datapath = ""):
 
 	# Dynamic treatment.
 	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK")
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
+	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, max_iter = 1000, solver = "MOSEK", ccp_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])
@@ -86,7 +86,6 @@ def main(figpath = "", datapath = ""):
 	lc_norm = LogNorm(vmin = b_min, vmax = b_max)
 
 	# Plot dynamic beam, health, and treatment curves.
-	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True)
 	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
 				title = "Beam Intensities vs. Time", one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", one_idx = True)

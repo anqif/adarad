@@ -1,10 +1,11 @@
 import cvxpy.settings as cvxpy_s
 import numpy as np
+from collections import Counter
 
 from fractionation.utilities.data_utils import pad_matrix
 from fractionation.mpc_funcs import build_dyn_prob, dyn_objective
 
-def ccp_solve(prob, d, d_parm, d_init = None, max_iter = 1000, eps_ccp = 1e-4, *args, **kwargs):
+def ccp_solve(prob, d, d_parm, d_init = None, max_iter = 1000, eps_ccp = 1e-4, ccp_verbose = False, *args, **kwargs):
 	if d_init is None:
 		d_init = np.zeros(d_parm.shape)
 	
@@ -16,6 +17,9 @@ def ccp_solve(prob, d, d_parm, d_init = None, max_iter = 1000, eps_ccp = 1e-4, *
 	status_list = []
 
 	while not finished:
+		if ccp_verbose and k % 10 == 0:
+			print("Iteration:", k)
+
 		# Solve linearized problem.
 		d_parm.value = d_cur
 		prob.solve(*args, **kwargs)
@@ -26,7 +30,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, max_iter = 1000, eps_ccp = 1e-4, *
 
 		# Check stopping criterion.
 		obj_diff = obj_cur - prob.value
-		finished = (k + 1) >= max_iter or obj_diff <= eps
+		finished = (k + 1) >= max_iter or obj_diff <= eps_ccp
 
 		# Update objective and linearization point.
 		obj_cur = prob.value
