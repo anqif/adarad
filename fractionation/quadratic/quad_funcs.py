@@ -8,8 +8,26 @@ from fractionation.mpc_funcs import print_results
 from fractionation.problem.dyn_prob import rx_slice
 
 from fractionation.quadratic.dyn_quad_prob import build_dyn_quad_prob, dyn_quad_obj
-# from fractionation.quadratic.slack_quad_prob import build_dyn_slack_quad_prob
+from fractionation.quadratic.slack_quad_prob import build_dyn_slack_quad_prob
 from fractionation.utilities.data_utils import pad_matrix, check_quad_vectors, health_prog_quad
+
+def print_quad_results(prob, is_target, status=None, slack_dict=None):
+	if status is None:
+		status = prob.status
+	if slack_dict is None:
+		slack_dict = dict()
+	print("Status:", status)
+	print("Objective:", prob.value)
+	print("Solve Time:", prob.solver_stats.solve_time)
+	if len(slack_dict.items()) > 0:
+		def func_ss(slack):
+			slack_lo = slack["lower"][:,~is_target].value if "lower" in slack else 0
+			slack_up = slack["upper"][:,is_target].value if "upper" in slack else 0
+			return [np.sum(slack_lo**2), np.sum(slack_hi**2)]
+			
+		print("Sum-of-Squares of Slacks:")
+		for key, value in slack_dict.items():
+			print("\t{0} (Lower, Upper):".format(key.title()), func_ss(value))
 
 def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None, *args, **kwargs):
 	T_treat = len(A_list)
@@ -66,7 +84,7 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(status), RuntimeWarning)
 			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(status))
 
-			prob, b, h, d, d_parm, s_vars = build_dyn_quad_slack_prob(T_left*[A_list[t_s]], np.tile(alpha[t_s], T_left), np.tile(beta[t_s], T_left), np.tile(gamma[t_s], T_left), \
+			prob, b, h, d, d_parm, s_vars = build_dyn_slack_quad_prob(T_left*[A_list[t_s]], np.tile(alpha[t_s], T_left), np.tile(beta[t_s], T_left), np.tile(gamma[t_s], T_left), \
 														 				h_cur, rx_cur, T_recov, slack_weights, slack_final)
 			result = ccp_solve(prob, d, d_parm, d_init, *args, **kwargs)
 			status = result["status"]
@@ -77,7 +95,7 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 		
 		if mpc_verbose:
 			print("\nStart Time:", t_s)
-			print_results(prob, status = status, slack_dict = s_vars)
+			print_quad_results(prob, status = status, slack_dict = s_vars)
 
 		# Save solver statistics.
 		solve_time += result["solve_time"]

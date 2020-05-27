@@ -117,7 +117,8 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=
 
         # Additional health constraints during recovery.
         if "recov_constrs" in patient_rx:
-            constrs_r += rx_to_constrs(h_r, patient_rx["recov_constrs"])
+            # constrs_r += rx_to_constrs(h_r, patient_rx["recov_constrs"])
+            constrs_r += rx_to_quad_constrs(h[1:], patient_rx["health_constrs"], patient_rx["is_target"])
         constrs += constrs_r
 
     prob = Problem(Minimize(obj), constrs)
