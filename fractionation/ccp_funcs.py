@@ -1,13 +1,23 @@
-import cvxpy.settings as cvxpy_s
 import numpy as np
+import cvxpy.settings as cvxpy_s
 from collections import Counter
 
 from fractionation.utilities.data_utils import pad_matrix
 from fractionation.mpc_funcs import build_dyn_prob, dyn_objective
 
-def ccp_solve(prob, d, d_parm, d_init = None, max_iter = 1000, eps_ccp = 1e-4, ccp_verbose = False, *args, **kwargs):
+def ccp_solve(prob, d, d_parm, d_init = None, ccp_verbose = False, *args, **kwargs):
 	if d_init is None:
 		d_init = np.zeros(d_parm.shape)
+
+	# Problem parameters.
+	max_iter = kwargs.pop("max_iter", 100)  # Maximum iterations.
+	eps_ccp = kwargs.pop("eps_ccp", 1e-3)   # Stopping tolerance.
+
+	# Validate parameters.
+	if max_iter <= 0:
+		raise ValueError("max_iter must be a positive integer.")
+	if eps_ccp < 0:
+		raise ValueError("eps_ccp must be a non-negative scalar.")
 	
 	k = 0
 	solve_time = 0

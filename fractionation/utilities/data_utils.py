@@ -228,7 +228,7 @@ def check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov = 0):
 			raise ValueError("G_t must have dimensions ({0},{0})".format(K))
 	for q in q_list:
 		if q.shape not in [(K,), (K,1)]:
-			raise ValueError("r_t must have dimensions ({0},)".format(K))
+			raise ValueError("q_t must have dimensions ({0},)".format(K))
 		if np.any(q < 0):
 			raise ValueError("q_t can only contain nonnegative values")
 	for r in r_list:
@@ -317,5 +317,5 @@ def health_prog_quad(h_init, T, alpha = None, beta = None, gamma = None, doses =
 	h_prog = np.zeros((T+1,K))
 	h_prog[0] = h_init
 	for t in range(T):
-		h_prog[t+1] = health_map(h_prog[t] - alpha[t]*doses[t] - beta[t]*(doses[t]**2) + gamma[t], t)
+		h_prog[t+1] = health_map(h_prog[t] - alpha[t]*doses[t] - beta[t]*doses[t]**2 + gamma[t], t)
 	return h_prog
