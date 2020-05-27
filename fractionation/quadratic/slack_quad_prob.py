@@ -15,11 +15,11 @@ def slack_quad_penalty(slack_vars, is_target, slack_weights = None):
     # Objective = \sum_{i=1}^N w_i*||s_i||_2^2, where N = number of slack constraint categories.
     slack_wss = []
     for key, slack in slack_vars.items():
-    	base_penalty = 0
-    	if "lower" in slack:
-    		base_penalty += sum_squares(slack["lower"][:,~is_target])
-    	if "upper" in slack:
-    		base_penalty += sum_squares(slack["upper"][:,is_target])
+        base_penalty = 0
+        if "lower" in slack:
+            base_penalty += sum_squares(slack["lower"][:,~is_target])
+        if "upper" in slack:
+            base_penalty += sum_squares(slack["upper"][:,is_target])
         slack_wss += [slack_weights[key]*base_penalty]
     return sum(slack_wss)
 
@@ -43,7 +43,7 @@ def slack_quad_constrs(slack_vars, is_target, slack_final = True):
 
 # Extract constraints from patient prescription.
 def rx_to_slack_quad_constrs(expr, rx_dict, is_target, slack):
-	slack_lo, slack_hi = slack
+    slack_lo, slack_hi = slack
     if slack_lo.shape != expr.shape:
         raise ValueError("slack_lo must have dimensions ({0},{1})".format(*expr.shape))
     if slack_hi.shape != expr.shape:

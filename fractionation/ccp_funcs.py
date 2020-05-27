@@ -11,13 +11,13 @@ def ccp_solve(prob, d, d_parm, d_init = None, ccp_verbose = False, *args, **kwar
 
 	# Problem parameters.
 	max_iter = kwargs.pop("max_iter", 100)  # Maximum iterations.
-	eps_ccp = kwargs.pop("eps_ccp", 1e-3)   # Stopping tolerance.
+	ccp_eps = kwargs.pop("ccp_eps", 1e-3)   # Stopping tolerance.
 
 	# Validate parameters.
 	if max_iter <= 0:
 		raise ValueError("max_iter must be a positive integer.")
-	if eps_ccp < 0:
-		raise ValueError("eps_ccp must be a non-negative scalar.")
+	if ccp_eps < 0:
+		raise ValueError("ccp_eps must be a non-negative scalar.")
 	
 	k = 0
 	solve_time = 0
@@ -40,7 +40,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, ccp_verbose = False, *args, **kwar
 
 		# Check stopping criterion.
 		obj_diff = obj_cur - prob.value
-		finished = (k + 1) >= max_iter or obj_diff <= eps_ccp
+		finished = (k + 1) >= max_iter or obj_diff <= ccp_eps
 
 		# Update objective and linearization point.
 		obj_cur = prob.value

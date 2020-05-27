@@ -81,12 +81,12 @@ def main(figpath = "", datapath = ""):
 	# Health constraints.
 	health_lower = np.full((T,K), -np.inf)
 	health_upper = np.full((T,K), np.inf)
-	health_lower[:,1] = -20     # Lower bound on OARs.
-	health_lower[:,2] = -10
-	health_lower[:,3] = -10
-	health_lower[:,4] = -30
-	health_upper[:15,0] = 25    # Upper bound on PTV for t = 1,...,15.
-	health_upper[15:,0] = 5     # Upper bound on PTV for t = 16,...,20.
+	# health_lower[:,1] = -20     # Lower bound on OARs.
+	# health_lower[:,2] = -10
+	# health_lower[:,3] = -10
+	# health_lower[:,4] = -30
+	# health_upper[:15,0] = 25    # Upper bound on PTV for t = 1,...,15.
+	# health_upper[15:,0] = 5     # Upper bound on PTV for t = 16,...,20.
 
 	is_target = np.array([True] + (K-1)*[False])
 	patient_rx["is_target"] = is_target
@@ -94,7 +94,7 @@ def main(figpath = "", datapath = ""):
 
 	# Dynamic treatment.
 	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK")
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, max_iter = 1000, solver = "MOSEK", ccp_verbose = True)
+	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, max_iter = 1000, solver = "MOSEK", ccp_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])
@@ -113,7 +113,7 @@ def main(figpath = "", datapath = ""):
 	# Plot dynamic beam, health, and treatment curves.
 	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
 				title = "Beam Intensities vs. Time", one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
-	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", one_idx = True)
+	plot_health(res_dynamic["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", one_idx = True)
 	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", one_idx = True)
 
 	# plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
@@ -123,8 +123,8 @@ def main(figpath = "", datapath = ""):
 
 	# Dynamic treatment with MPC.
 	print("\nStarting MPC algorithm...")
-	# res_mpc = mpc_treat_quad(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, solver = "MOSEK", mpc_verbose = True)
-	res_mpc = mpc_treat_quad(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, max_iter = 1000, solver = "MOSEK", mpc_verbose = True)
+	# res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, solver = "MOSEK", mpc_verbose = True)
+	res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, max_iter = 1000, solver = "MOSEK", mpc_verbose = True)
 	print("\nMPC Treatment")
 	print("Status:", res_mpc["status"])
 	print("Objective:", res_mpc["obj"])
