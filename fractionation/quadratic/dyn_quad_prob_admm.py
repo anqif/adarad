@@ -6,7 +6,7 @@ from fractionation.problem.dyn_prob import dose_penalty, health_penalty, rx_to_c
 from fractionation.quadratic.dyn_quad_prob import rx_to_quad_constrs
 
 def build_dyn_quad_prob_dose(A_list, patient_rx):
-	T_treat = len(A_list)
+    T_treat = len(A_list)
     K, n = A_list[0].shape
     if patient_rx["dose_goal"].shape != (T_treat, K):
         raise ValueError("dose_goal must have dimensions ({0},{1})".format(T_treat, K))
@@ -52,8 +52,8 @@ def build_dyn_quad_prob_dose_period(A, patient_rx):
     prob_t = Problem(Minimize(obj), constrs)
     return prob_t, b_t, d_t
 
-def build_dyn_quad_prob_health(alpha, beta, gamma, patient_rx, h_init, patient_rx, T_treat, T_recov=0):
-	K = h_init.shape[0]
+def build_dyn_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov=0):
+    K = h_init.shape[0]
     if patient_rx["health_goal"].shape != (T_treat, K):
         raise ValueError("health_goal must have dimensions ({0},{1})".format(T_treat, K))
 

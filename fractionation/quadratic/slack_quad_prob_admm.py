@@ -4,7 +4,7 @@ from cvxpy import *
 from collections import defaultdict
 
 from fractionation.problem.dyn_prob import dose_penalty, health_penalty, rx_to_constrs
-from fractionation.problem.slack_quad_prob import slack_quad_penalty, slack_quad_constrs, rx_to_slack_quad_constrs
+from fractionation.quadratic.slack_quad_prob import slack_quad_penalty, slack_quad_constrs, rx_to_slack_quad_constrs
 
 def build_dyn_slack_quad_prob_dose(A_list, patient_rx, s_weights = None, s_final = True):
     T_treat = len(A_list)
@@ -23,7 +23,7 @@ def build_dyn_slack_quad_prob_dose(A_list, patient_rx, s_weights = None, s_final
     # Additional beam constraints.
     s_vars = dict()
     if "beam_constrs" in patient_rx:
-    	# b_slack_lo = Variable((T_treat, n), pos=True, name="beam lower slack")  # Slack for beam constraints.
+        # b_slack_lo = Variable((T_treat, n), pos=True, name="beam lower slack")  # Slack for beam constraints.
         # b_slack_hi = Variable((T_treat, n), pos=True, name="beam upper slack")
         # s_vars["beam"] = [b_slack_lo, b_slack_hi]
         # constrs += rx_to_slack_constrs(b, patient_rx["beam_constrs"], s_vars["beam"])
@@ -31,7 +31,7 @@ def build_dyn_slack_quad_prob_dose(A_list, patient_rx, s_weights = None, s_final
 
     # Additional dose constraints.
     if "dose_constrs" in patient_rx:
-    	# d_slack_lo = Variable((T_treat, K), nonneg=True, name="dose lower slack")  # Slack for dose constraints.
+        # d_slack_lo = Variable((T_treat, K), nonneg=True, name="dose lower slack")  # Slack for dose constraints.
         # d_slack_hi = Variable((T_treat, K), nonneg=True, name="dose upper slack")
         # s_vars["dose"] = [d_slack_lo, d_slack_hi]
         # constrs += rx_to_slack_constrs(d, patient_rx["dose_constrs"], s_vars["dose"])
@@ -44,9 +44,9 @@ def build_dyn_slack_quad_prob_dose(A_list, patient_rx, s_weights = None, s_final
     return prob, b, d, s_vars
 
 def build_dyn_slack_quad_prob_dose_period(A, patient_rx, s_weights = None, s_final = True):
-	K, n = A.shape
+    K, n = A.shape
 
-	# Define variables for period.
+    # Define variables for period.
     b_t = Variable(n, nonneg=True, name="beams")  # Beams.
     d_t = A * b_t
 
@@ -57,7 +57,7 @@ def build_dyn_slack_quad_prob_dose_period(A, patient_rx, s_weights = None, s_fin
     # Additional beam constraints in period.
     s_t_vars = dict()
     if "beam_constrs" in patient_rx:
-    	# b_t_slack_lo = Variable(n, pos=True, name="beam lower slack")  # Slack for beam constraints.
+        # b_t_slack_lo = Variable(n, pos=True, name="beam lower slack")  # Slack for beam constraints.
         # b_t_slack_hi = Variable(n, pos=True, name="beam upper slack")
         # s_t_vars["beam"] = [b_t_slack_lo, b_t_slack_hi]
         # constrs += rx_to_slack_constrs(b_t, patient_rx["beam_constrs"], s_t_vars["beam"])
@@ -65,7 +65,7 @@ def build_dyn_slack_quad_prob_dose_period(A, patient_rx, s_weights = None, s_fin
 
     # Additional dose constraints in period.
     if "dose_constrs" in patient_rx:
-    	# d_t_slack_lo = Variable(K, nonneg=True, name="dose lower slack")  # Slack for dose constraints.
+        # d_t_slack_lo = Variable(K, nonneg=True, name="dose lower slack")  # Slack for dose constraints.
         # d_t_slack_hi = Variable(K, nonneg=True, name="dose upper slack")
         # s_t_vars["dose"] = [d_t_slack_lo, d_t_slack_hi]
         # constrs += rx_to_slack_constrs(d_t, patient_rx["dose_constrs"], s_t_vars["dose"])
@@ -77,8 +77,8 @@ def build_dyn_slack_quad_prob_dose_period(A, patient_rx, s_weights = None, s_fin
     prob = Problem(Minimize(obj), constrs)
     return prob, b_t, d_t, s_t_vars
 
-def build_dyn_slack_quad_prob_health(alpha, beta, gamma, patient_rx, h_init, patient_rx, T_treat, T_recov = 0):
-	K = h_init.shape[0]
+def build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = 0, s_weights = None, s_final = True):
+    K = h_init.shape[0]
     if patient_rx["health_goal"].shape != (T_treat, K):
         raise ValueError("health_goal must have dimensions ({0},{1})".format(T_treat, K))
 
@@ -104,8 +104,9 @@ def build_dyn_slack_quad_prob_health(alpha, beta, gamma, patient_rx, h_init, pat
         constrs.append(h[t+1, ~patient_rx["is_target"]] <= h_quad[t, ~patient_rx["is_target"]])
 
     # Additional health constraints.
+    s_vars = dict()
     if "health_constrs" in patient_rx:
-    	# TODO: Only create lower/upper slacks for organ-at-risk/target structures.
+        # TODO: Only create lower/upper slacks for organ-at-risk/target structures.
         h_slack_lo = Variable((T_treat, K), nonneg=True, name="health lower slack")  # Slack for health status constraints.
         h_slack_hi = Variable((T_treat, K), nonneg=True, name="health upper slack")
         s_vars["health"] = {"lower": h_slack_lo, "upper": h_slack_hi}
