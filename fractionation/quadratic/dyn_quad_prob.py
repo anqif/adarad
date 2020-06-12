@@ -2,11 +2,7 @@ import cvxpy
 import numpy as np
 from cvxpy import *
 
-from fractionation.problem.dyn_prob import square_penalty, hinge_penalty, rx_to_constrs
-
-# Penalty functions.
-dose_penalty = square_penalty
-health_penalty = hinge_penalty
+from fractionation.problem.dyn_prob import dose_penalty, health_penalty, rx_to_constrs
 
 # Full objective function.
 def dyn_quad_obj(d_var, h_var, patient_rx):

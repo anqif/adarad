@@ -2,7 +2,7 @@ import matplotlib
 matplotlib.use("TKAgg")
 from matplotlib.colors import LogNorm
 
-from fractionation.quadratic.quad_funcs import dyn_quad_treat, mpc_quad_treat
+from fractionation.quad_funcs import dyn_quad_treat, mpc_quad_treat
 from fractionation.utilities.plot_utils import *
 from fractionation.utilities.data_utils import line_integral_mat, health_prog_quad
 
