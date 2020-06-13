@@ -49,7 +49,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, ccp_verbose = False, *args, **kwar
 
 	# Take majority as final status.
 	status, status_count = Counter(status_list).most_common(1)[0]
-	return {"obj": obj_cur, "status": status, "num_iters": k, "solve_time": solve_time}
+	return {"obj": obj_cur, "status": status, "num_iters": k, "solve_time": solve_time, "doses": d.value}
 
 def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda h,t: h):
 	K = h_init.shape[0]

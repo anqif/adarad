@@ -190,8 +190,8 @@ def mpc_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patient_r
 	# Initialize values.
 	beams = np.zeros((T_treat,n))
 	doses = np.zeros((T_treat,K))
-	solve_time = 0
 	num_iters = 0
+	solve_time = 0
 	status_list = []
 
 	h_cur = h_init
