@@ -50,7 +50,8 @@ def run_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
     d_val = A.dot(b.value)
     pipe.send((b.value, d_val))
 
-def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None, partial_results = False, admm_verbose = False, *args, **kwargs):
+def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
+                        partial_results = False, admm_verbose = False, *args, **kwargs):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
