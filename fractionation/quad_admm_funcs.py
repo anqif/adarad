@@ -211,8 +211,7 @@ def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
         # TODO: Warm start next ADMM solve, or better yet, rewrite so no teardown/rebuild process between ADMM solves.
         T_left = T_treat - t_s
         result = dyn_quad_treat_admm(T_left * [A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]), \
-                    np.row_stack(T_left * [gamma[t_s]]), h_cur, rx_cur, T_recov, slack_weights = slack_weights, slack_final = slack_final, \
-                    partial_results = True, *args, **kwargs)
+                    np.row_stack(T_left * [gamma[t_s]]), h_cur, rx_cur, T_recov, partial_results = True, *args, **kwargs)
 
         # If not optimal, re-solve with slack constraints.
         if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
