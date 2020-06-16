@@ -3,6 +3,7 @@ matplotlib.use("TKAgg")
 from matplotlib.colors import LogNorm
 
 from fractionation.quad_funcs import dyn_quad_treat, mpc_quad_treat
+from fractionation.quad_admm_funcs import dyn_quad_treat_admm, mpc_quad_treat_admm
 from fractionation.utilities.plot_utils import *
 from fractionation.utilities.data_utils import line_integral_mat, health_prog_quad
 
@@ -95,6 +96,7 @@ def main(figpath = "", datapath = ""):
 	# Dynamic treatment.
 	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK")
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, max_iter = 1000, solver = "MOSEK", ccp_verbose = True)
+	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])
@@ -125,6 +127,7 @@ def main(figpath = "", datapath = ""):
 	print("\nStarting MPC algorithm...")
 	# res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, solver = "MOSEK", mpc_verbose = True)
 	res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, max_iter = 1000, solver = "MOSEK", mpc_verbose = True)
+	# res_mpc = mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, rho = 1, max_iter = 1000, solver = "MOSEK", mpc_verbose = True)
 	print("\nMPC Treatment")
 	print("Status:", res_mpc["status"])
 	print("Objective:", res_mpc["obj"])

@@ -3,6 +3,7 @@ matplotlib.use("TKAgg")
 from matplotlib.colors import LogNorm
 
 from fractionation.quad_funcs import dyn_quad_treat
+from fractionation.quad_admm_funcs import dyn_quad_treat_admm
 from fractionation.utilities.plot_utils import *
 from fractionation.utilities.data_utils import line_integral_mat, health_prog_quad
 
@@ -33,7 +34,7 @@ def main(figpath = "", datapath = ""):
 	gamma = np.array(T*[[1.05, 0.90, 0.75, 0.80, 0.95]])
 	h_init = np.array([1] + (K-1)*[0])
 
-    # Health prognosis.
+	# Health prognosis.
 	h_prog = health_prog_quad(h_init, T, gamma = gamma)
 	curves = [{"h": h_prog, "label": "Untreated"}]
 
@@ -73,6 +74,7 @@ def main(figpath = "", datapath = ""):
 	# Dynamic treatment.
 	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK")
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, max_iter = 1000, solver = "MOSEK", ccp_verbose = True)
+	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])

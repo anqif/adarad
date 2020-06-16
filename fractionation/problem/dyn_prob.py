@@ -29,7 +29,7 @@ def hinge_penalty(var, goal=None, weights=None):
 
 # Penalty functions.
 dose_penalty = square_penalty
-health_penalty = square_penalty
+health_penalty = hinge_penalty
 
 # Full objective function.
 def dyn_objective(d_var, h_var, patient_rx):
