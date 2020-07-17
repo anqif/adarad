@@ -158,7 +158,7 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
     beams_all = pad_matrix(b_val, T_recov)
     doses_all = pad_matrix(d_val, T_recov)
     alpha_pad = np.vstack([alpha, np.zeros((T_recov, K))])
-    beta_pad = np.vstack([alpha, np.zeros((T_recov, K))])
+    beta_pad = np.vstack([beta, np.zeros((T_recov, K))])
     health_all = health_prog_quad(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, health_map)
     obj = dyn_quad_obj(d_val, health_all[:(T_treat + 1)], patient_rx).value
 
