@@ -85,7 +85,8 @@ def tumor_fast_parms():
 						"alpha_over_beta": 10,
 						"tau_R": 0.5}
 
-	return tumor_parms, {"late": norm_late_parms, "early": norm_early_parms}
+	norm_parms = {"late": norm_late_parms, "early": norm_early_parms}
+	return tumor_parms, norm_parms
 
 # Slowly proliferating tumors.
 def tumor_slow_parms():
@@ -96,7 +97,7 @@ def tumor_slow_parms():
 				   "T_pd": 40,               # Doubling time.
 				   "tau_S": 2,               # Resensitization time.
 				   "tau_R": 1.9,             # Repair time.
-				   "half_sigma_sq": 1/30 }   # Variance of Gaussian distribution of alpha.
+				   "half_sigma_sq": 1/30 }   # Variance of Gaussian distribution of alpha. (Here it's beta/3).
 
 	# Late-responding normal tissue.
 	norm_late_parms  = {"alpha": 0.315,
@@ -108,7 +109,8 @@ def tumor_slow_parms():
 						"alpha_over_beta": 10,
 						"tau_R": 0.5}
 
-	return tumor_parms, {"late": norm_late_parms, "early": norm_early_parms}
+	norm_parms = {"late": norm_late_parms, "early": norm_early_parms}
+	return tumor_parms, norm_parms
 
 def med_to_lq_parms(med_parms, T_tot, is_tumor = False):
 	alpha_lq = med_parms["alpha"]
@@ -125,3 +127,38 @@ def med_to_lq_parms(med_parms, T_tot, is_tumor = False):
 
 	lq_parms = {"alpha": alpha_vec, "beta": beta_vec, "gamma": gamma_vec}
 	return lq_parms
+
+def simple_fast_parms():
+	K = 5
+	T = 60
+
+	tumor_parms, norm_parms = tumor_fast_parms()
+	tumor_lq = med_to_lq_parms(tumor_parms, T, is_tumor = True)
+	norm_late_lq = med_to_lq_parms(norm_parms["late"], T, is_tumor = False)
+	norm_early_lq = med_to_lq_parms(norm_parms["early"], T, is_tumor = False)
+
+	alpha = np.zeros((T, K))
+	beta = np.zeros((T, K))
+	gamma = np.zeros((T, K))
+
+	# PTV (s = 0).
+	alpha[:,0] = tumor_lq["alpha"]
+	beta[:,0] = tumor_lq["beta"]
+	gamma[:,0] = tumor_lq["gamma"]
+
+	# OAR (s = 1 and 3).
+	alpha[:,1] = alpha[:,3] = norm_late_lq["alpha"]
+	beta[:,1] = beta[:,3] = norm_late_lq["beta"]
+	gamma[:,1] = gamma[:,3] = norm_late_lq["gamma"]
+
+	# OAR (s = 2).
+	alpha[:,2] = norm_early_lq["alpha"]
+	beta[:,2] = norm_early_lq["beta"]
+	gamma[:,2] = norm_early_lq["gamma"]
+
+	# OAR (s = 4).
+	alpha[:,4] = 0.1*norm_early_lq["alpha"]
+	beta[:,4] = 0.01*norm_early_lq["beta"]
+	gamma[:,4] = norm_early_lq["gamma"]
+
+	return alpha, beta, gamma

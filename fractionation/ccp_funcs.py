@@ -2,6 +2,9 @@ import numpy as np
 import cvxpy.settings as cvxpy_s
 from collections import Counter
 
+import cvxpy
+from cvxpy import Problem
+
 from fractionation.utilities.data_utils import pad_matrix
 from fractionation.mpc_funcs import build_dyn_prob, dyn_objective
 
@@ -10,8 +13,9 @@ def ccp_solve(prob, d, d_parm, d_init = None, ccp_verbose = False, *args, **kwar
 		d_init = np.zeros(d_parm.shape)
 
 	# Problem parameters.
-	max_iter = kwargs.pop("max_iter", 100)  # Maximum iterations.
-	ccp_eps = kwargs.pop("ccp_eps", 1e-3)   # Stopping tolerance.
+	max_iter = kwargs.pop("max_iter", 50)  # Maximum iterations.
+	ccp_eps = kwargs.pop("ccp_eps", 1e-3)  # Stopping tolerance.
+	iter_print = np.maximum(max_iter // 10, 1)
 
 	# Validate parameters.
 	if max_iter <= 0:
@@ -27,7 +31,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, ccp_verbose = False, *args, **kwar
 	status_list = []
 
 	while not finished:
-		if ccp_verbose and k % 10 == 0:
+		if ccp_verbose and k % iter_print == 0:
 			print("Iteration:", k)
 
 		# Solve linearized problem.

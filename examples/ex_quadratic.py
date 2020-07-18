@@ -29,9 +29,9 @@ def main(figpath = "", datapath = ""):
 	A = A/n_grid
 	A_list = T*[A]
 
-	alpha = np.array(T*[[0.01, 0.50, 0.25, 0.15, 0.0075]])
-	beta = np.array(T*[[0.001, 0.05, 0.025, 0.015, 0.001]])
-	gamma = np.array(T*[[1.05, 0.90, 0.75, 0.80, 0.95]])
+	alpha = np.array(T*[[0.01, 0.50, 0.25, 0.15, 0.005]])
+	beta = np.array(T*[[0.001, 0.05, 0.025, 0.015, 0.0005]])
+	gamma = np.array(T*[[0.05, 0, 0, 0, 0]])
 	h_init = np.array([1] + (K-1)*[0])
 
 	# Health prognosis.
@@ -43,29 +43,31 @@ def main(figpath = "", datapath = ""):
 	w_hi = np.array([1] + (K-1)*[0])
 	rx_health_weights = [w_lo, w_hi]
 	rx_health_goal = np.zeros((T,K))
-	rx_dose_weights = np.array([0.01, 1, 1, 1, 0.001])
+	rx_dose_weights = np.array([1, 1, 1, 1, 0.25])
 	rx_dose_goal = np.zeros((T,K))
 	patient_rx = {"dose_goal": rx_dose_goal, "dose_weights": rx_dose_weights, \
 				  "health_goal": rx_health_goal, "health_weights": rx_health_weights}
 
 	# Beam constraints.
 	beam_upper = np.full((T,n), 1.0)
+	# beam_upper = np.full((T,n), np.inf)
 	patient_rx["beam_constrs"] = {"upper": beam_upper}
 
 	# Dose constraints.
 	dose_lower = np.zeros((T,K))
-	dose_upper = np.full((T,K), 25)   # Upper bound on doses.
+	# dose_upper = np.full((T,K), 25)   # Upper bound on doses.
+	dose_upper = np.full((T,K), np.inf)
 	patient_rx["dose_constrs"] = {"lower": dose_lower, "upper": dose_upper}
 
 	# Health constraints.
 	health_lower = np.full((T,K), -np.inf)
 	health_upper = np.full((T,K), np.inf)
-	health_lower[:,1] = -20     # Lower bound on OARs.
-	health_lower[:,2] = -10
-	health_lower[:,3] = -10
-	health_lower[:,4] = -30
-	health_upper[:15,0] = 25    # Upper bound on PTV for t = 1,...,15.
-	health_upper[15:,0] = 5     # Upper bound on PTV for t = 16,...,20.
+	health_lower[:,1] = -1.0     # Lower bound on OARs.
+	health_lower[:,2] = -2.0
+	health_lower[:,3] = -2.0
+	# health_lower[:,4] = -3.0
+	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
+	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 
 	is_target = np.array([True] + (K-1)*[False])
 	patient_rx["is_target"] = is_target
@@ -73,7 +75,7 @@ def main(figpath = "", datapath = ""):
 
 	# Dynamic treatment.
 	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK")
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, max_iter = 1000, solver = "MOSEK", ccp_verbose = True)
+	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, max_iter = 10, solver = "MOSEK", ccp_verbose = True)
 	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
