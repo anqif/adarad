@@ -35,8 +35,9 @@ def main(figpath = "", datapath = ""):
 	h_init = np.array([1] + (K-1)*[0])
 
 	# Health prognosis.
+	prop_cycle = plt.rcParams['axes.prop_cycle']
+	colors = prop_cycle.by_key()['color']
 	h_prog = health_prog_quad(h_init, T, gamma = gamma)
-	curves = [{"h": h_prog, "label": "Untreated"}]
 
 	# Penalty functions.
 	w_lo = np.array([0] + (K-1)*[1])
@@ -55,8 +56,8 @@ def main(figpath = "", datapath = ""):
 
 	# Dose constraints.
 	dose_lower = np.zeros((T,K))
-	# dose_upper = np.full((T,K), 25)   # Upper bound on doses.
-	dose_upper = np.full((T,K), np.inf)
+	dose_upper = np.full((T,K), 20)   # Upper bound on doses.
+	# dose_upper = np.full((T,K), np.inf)
 	patient_rx["dose_constrs"] = {"lower": dose_lower, "upper": dose_upper}
 
 	# Health constraints.
@@ -65,7 +66,7 @@ def main(figpath = "", datapath = ""):
 	health_lower[:,1] = -1.0     # Lower bound on OARs.
 	health_lower[:,2] = -2.0
 	health_lower[:,3] = -2.0
-	# health_lower[:,4] = -3.0
+	health_lower[:,4] = -3.0
 	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 
@@ -74,8 +75,9 @@ def main(figpath = "", datapath = ""):
 	patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
 	# Dynamic treatment.
-	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK")
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, max_iter = 10, solver = "MOSEK", ccp_verbose = True)
+	d_init = np.zeros((T, K))
+	# d_init = np.vstack(T * [[6.0, 0, 0.5, 0.5, 12]])
+	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True, max_iter = 1, solver = "MOSEK", ccp_verbose = True)
 	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
@@ -88,16 +90,22 @@ def main(figpath = "", datapath = ""):
 	b_max = np.max(res_dynamic["beams"])
 	lc_norm = LogNorm(vmin = b_min, vmax = b_max)
 
+	# Compare actual and approximate health curves.
+	curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
+	curves += [{"h": res_dynamic["health_opt"], "label": "Optimal", "kwargs": {"color": colors[2], "linestyle": "dashed"}}]
+	curves += [{"h": res_dynamic["health_est"], "label": "Approximated", "kwargs": {"color": colors[3], "linestyle": "dashed"}}]
+
 	# Plot dynamic beam, health, and treatment curves.
-	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
+	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5),
 				title = "Beam Intensities vs. Time", one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
-	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", one_idx = True)
+	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper),
+				title = "Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True)
 	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", one_idx = True)
 
 	# plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
-	#			one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, filename = figpath + "ex_cardioid5_Dmax25_admm_beams.png")
-	# plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), one_idx = True, filename = figpath + "ex_cardioid5_Dmax25_admm_health.png")
-	# plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, filename = figpath + "ex_cardioid5_Dmax25_admm_doses.png")
+	#			one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, filename = figpath + "ex_cardioid_lq_ccp_beams.png")
+	# plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), one_idx = True, filename = figpath + "ex_cardioid_lq_ccp_health.png")
+	# plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, filename = figpath + "ex_cardioid_lq_ccp_doses.png")
 
 if __name__ == '__main__':
 	main(figpath = "/home/anqi/Dropbox/Research/Fractionation/Figures/", \

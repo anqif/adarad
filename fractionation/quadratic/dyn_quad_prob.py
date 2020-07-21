@@ -61,7 +61,7 @@ def rx_to_quad_constrs(expr, rx_dict, is_target):
     return constrs
 
 # Construct optimal control problem.
-def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=0):
+def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=0, use_slack=False):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     if h_init.shape[0] != K:
@@ -80,6 +80,14 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=
     h_lin = h[:-1] - multiply(alpha, d) + gamma[:T_treat]
     h_quad = h_lin - multiply(beta, square(d))
     h_taylor = h_lin - multiply(multiply(beta, d_parm), 2*d - d_parm)
+
+    # Allow slack in health dynamics constraints.
+    if use_slack:
+        h_dyn_slack = Variable((T_treat, K), nonneg=True, name="health dynamics slack")
+        h_dyn_slack_weight = Parameter(nonneg=True, name="health dynamics slack weight")
+        h_dyn_slack_weight.value = 1e4   # TODO: Set slack weight relative to overall health penalty.
+        obj += h_dyn_slack_weight*sum(h_dyn_slack)
+        h_taylor -= h_dyn_slack
 
     constrs = [h[0] == h_init]
     for t in range(T_treat):
