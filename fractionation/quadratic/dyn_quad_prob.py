@@ -82,6 +82,7 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=
     h_taylor = h_lin - multiply(multiply(beta, d_parm), 2*d - d_parm)
 
     # Allow slack in health dynamics constraints.
+    h_dyn_slack = Constant(0)
     if use_slack:
         h_dyn_slack = Variable((T_treat, K), nonneg=True, name="health dynamics slack")
         h_dyn_slack_weight = Parameter(nonneg=True, name="health dynamics slack weight")
@@ -126,4 +127,4 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=
         constrs += constrs_r
 
     prob = Problem(Minimize(obj), constrs)
-    return prob, b, h, d, d_parm
+    return prob, b, h, d, d_parm, h_dyn_slack

@@ -1,6 +1,5 @@
 import matplotlib
 matplotlib.use("TKAgg")
-from matplotlib.colors import LogNorm
 
 from fractionation.quad_funcs import dyn_quad_treat
 from fractionation.quad_admm_funcs import dyn_quad_treat_admm
@@ -77,7 +76,7 @@ def main(figpath = "", datapath = ""):
 	# Dynamic treatment.
 	d_init = np.zeros((T, K))
 	# d_init = np.vstack(T * [[6.0, 0, 0.5, 0.5, 12]])
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True, max_iter = 1, solver = "MOSEK", ccp_verbose = True)
+	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
 	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
@@ -85,15 +84,14 @@ def main(figpath = "", datapath = ""):
 	print("Solve Time:", res_dynamic["solve_time"])
 	print("Iterations:", res_dynamic["num_iters"])
 
-	# Set beam colors on logarithmic scale.
-	b_min = np.min(res_dynamic["beams"][res_dynamic["beams"] > 0])
-	b_max = np.max(res_dynamic["beams"])
-	lc_norm = LogNorm(vmin = b_min, vmax = b_max)
+	# Plot total slack in health dynamics per iteration.
+	plot_slacks(res_dynamic["health_slack"], title = "Health Dynamics Slack vs. Iteration")
+	# plot_slacks(res_dynamic["health_slack"], title = "Health Dynamics Slack vs. Iteration", filename = figpath + "ex_cardiod_lq_ccp_slacks.png")
 
-	# Compare actual and approximate health curves.
-	curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
+	# Compare actual (linear-quadratic), linearized (PTV only), and optimal (direct from solver) health curves.
+	curves  = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 	curves += [{"h": res_dynamic["health_opt"], "label": "Optimal", "kwargs": {"color": colors[2], "linestyle": "dashed"}}]
-	curves += [{"h": res_dynamic["health_est"], "label": "Approximated", "kwargs": {"color": colors[3], "linestyle": "dashed"}}]
+	curves += [{"h": res_dynamic["health_est"], "label": "Linearized", "kwargs": {"color": colors[3], "linestyle": "dashed"}}]
 
 	# Plot dynamic beam, health, and treatment curves.
 	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5),

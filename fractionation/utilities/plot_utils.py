@@ -282,3 +282,26 @@ def plot_residuals(r_primal, r_dual, normalize = False, show = True, title = Non
 		plt.show()
 	if filename is not None:
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
+
+# Plot slack in health dynamics constraint.
+def plot_slacks(slack, show = True, title = None, semilogy = False, filename = None, *args, **kwargs):
+	fig = plt.figure()
+	fig.set_size_inches(12, 8)
+
+	if semilogy:
+		plt.semilogy(range(len(slack)), slack, *args, **kwargs)
+	else:
+		plt.plot(range(len(slack)), slack, *args, **kwargs)
+
+	# plt.gca().set_xlim(0, len(slack))
+	plt.gca().set_ylim(bottom = 0)
+
+	plt.xlabel("Iteration")
+	plt.ylabel("Total Slack")
+
+	if title:
+		plt.title(title)
+	if show:
+		plt.show()
+	if filename is not None:
+		fig.savefig(filename, bbox_inches = "tight", dpi = 300)

@@ -1,14 +1,12 @@
 import numpy as np
 import cvxpy.settings as cvxpy_s
 from collections import Counter
-
-import cvxpy
-from cvxpy import Problem
+from cvxpy import Constant
 
 from fractionation.utilities.data_utils import pad_matrix
 from fractionation.mpc_funcs import build_dyn_prob, dyn_objective
 
-def ccp_solve(prob, d, d_parm, d_init = None, ccp_verbose = False, *args, **kwargs):
+def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose = False, *args, **kwargs):
 	if d_init is None:
 		d_init = np.zeros(d_parm.shape)
 
@@ -29,6 +27,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, ccp_verbose = False, *args, **kwar
 	obj_cur = np.inf
 	d_cur = d_init
 	status_list = []
+	h_slack_sum = np.zeros(max_iter)
 
 	while not finished:
 		if ccp_verbose and k % iter_print == 0:
@@ -46,14 +45,16 @@ def ccp_solve(prob, d, d_parm, d_init = None, ccp_verbose = False, *args, **kwar
 		obj_diff = obj_cur - prob.value
 		finished = (k + 1) >= max_iter or obj_diff <= ccp_eps
 
-		# Update objective and linearization point.
-		obj_cur = prob.value
+		# Update linearization point and objective.
 		d_cur = d.value
+		obj_cur = prob.value
+		h_slack_sum[k] = np.sum(h_slack.value)
 		k = k + 1
 
 	# Take majority as final status.
 	status, status_count = Counter(status_list).most_common(1)[0]
-	return {"obj": obj_cur, "status": status, "num_iters": k, "solve_time": solve_time, "doses": d.value}
+	return {"obj": obj_cur, "status": status, "num_iters": k, "solve_time": solve_time, "doses": d.value,
+			"health_slack": np.array(h_slack_sum[:k])}
 
 def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda h,t: h):
 	K = h_init.shape[0]
