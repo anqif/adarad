@@ -138,7 +138,9 @@ def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardi
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot health curves.
-def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treated", ylim = None, one_idx = False, filename = None, *args, **kwargs):
+def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treated", ylim = None, indices = None, one_idx = False, filename = None, *args, **kwargs):
+	# if len(h.shape) == 1:
+	#	h = h[:,np.newaxis]
 	T = h.shape[0] - 1
 	m = h.shape[1]
 	
@@ -146,11 +148,13 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 		lower, upper = bounds
 	else:
 		lower = upper = None
+	if indices is None:
+		indices = np.arange(m) + int(one_idx)
 	
 	rows = 1 if m <= maxcols else int(np.ceil(m / maxcols))
 	cols = min(m, maxcols)
 	left = rows*cols - m
-	
+
 	fig, axs = plt.subplots(rows, cols, sharey = True)
 	fig.set_size_inches(16,8)
 	if ylim is not None:
@@ -163,12 +167,14 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 		ltreat, = ax.plot(range(T+1), h[:,i], label = label, *args, **kwargs)
 		handles = [ltreat]
 		for curve in curves:
+			# if len(curve["h"].shape) == 1:
+			#	curve["h"] = curve["h"][:,np.newaxis]
 			curve_kw = curve.get("kwargs", {})
 			lcurve, = ax.plot(range(T+1), curve["h"][:,i], label = curve["label"], **curve_kw)
 			handles += [lcurve]
 		# lnone, = ax.plot(range(T+1), h_prog[:,i], ls = '--', color = "red")
-		# ax.set_title("$x_{{{0}}}(t)$".format(i))
-		ax.set_title("$h_{{{0}}}(t)$".format(i + int(one_idx)))
+		ax.set_title("$h_{{{0}}}(t)$".format(indices[i]))
+		# ax.set_title("$s = {{{0}}}$".format(indices[i]))
 		
 		# Label transition from treatment to recovery period.
 		xt = np.arange(0, T, stepsize)
@@ -228,7 +234,6 @@ def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, b
 			lcurve, = ax.plot(range(1,T+1), curve["d"][:,j], label = curve["label"], **curve_kw)
 			handles += [lcurve]
 		# ax.plot(range(1,T+1), d[:,j])
-		# ax.set_title("$u_{{{0}}}(t)$".format(j))
 		ax.set_title("$d_{{{0}}}(t)$".format(j + int(one_idx)))
 		
 		# Label transition from treatment to recovery period.
@@ -296,7 +301,7 @@ def plot_slacks(slack, show = True, title = None, semilogy = False, filename = N
 	# plt.gca().set_xlim(0, len(slack))
 	plt.gca().set_ylim(bottom = 0)
 
-	plt.xlabel("Iteration")
+	plt.xlabel("Iteration (s)")
 	plt.ylabel("Total Slack")
 
 	if title:

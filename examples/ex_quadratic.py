@@ -37,6 +37,7 @@ def main(figpath = "", datapath = ""):
 	prop_cycle = plt.rcParams['axes.prop_cycle']
 	colors = prop_cycle.by_key()['color']
 	h_prog = health_prog_quad(h_init, T, gamma = gamma)
+	curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
 	# Penalty functions.
 	w_lo = np.array([0] + (K-1)*[1])
@@ -85,13 +86,8 @@ def main(figpath = "", datapath = ""):
 	print("Iterations:", res_dynamic["num_iters"])
 
 	# Plot total slack in health dynamics per iteration.
-	plot_slacks(res_dynamic["health_slack"], title = "Health Dynamics Slack vs. Iteration")
-	# plot_slacks(res_dynamic["health_slack"], title = "Health Dynamics Slack vs. Iteration", filename = figpath + "ex_cardiod_lq_ccp_slacks.png")
-
-	# Compare actual (linear-quadratic), linearized (PTV only), and optimal (direct from solver) health curves.
-	curves  = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
-	curves += [{"h": res_dynamic["health_opt"], "label": "Optimal", "kwargs": {"color": colors[2], "linestyle": "dashed"}}]
-	curves += [{"h": res_dynamic["health_est"], "label": "Linearized", "kwargs": {"color": colors[3], "linestyle": "dashed"}}]
+	# plot_slacks(res_dynamic["health_slack"], title = "Health Dynamics Slack vs. Iteration")
+	# plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_cardioid_lq_ccp_slacks.png")
 
 	# Plot dynamic beam, health, and treatment curves.
 	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5),
@@ -104,6 +100,28 @@ def main(figpath = "", datapath = ""):
 	#			one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, filename = figpath + "ex_cardioid_lq_ccp_beams.png")
 	# plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), one_idx = True, filename = figpath + "ex_cardioid_lq_ccp_health.png")
 	# plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, filename = figpath + "ex_cardioid_lq_ccp_doses.png")
+
+	# Compare PTV health curves under linearized, linearized with slack, and linear-quadratic models.
+	# sidx = 0
+	# iters = np.array([1, 2, 5])
+	# M = len(iters)
+	#
+	# ptv_health = np.zeros((T+1,M))
+	# ptv_health_est = np.zeros((T+1,M))
+	# ptv_health_opt = np.zeros((T+1,M))
+	#
+	# for j in range(M):
+	# 	print("\nDynamic Treatment with Maximum Iterations {0}".format(iters[j]))
+	# 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True, max_iter = iters[j], solver = "MOSEK", ccp_verbose = True)
+	# 	ptv_health[:,j] = res_dynamic["health"][:,sidx]
+	# 	ptv_health_est[:,j] = res_dynamic["health_est"][:,sidx]
+	# 	ptv_health_opt[:,j] = res_dynamic["health_opt"][:,sidx]
+	#
+	# curves = [{"h": ptv_health_est, "label": "Linearized", "kwargs": {"color": colors[3], "linestyle": "dashed"}}]
+	# curves += [{"h": ptv_health_opt, "label": "Linearized with Slack", "kwargs": {"color": colors[2], "linestyle": "dashed"}}]
+	# plot_health(ptv_health, curves = curves, stepsize = 10, label = "Linear-Quadratic", one_idx = True)
+	# plot_health(ptv_health, curves = curves, stepsize = 10, label = "Linear-Quadratic", indices = np.array(iters), one_idx = True, \
+	# 			filename = figpath + "ex_cardioid_ccp_PTV_health.png")
 
 if __name__ == '__main__':
 	main(figpath = "/home/anqi/Dropbox/Research/Fractionation/Figures/", \
