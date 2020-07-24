@@ -6,7 +6,7 @@ from fractionation.quad_admm_funcs import dyn_quad_treat_admm
 from fractionation.utilities.plot_utils import *
 from fractionation.utilities.data_utils import line_integral_mat, health_prog_quad
 
-from example_utils import simple_structures, simple_colormap, save_data
+from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	T = 20           # Length of treatment.
