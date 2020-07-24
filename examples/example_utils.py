@@ -121,22 +121,20 @@ def med_to_lq_parms(med_parms, T_tot, is_tumor = False):
 	alpha_vec = np.full((T_tot,), alpha_lq)
 	beta_vec = np.full((T_tot,), beta_lq)
 	gamma_vec = np.zeros((T_tot,))
-	if med_parms["T_k"] <= T_tot:
-		T_k_idx = med_parms["T_k"] - 1
+	if is_tumor and med_parms["T_k"] <= T_tot:
+		T_k_idx = int(med_parms["T_k"] - 1)
 		gamma_vec[T_k_idx:] = 1/med_parms["T_pd"]
 
 	lq_parms = {"alpha": alpha_vec, "beta": beta_vec, "gamma": gamma_vec}
 	return lq_parms
 
-def simple_fast_parms():
-	K = 5
-	T = 60
-
-	tumor_parms, norm_parms = tumor_fast_parms()
+def simple_parms(T = 60, fast = True):
+	tumor_parms, norm_parms = tumor_fast_parms() if fast else tumor_slow_parms()
 	tumor_lq = med_to_lq_parms(tumor_parms, T, is_tumor = True)
 	norm_late_lq = med_to_lq_parms(norm_parms["late"], T, is_tumor = False)
 	norm_early_lq = med_to_lq_parms(norm_parms["early"], T, is_tumor = False)
 
+	K = 5
 	alpha = np.zeros((T, K))
 	beta = np.zeros((T, K))
 	gamma = np.zeros((T, K))
@@ -156,7 +154,7 @@ def simple_fast_parms():
 	beta[:,2] = norm_early_lq["beta"]
 	gamma[:,2] = norm_early_lq["gamma"]
 
-	# OAR (s = 4).
+	# Body voxels (s = 4).
 	alpha[:,4] = 0.1*norm_early_lq["alpha"]
 	beta[:,4] = 0.01*norm_early_lq["beta"]
 	gamma[:,4] = norm_early_lq["gamma"]
