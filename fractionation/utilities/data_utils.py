@@ -345,6 +345,7 @@ def health_prog_est(h_init, T, alpha = None, beta = None, gamma = None, doses = 
 	if is_target.shape not in [(K,), (K,1)]:
 		raise ValueError("is_target must have dimensions ({0},)".format(K))
 
+	# TODO: Allow different health maps for PTV/OAR.
 	h_prog = np.zeros((T + 1, K))
 	h_prog[:,is_target] = health_prog_lin(h_init[is_target], T, alpha[:,is_target], beta[:,is_target], gamma[:,is_target], doses[:,is_target], d_parm[:,is_target], health_map)
 	h_prog[:,~is_target] = health_prog_quad(h_init[~is_target], T, alpha[:,~is_target], beta[:,~is_target], gamma[:,~is_target], doses[:,~is_target], health_map)

@@ -61,7 +61,7 @@ def rx_to_quad_constrs(expr, rx_dict, is_target):
     return constrs
 
 # Construct optimal control problem.
-def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=0, use_slack=False):
+def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_slack = False, slack_weight = 0):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     if h_init.shape[0] != K:
@@ -71,7 +71,7 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=
     b = Variable((T_treat, n), nonneg=True, name="beams")   # Beams.
     h = Variable((T_treat + 1, K), name="health")           # Health statuses.
     d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
-    d_parm = Parameter(d.shape, nonneg=True, name="dose parameter")  # Dose point around which to linearize target dynamics.
+    d_parm = Parameter(d.shape, nonneg=True, name="dose parameter")  # Dose around which to linearize target dynamics.
 
     # Objective function.
     obj = dyn_quad_obj(d, h, patient_rx)
@@ -85,9 +85,7 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=
     h_dyn_slack = Constant(0)
     if use_slack:
         h_dyn_slack = Variable((T_treat, K), nonneg=True, name="health dynamics slack")
-        h_dyn_slack_weight = Parameter(nonneg=True, name="health dynamics slack weight")
-        h_dyn_slack_weight.value = 1e4   # TODO: Set slack weight relative to overall health penalty.
-        obj += h_dyn_slack_weight*sum(h_dyn_slack)
+        obj += slack_weight*sum(h_dyn_slack)   # TODO: Set slack weight relative to overall health penalty.
         h_taylor -= h_dyn_slack
 
     constrs = [h[0] == h_init]

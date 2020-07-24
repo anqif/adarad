@@ -91,7 +91,8 @@ def rx_to_slack_quad_constrs(expr, rx_dict, is_target, slack):
     return constrs
 
 # Construct optimal control problem with slack health/dose constraints.
-def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, s_weights = None, s_final = True):
+def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_h_dyn_slack = False,
+                              h_dyn_slack_weight = 0, bnd_slack_weights = None, bnd_slack_final = True):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     if h_init.shape[0] != K:
@@ -110,6 +111,13 @@ def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_
     h_lin = h[:-1] - multiply(alpha, d) + gamma[:T_treat]
     h_quad = h_lin - multiply(beta, square(d))
     h_taylor = h_lin - multiply(multiply(beta, d_parm), 2*d - d_parm)
+
+    # Allow slack in health dynamics constraints.
+    h_dyn_slack = Constant(0)
+    if use_h_dyn_slack:
+        h_dyn_slack = Variable((T_treat, K), nonneg=True, name="health dynamics slack")
+        obj += h_dyn_slack_weight * sum(h_dyn_slack)  # TODO: Set slack weight relative to overall health penalty.
+        h_taylor -= h_dyn_slack
 
     constrs = [h[0] == h_init]
     for t in range(T_treat):
@@ -130,8 +138,8 @@ def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_
 
     # Additional health constraints.
     if "health_constrs" in patient_rx:
-    	# TODO: Only create lower/upper slacks for organ-at-risk/target structures.
-        h_slack_lo = Variable((T_treat, K), nonneg=True, name="health lower slack")  # Slack for health status constraints.
+        # TODO: Only create lower/upper slacks for organ-at-risk/target structures.
+        h_slack_lo = Variable((T_treat, K), nonneg=True, name="health lower slack")   # Slack for health status constraints.
         h_slack_hi = Variable((T_treat, K), nonneg=True, name="health upper slack")
         s_vars["health"] = {"lower": h_slack_lo, "upper": h_slack_hi}
         constrs += rx_to_slack_quad_constrs(h[1:], patient_rx["health_constrs"], patient_rx["is_target"], s_vars["health"])
@@ -156,7 +164,7 @@ def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         constrs += constrs_r
 
     # Final problem.
-    obj += slack_quad_penalty(s_vars, patient_rx["is_target"], s_weights)
-    constrs += slack_quad_constrs(s_vars, patient_rx["is_target"], s_final)
+    obj += slack_quad_penalty(s_vars, patient_rx["is_target"], bnd_slack_weights)
+    constrs += slack_quad_constrs(s_vars, patient_rx["is_target"], bnd_slack_final)
     prob = Problem(Minimize(obj), constrs)
-    return prob, b, h, d, d_parm, s_vars
+    return prob, b, h, d, d_parm, h_dyn_slack, s_vars

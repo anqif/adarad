@@ -27,14 +27,15 @@ def print_quad_results(result, is_target, slack_dict=None):
 		for key, value in slack_dict.items():
 			print("\t{0} (Lower, Upper):".format(key.title()), func_ss(value))
 
-def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None, \
-					use_slack = False, *args, **kwargs):
+def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
+					use_slack = False, slack_weight = 0, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
 	
 	# Build problem for treatment stage.
-	prob, b, h, d, d_parm, h_dyn_slack = build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_slack)
+	prob, b, h, d, d_parm, h_dyn_slack = build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov,
+															 use_slack, slack_weight)
 	result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, *args, **kwargs)
 	if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
 		raise RuntimeError("CCP solve failed with status {0}".format(result["status"]))
@@ -49,13 +50,16 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 
 	health_est = health_prog_est(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, doses_parms, patient_rx["is_target"], health_map)
 	health_proj = health_prog_quad(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, health_map)
-	obj = dyn_quad_obj(d.value, health_proj[:(T_treat+1)], patient_rx).value
+	obj = dyn_quad_obj(d, health_proj[:(T_treat+1)], patient_rx).value
+	if use_slack:
+		obj += slack_weight*sum(h_dyn_slack).value
 	return {"obj": obj, "status": result["status"], "solve_time": result["solve_time"], "num_iters": result["num_iters"],
 			"beams": beams_all, "doses": doses_all, "health": health_proj, "health_opt": health_all, "health_est": health_est,
 			"health_slack": result["health_slack"]}
 
-def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None, \
-					use_slack = True, slack_weights = None, slack_final = True, mpc_verbose = False, *args, **kwargs):
+def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
+					use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = True, mpc_slack_weights = None,
+					mpc_slack_final = True, mpc_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
@@ -74,25 +78,26 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 
 		# Solve optimal control problem from current period forward.
 		T_left = T_treat - t_s
-		prob, b, h, d, d_parm = build_dyn_quad_prob(T_left*[A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]), \
-													np.row_stack(T_left*[gamma[t_s]]), h_cur, rx_cur, T_recov)
-		# prob, b, h, d, d_parm = build_dyn_quad_prob(A_list[t_s:], alpha[t_s:], beta[t_s:], gamma[t_s:], h_cur, rx_cur, T_recov)
+		prob, b, h, d, d_parm, h_dyn_slack = build_dyn_quad_prob(T_left*[A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]),
+													np.row_stack(T_left*[gamma[t_s]]), h_cur, rx_cur, T_recov, use_ccp_slack, ccp_slack_weight)
+		# prob, b, h, d, d_parm, h_dyn_slack = build_dyn_quad_prob(A_list[t_s:], alpha[t_s:], beta[t_s:], gamma[t_s:],
+		# 											h_cur, rx_cur, T_recov, use_ccp_slack, ccp_slack_weight)
 		try:
-			result = ccp_solve(prob, d, d_parm, d_init, *args, **kwargs)
+			result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, *args, **kwargs)
 			status = result["status"]
 		except SolverError:
 			status = "SolverError"
 
 		# If not optimal, re-solve with slack constraints.
 		if status not in cvxpy_s.SOLUTION_PRESENT:
-			if not use_slack:
+			if not use_mpc_slack:
 				raise RuntimeError("Solver failed with status {0}".format(status))
 			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(status), RuntimeWarning)
 			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(status))
 
-			prob, b, h, d, d_parm, s_vars = build_dyn_slack_quad_prob(T_left*[A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]), \
-																	  np.row_stack(T_left*[gamma[t_s]]), h_cur, rx_cur, T_recov, slack_weights, slack_final)
-			result = ccp_solve(prob, d, d_parm, d_init, *args, **kwargs)
+			prob, b, h, d, d_parm, h_dyn_slack, s_vars = build_dyn_slack_quad_prob(T_left*[A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]),
+																	  np.row_stack(T_left*[gamma[t_s]]), h_cur, rx_cur, T_recov, mpc_slack_weights, mpc_slack_final)
+			result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, *args, **kwargs)
 			status = result["status"]
 			if status not in cvxpy_s.SOLUTION_PRESENT:
 				raise RuntimeError("Solver failed on slack problem with status {0}".format(status))
@@ -116,12 +121,20 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 		h_cur = health_map(h_cur - alpha[t_s]*doses[t_s] - beta[t_s]*doses[t_s]**2 + gamma[t_s], t_s)
 
 	# Construct full results.
-	beams_all = pad_matrix(beams, T_recov)
-	doses_all = pad_matrix(doses, T_recov)
-	alpha_pad = np.vstack([alpha, np.zeros((T_recov,K))])
-	beta_pad  = np.vstack([beta, np.zeros((T_recov,K))])
-	health_all = health_prog_quad(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, health_map)
-	obj_treat = dyn_quad_obj(doses, health_all[:(T_treat+1)], patient_rx).value
+	beams_all = pad_matrix(b.value, T_recov)
+	health_all = pad_matrix(h.value, T_recov)
+	doses_all = pad_matrix(d.value, T_recov)
+	doses_parms = pad_matrix(d_parm.value, T_recov)
+	alpha_pad = np.vstack([alpha, np.zeros((T_recov, K))])
+	beta_pad = np.vstack([beta, np.zeros((T_recov, K))])
+
+	health_est = health_prog_est(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, doses_parms,
+								 patient_rx["is_target"], health_map)
+	health_proj = health_prog_quad(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, health_map)
+	obj = dyn_quad_obj(d, health_proj[:(T_treat + 1)], patient_rx).value
+	if use_ccp_slack:
+		obj += ccp_slack_weight*sum(h_dyn_slack).value
 	# TODO: How should we handle constraint violations?
 	status, status_count = Counter(status_list).most_common(1)[0]   # Take majority as final status.
-	return {"obj": obj_treat, "status": status, "num_iters": num_iters, "solve_time": solve_time, "beams": beams_all, "doses": doses_all, "health": health_all}
+	return {"obj": obj, "status": status, "num_iters": num_iters, "solve_time": solve_time, "beams": beams_all,
+			"doses": doses_all, "health": health_proj, "health_opt": health_all, "health_est": health_est}

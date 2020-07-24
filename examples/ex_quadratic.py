@@ -46,7 +46,7 @@ def main(figpath = "", datapath = ""):
 	rx_health_goal = np.zeros((T,K))
 	rx_dose_weights = np.array([1, 1, 1, 1, 0.25])
 	rx_dose_goal = np.zeros((T,K))
-	patient_rx = {"dose_goal": rx_dose_goal, "dose_weights": rx_dose_weights, \
+	patient_rx = {"dose_goal": rx_dose_goal, "dose_weights": rx_dose_weights,
 				  "health_goal": rx_health_goal, "health_weights": rx_health_weights}
 
 	# Beam constraints.
@@ -77,7 +77,8 @@ def main(figpath = "", datapath = ""):
 	# Dynamic treatment.
 	d_init = np.zeros((T, K))
 	# d_init = np.vstack(T * [[6.0, 0, 0.5, 0.5, 12]])
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
+	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True,
+								 slack_weight = 1e4, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
 	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
@@ -90,13 +91,15 @@ def main(figpath = "", datapath = ""):
 	# plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_cardioid_lq_ccp_slacks.png")
 
 	# Plot dynamic beam, health, and treatment curves.
-	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5),
-				title = "Beam Intensities vs. Time", one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
+	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
+			   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Beam Intensities vs. Time", one_idx = True,
+			   structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper),
 				title = "Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True)
-	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", one_idx = True)
+	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper),
+				   title = "Treatment Dose vs. Time", one_idx = True)
 
-	# plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), \
+	# plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5),
 	#			one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, filename = figpath + "ex_cardioid_lq_ccp_beams.png")
 	# plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), one_idx = True, filename = figpath + "ex_cardioid_lq_ccp_health.png")
 	# plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, filename = figpath + "ex_cardioid_lq_ccp_doses.png")
@@ -112,7 +115,8 @@ def main(figpath = "", datapath = ""):
 	#
 	# for j in range(M):
 	# 	print("\nDynamic Treatment with Maximum Iterations {0}".format(iters[j]))
-	# 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True, max_iter = iters[j], solver = "MOSEK", ccp_verbose = True)
+	# 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True,
+	# 								slack_weight = 1e4, max_iter = iters[j], solver = "MOSEK", ccp_verbose = True)
 	# 	ptv_health[:,j] = res_dynamic["health"][:,sidx]
 	# 	ptv_health_est[:,j] = res_dynamic["health_est"][:,sidx]
 	# 	ptv_health_opt[:,j] = res_dynamic["health_opt"][:,sidx]
@@ -120,7 +124,7 @@ def main(figpath = "", datapath = ""):
 	# curves = [{"h": ptv_health_est, "label": "Linearized", "kwargs": {"color": colors[3], "linestyle": "dashed"}}]
 	# curves += [{"h": ptv_health_opt, "label": "Linearized with Slack", "kwargs": {"color": colors[2], "linestyle": "dashed"}}]
 	# plot_health(ptv_health, curves = curves, stepsize = 10, label = "Linear-Quadratic", one_idx = True)
-	# plot_health(ptv_health, curves = curves, stepsize = 10, label = "Linear-Quadratic", indices = np.array(iters), one_idx = True, \
+	# plot_health(ptv_health, curves = curves, stepsize = 10, label = "Linear-Quadratic", indices = np.array(iters), one_idx = True,
 	# 			filename = figpath + "ex_cardioid_ccp_PTV_health.png")
 
 if __name__ == '__main__':
