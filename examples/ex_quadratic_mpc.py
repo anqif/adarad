@@ -5,7 +5,7 @@ from matplotlib.colors import LogNorm
 from fractionation.quad_funcs import dyn_quad_treat, mpc_quad_treat
 from fractionation.quad_admm_funcs import dyn_quad_treat_admm, mpc_quad_treat_admm
 from fractionation.utilities.plot_utils import *
-from fractionation.utilities.data_utils import line_integral_mat, health_prog_quad
+from fractionation.utilities.data_utils import line_integral_mat, health_prog_act
 
 from example_utils import simple_structures, simple_colormap
 
@@ -38,17 +38,24 @@ def main(figpath = "", datapath = ""):
 	beta = np.array(T * [[0.001, 0.05, 0.025, 0.015, 0.0005]])
 	gamma = np.array(T * [[0.05, 0, 0, 0, 0]])
 	h_init = np.array([1] + (K-1)*[0])
+	is_target = np.array([True] + (K - 1) * [False])
 
 	# Actual health status transition function.
 	mu = 0
 	sigma = 0.05   # 0.025
 	h_noise = mu + sigma*np.random.randn(T,K)
 	# health_map = lambda h,t: h
-	def health_map(h, t):
-		h_jitter = h + h_noise[t]
-		h_jitter[0] = np.maximum(h_jitter[0], 0)     # PTV: h_t >= 0.
-		h_jitter[1:] = np.minimum(h_jitter[1:], 0)   # OAR: h_t <= 0.
-		return h_jitter
+	# health_map = lambda h,t: h + h_noise[t]
+
+	# PTV: h_t >= 0.
+	def health_map_ptv(h, t):
+		h_jitter = h + h_noise[t,is_target]
+		return np.maximum(h_jitter, 0)
+	# OAR: h_t <= 0.
+	def health_map_oar(h, t):
+		h_jitter = h + h_noise[t,~is_target]
+		return np.minimum(h_jitter, 0)
+	health_map = {"target": health_map_ptv, "organ": health_map_oar}
 
 	# Health violation.
 	def health_viol(h, bounds, is_target):
@@ -59,7 +66,7 @@ def main(figpath = "", datapath = ""):
 	# Health prognosis.
 	prop_cycle = plt.rcParams['axes.prop_cycle']
 	colors = prop_cycle.by_key()['color']
-	h_prog = health_prog_quad(h_init, T, gamma = gamma)
+	h_prog = health_prog_act(h_init, T, gamma = gamma)
 	h_curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
 	# Penalty functions.
@@ -70,7 +77,7 @@ def main(figpath = "", datapath = ""):
 	# rx_dose_weights = np.array([0.01, 1, 1, 1, 0.001])
 	rx_dose_weights = np.array([1, 1, 1, 1, 0.25])
 	rx_dose_goal = np.zeros((T,K))
-	patient_rx = {"dose_goal": rx_dose_goal, "dose_weights": rx_dose_weights,
+	patient_rx = {"is_target": is_target, "dose_goal": rx_dose_goal, "dose_weights": rx_dose_weights,
 				  "health_goal": rx_health_goal, "health_weights": rx_health_weights}
 
 	# Beam constraints.
@@ -91,9 +98,6 @@ def main(figpath = "", datapath = ""):
 	# health_lower[:,4] = -30
 	# health_upper[:15,0] = 25    # Upper bound on PTV for t = 1,...,15.
 	# health_upper[15:,0] = 5     # Upper bound on PTV for t = 16,...,20.
-
-	is_target = np.array([True] + (K-1)*[False])
-	patient_rx["is_target"] = is_target
 	patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
 	# Dynamic treatment.

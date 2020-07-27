@@ -9,7 +9,7 @@ from fractionation.problem.dyn_prob import rx_slice
 
 from fractionation.quadratic.dyn_quad_prob import build_dyn_quad_prob, dyn_quad_obj
 from fractionation.quadratic.slack_quad_prob import build_dyn_slack_quad_prob
-from fractionation.utilities.data_utils import pad_matrix, check_quad_vectors, health_prog_quad, health_prog_est
+from fractionation.utilities.data_utils import pad_matrix, check_quad_vectors, health_prog_act, health_prog_est
 
 def print_quad_results(result, is_target, slack_dict=None):
 	if slack_dict is None:
@@ -49,10 +49,10 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	beta_pad  = np.vstack([beta, np.zeros((T_recov,K))])
 
 	health_est = health_prog_est(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, doses_parms, patient_rx["is_target"], health_map)
-	health_proj = health_prog_quad(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, health_map)
+	health_proj = health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, patient_rx["is_target"], health_map)
 	obj = dyn_quad_obj(d, health_proj[:(T_treat+1)], patient_rx).value
 	if use_slack:
-		obj += slack_weight*sum(h_dyn_slack).value
+		obj += slack_weight*np.sum(h_dyn_slack.value)
 	return {"obj": obj, "status": result["status"], "solve_time": result["solve_time"], "num_iters": result["num_iters"],
 			"beams": beams_all, "doses": doses_all, "health": health_proj, "health_opt": health_all, "health_est": health_est,
 			"health_slack": result["health_slack"]}
@@ -130,10 +130,10 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 
 	health_est = health_prog_est(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, doses_parms,
 								 patient_rx["is_target"], health_map)
-	health_proj = health_prog_quad(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, health_map)
+	health_proj = health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, patient_rx["is_target"], health_map)
 	obj = dyn_quad_obj(d, health_proj[:(T_treat + 1)], patient_rx).value
 	if use_ccp_slack:
-		obj += ccp_slack_weight*sum(h_dyn_slack).value
+		obj += ccp_slack_weight*np.sum(h_dyn_slack.value)
 	# TODO: How should we handle constraint violations?
 	status, status_count = Counter(status_list).most_common(1)[0]   # Take majority as final status.
 	return {"obj": obj, "status": status, "num_iters": num_iters, "solve_time": solve_time, "beams": beams_all,

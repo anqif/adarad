@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("TKAgg")
 
-from fractionation.utilities.data_utils import health_prog_quad
+from fractionation.utilities.data_utils import health_prog_act
 from fractionation.utilities.plot_utils import plot_health
 
 def main(savepath = ""):
@@ -20,7 +20,8 @@ def main(savepath = ""):
     doses[:t_off,:] = 0.75
     doses[t_off:,:] = 0.6665
     h_init = np.array([0.8] + (K-1)*[0])
-    h_prog = health_prog_quad(h_init, T, alpha, beta, gamma, doses)
+    is_target = np.array([True] + (K-1)*[False])
+    h_prog = health_prog_act(h_init, T, alpha, beta, gamma, doses, is_target)
 
     # Health constraints.
     health_lower = np.zeros((T,K))

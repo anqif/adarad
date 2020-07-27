@@ -13,7 +13,7 @@ from fractionation.problem.dyn_prob import rx_slice
 from fractionation.quad_admm_slack_funcs import dyn_quad_treat_admm_slack
 from fractionation.quadratic.dyn_quad_prob import dyn_quad_obj
 from fractionation.quadratic.dyn_quad_prob_admm import *
-from fractionation.utilities.data_utils import pad_matrix, check_quad_vectors, health_prog_quad
+from fractionation.utilities.data_utils import pad_matrix, check_quad_vectors, health_prog_act
 
 def run_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
     # Construct proximal dose problem.
@@ -184,7 +184,7 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
     doses_all = pad_matrix(d_val, T_recov)
     alpha_pad = np.vstack([alpha, np.zeros((T_recov, K))])
     beta_pad = np.vstack([beta, np.zeros((T_recov, K))])
-    health_all = health_prog_quad(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, health_map)
+    health_all = health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, patient_rx["is_target"], health_map)
     obj = dyn_quad_obj(d_val, health_all[:(T_treat + 1)], patient_rx).value
     return {"obj": obj, "status": status, "num_iters": k, "total_time": end - start, "solve_time": solve_time,
             "beams": beams_all, "doses": doses_all, "health": health_all, "primal": np.array(r_prim[:k]), "dual": np.array(r_dual[:k])}
@@ -248,7 +248,7 @@ def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
     doses_all = pad_matrix(doses, T_recov)
     alpha_pad = np.vstack([alpha, np.zeros((T_recov, K))])
     beta_pad = np.vstack([beta, np.zeros((T_recov, K))])
-    health_all = health_prog_quad(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, health_map)
+    health_all = health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, patient_rx["is_target"], health_map)
     obj_treat = dyn_quad_obj(doses, health_all[:(T_treat + 1)], patient_rx).value
     # TODO: How should we handle constraint violations?
     status, status_count = Counter(status_list).most_common(1)[0]  # Take majority as final status.

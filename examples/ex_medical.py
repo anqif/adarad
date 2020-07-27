@@ -4,7 +4,7 @@ matplotlib.use("TKAgg")
 from fractionation.quad_funcs import dyn_quad_treat
 from fractionation.quad_admm_funcs import dyn_quad_treat_admm
 from fractionation.utilities.plot_utils import *
-from fractionation.utilities.data_utils import line_integral_mat, health_prog_quad
+from fractionation.utilities.data_utils import line_integral_mat, health_prog_act
 
 from example_utils import simple_structures, simple_colormap, simple_parms
 
@@ -33,7 +33,7 @@ def main(figpath = "", datapath = ""):
     h_init = np.array([10] + (K - 1) * [0])
     prop_cycle = plt.rcParams['axes.prop_cycle']
     colors = prop_cycle.by_key()['color']
-    h_prog = health_prog_quad(h_init, T, gamma=gamma)
+    h_prog = health_prog_act(h_init, T, gamma=gamma)
     curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
     # Penalty functions.

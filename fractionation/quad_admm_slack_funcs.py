@@ -13,7 +13,7 @@ from fractionation.problem.dyn_prob import rx_slice
 from fractionation.quadratic.dyn_quad_prob import dyn_quad_obj
 from fractionation.quadratic.slack_quad_prob import slack_quad_penalty
 from fractionation.quadratic.slack_quad_prob_admm import *
-from fractionation.utilities.data_utils import pad_matrix, check_quad_vectors, health_prog_quad
+from fractionation.utilities.data_utils import pad_matrix, check_quad_vectors, health_prog_act
 
 def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, s_weights = None, s_final = True, *args, **kwargs):
     # Construct proximal dose problem.
@@ -159,7 +159,7 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
     doses_all = pad_matrix(d_val, T_recov)
     alpha_pad = np.vstack([alpha, np.zeros((T_recov, K))])
     beta_pad = np.vstack([beta, np.zeros((T_recov, K))])
-    health_all = health_prog_quad(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, health_map)
+    health_all = health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, patient_rx["is_target"], health_map)
     obj = dyn_quad_obj(d_val, health_all[:(T_treat + 1)], patient_rx).value
 
     # Add penalty on all slack variables/values.
