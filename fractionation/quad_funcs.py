@@ -9,7 +9,7 @@ from fractionation.problem.dyn_prob import rx_slice
 
 from fractionation.quadratic.dyn_quad_prob import build_dyn_quad_prob, dyn_quad_obj
 from fractionation.quadratic.slack_quad_prob import build_dyn_slack_quad_prob
-from fractionation.utilities.data_utils import pad_matrix, check_quad_vectors, health_prog_act, health_prog_est
+from fractionation.utilities.data_utils import *
 
 def print_quad_results(result, is_target, slack_dict=None):
 	if slack_dict is None:
@@ -114,16 +114,18 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 		status_list.append(status)
 
 		# Save beams and doses for current period.
+		# TODO: Save optimal health, health dynamics slack, and dose parameter values.
 		beams[t_s] = b.value[0]
 		doses[t_s] = d.value[0]
+		d_init = d.value[1:]   # Initialize next CCP at optimal dose from current period.
 
 		# Update health for next period.
-		h_cur = health_map(h_cur - alpha[t_s]*doses[t_s] - beta[t_s]*doses[t_s]**2 + gamma[t_s], t_s)
+		h_cur = health_prog_act_range(h_cur, t_s, t_s + 1, alpha, beta, gamma, doses, patient_rx["is_target"], health_map)[1]
 
 	# Construct full results.
-	beams_all = pad_matrix(b.value, T_recov)
+	beams_all = pad_matrix(beams, T_recov)
 	health_all = pad_matrix(h.value, T_recov)
-	doses_all = pad_matrix(d.value, T_recov)
+	doses_all = pad_matrix(doses, T_recov)
 	doses_parms = pad_matrix(d_parm.value, T_recov)
 	alpha_pad = np.vstack([alpha, np.zeros((T_recov, K))])
 	beta_pad = np.vstack([beta, np.zeros((T_recov, K))])

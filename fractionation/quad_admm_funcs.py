@@ -13,7 +13,7 @@ from fractionation.problem.dyn_prob import rx_slice
 from fractionation.quad_admm_slack_funcs import dyn_quad_treat_admm_slack
 from fractionation.quadratic.dyn_quad_prob import dyn_quad_obj
 from fractionation.quadratic.dyn_quad_prob_admm import *
-from fractionation.utilities.data_utils import pad_matrix, check_quad_vectors, health_prog_act
+from fractionation.utilities.data_utils import *
 
 def run_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
     # Construct proximal dose problem.
@@ -241,7 +241,7 @@ def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
         doses[t_s] = A_list[t_s].dot(beams[t_s])
 
         # Update health for next period.
-        h_cur = health_map(h_cur - alpha[t_s] * doses[t_s] - beta[t_s] * doses[t_s] ** 2 + gamma[t_s], t_s)
+        h_cur = health_prog_act_range(h_cur, t_s, t_s + 1, alpha, beta, gamma, doses, patient_rx["is_target"], health_map)[1]
 
     # Construct full results.
     beams_all = pad_matrix(beams, T_recov)

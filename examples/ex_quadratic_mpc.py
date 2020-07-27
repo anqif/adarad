@@ -42,7 +42,7 @@ def main(figpath = "", datapath = ""):
 
 	# Actual health status transition function.
 	mu = 0
-	sigma = 0.05   # 0.025
+	sigma = 0.025
 	h_noise = mu + sigma*np.random.randn(T,K)
 	# health_map = lambda h,t: h
 	# health_map = lambda h,t: h + h_noise[t]

@@ -338,6 +338,13 @@ def health_prog_lin(h_init, T, alpha = None, beta = None, gamma = None, doses = 
 def health_prog_act(h_init, T, alpha = None, beta = None, gamma = None, doses = None, is_target = None, health_map = lambda h,t: h):
 	K = h_init.shape[0]
 	alpha, beta, gamma, doses = check_prog_parms(alpha, beta, gamma, doses, K, T)
+	return health_prog_act_range(h_init, 0, T, alpha = alpha, beta = beta, gamma = gamma, doses = doses,
+								 is_target = is_target, health_map = health_map)
+
+def health_prog_act_range(h_init, t_s, T, alpha = None, beta = None, gamma = None, doses = None, is_target = None, health_map = lambda h,t: h):
+	K = h_init.shape[0]
+	if t_s > T:
+		raise ValueError("t_s must be less than or equal to T")
 	if is_target is None:
 		is_target = np.full((K,), False)
 	if is_target.shape not in [(K,), (K, 1)]:
@@ -363,12 +370,14 @@ def health_prog_act(h_init, T, alpha = None, beta = None, gamma = None, doses = 
 	#										 gamma[:, ~is_target],
 	#										 doses[:, ~is_target], health_map)
 
-	h_prog = np.zeros((T + 1, K))
+	h_prog = np.zeros((T - t_s + 1, K))
 	h_prog[0] = h_init
-	for t in range(T):
-		h_quad_expr = h_prog[t] - alpha[t]*doses[t] - beta[t]*doses[t]**2 + gamma[t]
-		h_prog[t+1,is_target] = health_map_ptv(h_quad_expr[is_target], t)
-		h_prog[t+1,~is_target] = health_map_oar(h_quad_expr[~is_target], t)
+	h_idx = 0
+	for t in range(t_s, T):
+		h_quad_expr = h_prog[h_idx] - alpha[t]*doses[t] - beta[t]*doses[t]**2 + gamma[t]
+		h_prog[h_idx+1,is_target] = health_map_ptv(h_quad_expr[is_target], t)
+		h_prog[h_idx+1,~is_target] = health_map_oar(h_quad_expr[~is_target], t)
+		h_idx = h_idx + 1
 	return h_prog
 
 def health_prog_est(h_init, T, alpha = None, beta = None, gamma = None, doses = None, d_parm = None, is_target = None, health_map = lambda h,t: h):
