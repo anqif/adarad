@@ -237,7 +237,15 @@ def check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov = 0):
 			raise ValueError("r_t must have dimensions ({0},)".format(K))
 	return F_list, G_list, q_list, r_list
 
-def check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov = 0):
+def check_row_range(v, v_name, K, T):
+	if len(v.shape) != 2:
+		raise ValueError("{0} must be a 2-dimensional array".format(v_name))
+	if v.shape[0] < T:
+		raise ValueError("{0} must have at least {1} rows".format(v_name,T))
+	if v.shape[1] != K:
+		raise ValueError("{0} must have exactly {1} columns".format(v_name,K))
+
+def check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov = 0, is_range = False):
 	T_total = T_treat + T_recov
 	if alpha is None:
 		alpha = np.zeros((T_treat,K))
@@ -246,18 +254,23 @@ def check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov = 0):
 	if gamma is None:
 		gamma = np.zeros((T_total,K))
 
-	if alpha.shape != (T_treat,K):
-		raise ValueError("alpha must have dimensions ({0},{1})".format(T_treat,K))
-	if beta.shape != (T_treat,K):
-		raise ValueError("beta must have dimensions ({0},{1})".format(T_treat,K))
-	if gamma.shape != (T_total,K):
-		raise ValueError("gamma must have dimensions ({0},{1})".format(T_total,K))
+	if is_range:
+		check_row_range(alpha, "alpha", K, T_treat)
+		check_row_range(beta, "beta", K, T_treat)
+		check_row_range(gamma, "gamma", K, T_total)
+	else:
+		if alpha.shape != (T_treat,K):
+			raise ValueError("alpha must have dimensions ({0},{1})".format(T_treat,K))
+		if beta.shape != (T_treat,K):
+			raise ValueError("beta must have dimensions ({0},{1})".format(T_treat,K))
+		if gamma.shape != (T_total,K):
+			raise ValueError("gamma must have dimensions ({0},{1})".format(T_total,K))
 
 	if np.any(beta < 0):
 		raise ValueError("beta can only contain nonnegative values")
 	return alpha, beta, gamma
 
-def check_prog_parms(alpha, beta, gamma, doses, K, T):
+def check_prog_parms(alpha, beta, gamma, doses, K, T, is_range = False):
 	# Defaults to no treatment.
 	if doses is None:
 		if alpha is None and beta is None:
@@ -273,12 +286,14 @@ def check_prog_parms(alpha, beta, gamma, doses, K, T):
 			beta = np.zeros((T, K))
 		elif alpha is None and beta is None:
 			raise ValueError("alpha or beta must be provided.")
-		if doses.shape != (T, K):
+		if is_range:
+			check_row_range(doses, "doses", K, T)
+		elif doses.shape != (T, K):
 			raise ValueError("doses must have dimensions ({0},{1})".format(T, K))
 	if gamma is None:
 		gamma = np.zeros((T, K))
 
-	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T, T_recov=0)
+	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T, T_recov=0, is_range=is_range)
 	return alpha, beta, gamma, doses
 
 # Health prognosis with a given treatment.
@@ -343,8 +358,10 @@ def health_prog_act(h_init, T, alpha = None, beta = None, gamma = None, doses = 
 
 def health_prog_act_range(h_init, t_s, T, alpha = None, beta = None, gamma = None, doses = None, is_target = None, health_map = lambda h,t: h):
 	K = h_init.shape[0]
-	if t_s > T:
-		raise ValueError("t_s must be less than or equal to T")
+	if t_s > T or t_s < 0:
+		raise ValueError("t_s must be an integer in [0, {0}]".format(T))
+
+	alpha, beta, gamma, doses = check_prog_parms(alpha, beta, gamma, doses, K, T, is_range = True)
 	if is_target is None:
 		is_target = np.full((K,), False)
 	if is_target.shape not in [(K,), (K, 1)]:

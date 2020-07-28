@@ -42,7 +42,7 @@ def main(figpath = "", datapath = ""):
 
 	# Actual health status transition function.
 	mu = 0
-	sigma = 0.025
+	sigma = 0.05
 	h_noise = mu + sigma*np.random.randn(T,K)
 	# health_map = lambda h,t: h
 	# health_map = lambda h,t: h + h_noise[t]
@@ -92,18 +92,19 @@ def main(figpath = "", datapath = ""):
 	# Health constraints.
 	health_lower = np.full((T,K), -np.inf)
 	health_upper = np.full((T,K), np.inf)
-	# health_lower[:,1] = -20     # Lower bound on OARs.
-	# health_lower[:,2] = -10
-	# health_lower[:,3] = -10
-	# health_lower[:,4] = -30
-	# health_upper[:15,0] = 25    # Upper bound on PTV for t = 1,...,15.
-	# health_upper[15:,0] = 5     # Upper bound on PTV for t = 16,...,20.
+	health_lower[:,1] = -1.0     # Lower bound on OARs.
+	health_lower[:,2] = -2.0
+	health_lower[:,3] = -2.0
+	health_lower[:,4] = -3.0
+	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
+	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 	patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
 	# Dynamic treatment.
 	d_init = np.zeros((T, K))
 	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK")
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, d_init = d_init, use_slack = True, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
+	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, d_init = d_init,
+								 slack_weight = 1e4, use_slack = True, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
 	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
@@ -129,7 +130,8 @@ def main(figpath = "", datapath = ""):
 	# Dynamic treatment with MPC.
 	print("\nStarting MPC algorithm...")
 	# res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, solver = "MOSEK", mpc_verbose = True)
-	res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, d_init = d_init, use_ccp_slack = True, max_iter = 15, solver = "MOSEK", mpc_verbose = True)
+	res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, d_init = d_init,
+							 ccp_slack_weight = 1e4, use_ccp_slack = True, max_iter = 15, solver = "MOSEK", mpc_verbose = True)
 	# res_mpc = mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, rho = 1, max_iter = 1000, solver = "MOSEK", mpc_verbose = True)
 	print("\nMPC Treatment")
 	print("Status:", res_mpc["status"])
