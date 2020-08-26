@@ -31,9 +31,6 @@ def main(figpath = "", datapath = ""):
 	A = A/n_grid
 	A_list = T*[A]
 
-	# alpha = np.array(T*[[0.01, 0.50, 0.25, 0.15, 0.0075]])
-	# beta = np.array(T*[[0.001, 0.05, 0.025, 0.015, 0.001]])
-	# gamma = np.array(T*[[1.05, 0.90, 0.75, 0.80, 0.95]])
 	alpha = np.array(T * [[0.01, 0.50, 0.25, 0.15, 0.005]])
 	beta = np.array(T * [[0.001, 0.05, 0.025, 0.015, 0.0005]])
 	gamma = np.array(T * [[0.05, 0, 0, 0, 0]])
@@ -42,7 +39,7 @@ def main(figpath = "", datapath = ""):
 
 	# Actual health status transition function.
 	mu = 0
-	sigma = 0.05
+	sigma = 0.1
 	h_noise = mu + sigma*np.random.randn(T,K)
 	# health_map = lambda h,t: h
 	# health_map = lambda h,t: h + h_noise[t]
@@ -159,11 +156,11 @@ def main(figpath = "", datapath = ""):
 
 	# plot_beams(res_mpc["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
  	#			cmap = transp_cmap(plt.cm.Reds, upper = 0.5), one_idx = True, structures = (x_grid, y_grid, regions),
-	#			struct_kw = struct_kw, filename = figpath + "ex_noisy2_mpc_admm_beams.png")
+	#			struct_kw = struct_kw, filename = figpath + "ex_noisy_mpc_ccp_beams.png")
 	# plot_health(res_mpc["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
-	#			label = "Treated (MPC)", color = colors[2], one_idx = True, filename = figpath + "ex_noisy2_mpc_admm_health.png")
+	#			label = "Treated (MPC)", color = colors[2], one_idx = True, filename = figpath + "ex_noisy_mpc_ccp_health.png")
 	# plot_treatment(res_mpc["doses"], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper),
-	#			label = "MPC", color = colors[2], one_idx = True, filename = figpath + "ex_noisy2_mpc_admm_doses.png")
+	#			label = "MPC", color = colors[2], one_idx = True, filename = figpath + "ex_noisy_mpc_ccp_doses.png")
 
 if __name__ == '__main__':
 	main(figpath = "/home/anqi/Dropbox/Research/Fractionation/Figures/", \
