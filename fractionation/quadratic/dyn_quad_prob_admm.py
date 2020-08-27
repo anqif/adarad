@@ -52,7 +52,7 @@ def build_dyn_quad_prob_dose_period(A, patient_rx):
     prob_t = Problem(Minimize(obj), constrs)
     return prob_t, b_t, d_t
 
-def build_dyn_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov=0):
+def build_dyn_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = 0, use_slack = False, slack_weight = 0):
     K = h_init.shape[0]
     if patient_rx["health_goal"].shape != (T_treat, K):
         raise ValueError("health_goal must have dimensions ({0},{1})".format(T_treat, K))
@@ -70,6 +70,13 @@ def build_dyn_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, 
     h_quad = h_lin - multiply(beta, square(d))
     h_taylor = h_lin - multiply(multiply(beta, d_parm), 2*d - d_parm)
 
+    # Allow slack in health dynamics constraints.
+    h_dyn_slack = Constant(0)
+    if use_slack:
+        h_dyn_slack = Variable((T_treat, K), nonneg=True, name="health dynamics slack")
+        obj += slack_weight * sum(h_dyn_slack)  # TODO: Set slack weight relative to overall health penalty.
+        h_taylor -= h_dyn_slack
+
     constrs = [h[0] == h_init]
     for t in range(T_treat):
         # For PTV, approximate dynamics via a first-order Taylor expansion.
@@ -77,6 +84,10 @@ def build_dyn_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, 
 
         # For OAR, relax dynamics constraint to an upper bound that is always tight at optimum.
         constrs.append(h[t+1, ~patient_rx["is_target"]] <= h_quad[t, ~patient_rx["is_target"]])
+
+    # Additional dose constraints.
+    if "dose_constrs" in patient_rx:
+        constrs += rx_to_constrs(d, patient_rx["dose_constrs"])
 
     # Additional health constraints.
     if "health_constrs" in patient_rx:
@@ -99,4 +110,4 @@ def build_dyn_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, 
         constrs += constrs_r
 
     prob = Problem(Minimize(obj), constrs)
-    return prob, h, d, d_parm
+    return prob, h, d, d_parm, h_dyn_slack

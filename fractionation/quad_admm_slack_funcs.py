@@ -48,7 +48,7 @@ def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, s_weights = None, s_fin
     pipe.send((b.value, d_val, s_vals))
 
 def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None, \
-                              slack_weights = None, slack_final = True, partial_results = False, admm_verbose = False, *args, **kwargs):
+                              mpc_slack_weights = None, mpc_slack_final = True, partial_results = False, admm_verbose = False, *args, **kwargs):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
@@ -76,11 +76,11 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         rx_cur = rx_slice(patient_rx, t, t + 1)  # Get prescription at time t.
         local, remote = Pipe()
         pipes += [local]
-        procs += [Process(target=run_slack_quad_dose_worker, args=(remote, A_list[t], rx_cur, rho, slack_weights, slack_final) + args, kwargs=kwargs)]
+        procs += [Process(target=run_slack_quad_dose_worker, args=(remote, A_list[t], rx_cur, rho, mpc_slack_weights, mpc_slack_final) + args, kwargs=kwargs)]
         procs[-1].start()
 
     # Proximal health problem.
-    prob_health, h, d_tld, d_parm, h_slacks = build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov, slack_weights, slack_final)
+    prob_health, h, d_tld, d_parm, h_slacks = build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov, mpc_slack_weights, mpc_slack_final)
     d_new = Parameter(d_tld.shape, value=np.zeros(d_tld.shape))
     u = Parameter(d_tld.shape, value=np.zeros(d_tld.shape))
     penalty = (rho / 2) * sum_squares(d_tld - d_new + u)
@@ -169,6 +169,6 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
             if key not in s_vars:
                 s_vars[key] = []
             s_vars[key].append(val_list)
-    obj += slack_quad_penalty(s_vars, slack_weights).value
+    obj += slack_quad_penalty(s_vars, mpc_slack_weights).value
     return {"obj": obj, "status": status, "num_iters": k, "total_time": end - start, "solve_time": solve_time, \
             "beams": beams_all, "doses": doses_all, "health": health_all, "primal": np.array(r_prim[:k]), "dual": np.array(r_dual[:k])}

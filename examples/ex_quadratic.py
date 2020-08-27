@@ -75,11 +75,10 @@ def main(figpath = "", datapath = ""):
 	patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
 	# Dynamic treatment.
-	d_init = np.zeros((T, K))
-	# d_init = np.vstack(T * [[6.0, 0, 0.5, 0.5, 12]])
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True,
-								 slack_weight = 1e4, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
-	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, rho = 1, max_iter = 1000, solver = "MOSEK", admm_verbose = True)
+	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+								 max_iter = 15, solver = "MOSEK", ccp_verbose = True)
+	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+	# 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 50, admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])
@@ -91,6 +90,7 @@ def main(figpath = "", datapath = ""):
 	# plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_cardioid_lq_ccp_slacks.png")
 
 	# Plot dynamic beam, health, and treatment curves.
+	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True)
 	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
 			   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Beam Intensities vs. Time", one_idx = True,
 			   structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
