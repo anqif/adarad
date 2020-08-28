@@ -77,7 +77,8 @@ def build_dyn_slack_quad_prob_dose_period(A, patient_rx, s_weights = None, s_fin
     prob = Problem(Minimize(obj), constrs)
     return prob, b_t, d_t, s_t_vars
 
-def build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = 0, s_weights = None, s_final = True):
+def build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = 0, use_ccp_slack = False,
+                                     ccp_slack_weight = 0, mpc_slack_weights = None, mpc_slack_final = True):
     K = h_init.shape[0]
     if patient_rx["health_goal"].shape != (T_treat, K):
         raise ValueError("health_goal must have dimensions ({0},{1})".format(T_treat, K))
@@ -94,6 +95,13 @@ def build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_t
     h_lin = h[:-1] - multiply(alpha, d) + gamma[:T_treat]
     h_quad = h_lin - multiply(beta, square(d))
     h_taylor = h_lin - multiply(multiply(beta, d_parm), 2*d - d_parm)
+
+    # Allow slack in health dynamics constraints.
+    h_dyn_slack = Constant(0)
+    if use_ccp_slack:
+        h_dyn_slack = Variable((T_treat, K), nonneg=True, name="health dynamics slack")
+        obj += ccp_slack_weight * sum(h_dyn_slack)  # TODO: Set slack weight relative to overall health penalty.
+        h_taylor -= h_dyn_slack
 
     constrs = [h[0] == h_init]
     for t in range(T_treat):
@@ -132,7 +140,7 @@ def build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_t
         constrs += constrs_r
 
     # Final problem.
-    obj += slack_quad_penalty(s_vars, patient_rx["is_target"], s_weights)
-    constrs += slack_quad_constrs(s_vars, patient_rx["is_target"], s_final)
+    obj += slack_quad_penalty(s_vars, patient_rx["is_target"], mpc_slack_weights)
+    constrs += slack_quad_constrs(s_vars, patient_rx["is_target"], mpc_slack_final)
     prob = Problem(Minimize(obj), constrs)
-    return prob, h, d, d_parm, s_vars
+    return prob, h, d, d_parm, h_dyn_slack, s_vars
