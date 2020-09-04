@@ -95,7 +95,9 @@ def main(figpath = "", datapath = ""):
 	health_lower[:,4] = -3.0
 	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
-	patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
+
+	patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
+	# patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
 	# Dynamic treatment.
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_slack = True,

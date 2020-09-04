@@ -27,7 +27,11 @@ def rx_to_quad_constrs(expr, rx_dict, is_target):
 
     # Lower bound.
     if "lower" in rx_dict:
-        rx_lower = rx_dict["lower"]
+        # rx_lower = rx_dict["lower"]
+        if not np.all(np.isneginf(rx_dict["lower"][:,is_target])):
+            raise ValueError("Lower bound must be negative infinity for all targets")
+
+        rx_lower = rx_dict["lower"][:,~is_target]
         expr_oar = expr[:,~is_target]
         if np.any(rx_lower == np.inf):
             raise ValueError("Lower bound cannot be infinity")
@@ -44,7 +48,11 @@ def rx_to_quad_constrs(expr, rx_dict, is_target):
 
     # Upper bound.
     if "upper" in rx_dict:
-        rx_upper = rx_dict["upper"]
+        # rx_upper = rx_dict["upper"]
+        if not np.all(np.isinf(rx_dict["upper"][:,~is_target])):
+            raise ValueError("Upper bound must be infinity for all non-targets")
+
+        rx_upper = rx_dict["upper"][:,is_target]
         expr_ptv = expr[:,is_target]
         if np.any(rx_upper == -np.inf):
             raise ValueError("Upper bound cannot be negative infinity")
