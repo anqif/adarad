@@ -1,0 +1,102 @@
+treatment_length : 21
+dose_matrix: /home/anqi/Documents/software/fractionation/examples/data/prostate_7_structs_10000_beams-dose_matrix.npy
+beams:
+  lower_bound : 0
+structures:
+  - name : Prostate
+    is_target : Yes
+    dose :
+      goal : 0
+      weight : 1
+    health :
+      initial : 4.8307
+      weight :
+        under : 0
+        over : 1
+    alpha : 0.103
+    beta : 0.026
+    gamma : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.04, 0.08, 0.16, 0.24, 0.24, 0.24, 0.24]
+
+  - name : Urethra
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+    health :
+      initial : 2.7451
+      weight :
+        under : 1
+        over : 0
+    alpha : 0.0923
+    beta : 0.0142
+    gamma : 0.25
+
+  - name : Bladder
+    is_target : No
+    dose : 
+      goal : 0
+      weight : 1
+    health :
+      initial : 4.1469
+      weight :
+        under : 1
+        over : 0
+    alpha : 0.0878
+    beta : 0.0146
+    gamma : 0.12
+
+  - name : Rectum
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+    health :
+      initial: 4.4543
+      weight :
+        under : 1
+        over : 0
+    alpha : 0.0484
+    beta : 0.0124
+    gamma : 0.15
+
+  - name : L. Femoral Head
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+    health :
+      initial : 5.2480
+      weight :
+        under : 1
+        over : 0
+    alpha : 0.0349
+    beta : 0.0388
+    gamma : 0.30
+
+  - name : R. Femoral Head
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+    health :
+      initial : 5.2562
+      weight :
+        under : 1
+        over : 0
+    alpha : 0.0346
+    beta : 0.0432
+    gamma : 0.45
+
+  - name : Ring
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+    health :
+      initial : 5.8394
+      weight :
+        under : 0.5
+        over : 0
+    alpha : 0.1000
+    beta : 0.0100
+    gamma : 0.1
