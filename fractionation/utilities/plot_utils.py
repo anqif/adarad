@@ -21,7 +21,7 @@ def transp_cmap(cmap, lower = 0, upper = 1):
 	return cmap_transp
 
 # Plot structures.
-def plot_structures(x, y, structures, title = None, one_idx = False, filename = None, *args, **kwargs):
+def plot_structures(x, y, structures, title = None, one_idx = False, show = True, filename = None, *args, **kwargs):
 	m, n = x.shape
 	if y.shape != (m,n):
 		raise ValueError("y must have dimensions ({0},{1})".format(m,n))
@@ -47,12 +47,14 @@ def plot_structures(x, y, structures, title = None, one_idx = False, filename = 
 		plt.title(title)
 	cbar = plt.colorbar(ctf, ticks = np.arange(lmin, lmax + 1))
 	cbar.solids.set(alpha = 1)
-	plt.show()
+	if show:
+		plt.show()
 	if filename is not None:
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot beams.
-def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardize = False, title = None, one_idx = False, filename = None, structures = None, struct_kw = dict(), *args, **kwargs):
+def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardize = False, title = None, one_idx = False,
+			   show = True, filename = None, structures = None, struct_kw = dict(), *args, **kwargs):
 	T = b.shape[0]
 	n = b.shape[1]
 	xlim = kwargs.pop("xlim", (-1,1))
@@ -133,12 +135,14 @@ def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardi
 	
 	if title is not None:
 		plt.suptitle(title)
-	plt.show()
+	if show:
+		plt.show()
 	if filename is not None:
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot health curves.
-def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treated", ylim = None, indices = None, one_idx = False, filename = None, *args, **kwargs):
+def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treated",
+				ylim = None, indices = None, one_idx = False, show = True, filename = None, *args, **kwargs):
 	# if len(h.shape) == 1:
 	#	h = h[:,np.newaxis]
 	T = h.shape[0] - 1
@@ -200,12 +204,14 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 	
 	if title is not None:
 		plt.suptitle(title)
-	plt.show()
+	if show:
+		plt.show()
 	if filename is not None:
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot treatment curves.
-def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treatment", ylim = None, one_idx = False, filename = None, *args, **kwargs):
+def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treatment",
+				   ylim = None, one_idx = False, show = True, filename = None, *args, **kwargs):
 	T = d.shape[0]
 	n = d.shape[1]
 	
@@ -258,12 +264,13 @@ def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, b
 	
 	if title is not None:
 		plt.suptitle(title)
-	plt.show()
+	if show:
+		plt.show()
 	if filename is not None:
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot primal and dual residuals.
-def plot_residuals(r_primal, r_dual, normalize = False, show = True, title = None, semilogy = False, filename = None, *args, **kwargs):
+def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy = False, show = True, filename = None, *args, **kwargs):
 	if normalize:
 		r_primal = r_primal/r_primal[0] if r_primal[0] != 0 else r_primal
 		r_dual = r_dual/r_dual[0] if r_dual[0] != 0 else r_dual
@@ -289,7 +296,7 @@ def plot_residuals(r_primal, r_dual, normalize = False, show = True, title = Non
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot slack in health dynamics constraint.
-def plot_slacks(slack, show = True, title = None, semilogy = False, filename = None, *args, **kwargs):
+def plot_slacks(slack, title = None, semilogy = False, show = True, filename = None, *args, **kwargs):
 	fig = plt.figure()
 	fig.set_size_inches(12, 8)
 
