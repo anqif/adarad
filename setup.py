@@ -12,7 +12,7 @@ setup(
 	url = "https://github.com/anqif/fractionation",
 	install_requires = ["cvxpy>=1.0",
 			    "matplotlib",
-			    "numpy>=1.18",
+			    "numpy>=1.15",
 			    "pyyaml"],
 	python_requires = ">=3.6",
 )
