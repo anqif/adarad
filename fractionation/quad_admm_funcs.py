@@ -211,7 +211,7 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
 
 def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
 					    use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = True, mpc_slack_weights = None,
-                        mpc_slack_final = True, mpc_verbose = False, *args, **kwargs):
+                        mpc_verbose = False, *args, **kwargs):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
@@ -244,8 +244,7 @@ def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
             print("\nSolver failed with status {0}. Retrying with slack enabled...".format(result["status"]))
             result = dyn_quad_treat_admm_slack(T_left*[A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]),
                         np.row_stack(T_left * [gamma[t_s]]), h_cur, rx_cur, T_recov, d_init = d_init_cur, use_ccp_slack = use_ccp_slack,
-                        ccp_slack_weight = ccp_slack_weight, mpc_slack_weights = mpc_slack_weights, mpc_slack_final = mpc_slack_final,
-                        partial_results = True, *args, **kwargs)
+                        ccp_slack_weight = ccp_slack_weight, mpc_slack_weights = mpc_slack_weights, partial_results = True, *args, **kwargs)
 
         if mpc_verbose:
             print("\nStart Time:", t_s)

@@ -56,8 +56,8 @@ def main(figpath = "", datapath = ""):
 
 	# Health violation.
 	def health_viol(h, bounds, is_target):
-		viol_oar = np.maximum(bounds["lower"] - h[:,~is_target], 0)
-		viol_ptv = np.maximum(h[:,is_target] - bounds["upper"], 0)
+		viol_oar = np.maximum(bounds["lower"][:,~is_target] - h[:,~is_target], 0)
+		viol_ptv = np.maximum(h[:,is_target] - bounds["upper"][:,is_target], 0)
 		return np.sum(viol_oar + viol_ptv)/T
 
 	# Health prognosis.
@@ -96,6 +96,7 @@ def main(figpath = "", datapath = ""):
 	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 
+	# TODO: Check lower bound for PTV always -Inf and upper bound for OAR always Inf.
 	patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
 	# patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
@@ -130,9 +131,8 @@ def main(figpath = "", datapath = ""):
 	print("\nStarting MPC algorithm...")
 	res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
 							 ccp_slack_weight = 1e4, max_iter = 15, solver = "MOSEK", mpc_verbose = True)
-	# res_mpc = mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map,
-	# 						 use_ccp_slack = True, ccp_slack_weight = 1e4, ccp_max_iter = 15, solver = "MOSEK", rho = 5,
-	#  						 admm_max_iter = 50, mpc_verbose = True)
+	# res_mpc = mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
+	#							  ccp_slack_weight = 1e4, ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 50, mpc_verbose = True)
 	print("\nMPC Treatment")
 	print("Status:", res_mpc["status"])
 	print("Objective:", res_mpc["obj"])

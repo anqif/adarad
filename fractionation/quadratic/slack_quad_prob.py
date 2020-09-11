@@ -42,6 +42,57 @@ def slack_quad_constrs(slack_vars, is_target, slack_final = True):
             constrs += [slack[-1] == 0 for slack in slack_vars["health"].values()]
     return constrs
 
+# Convert constraints to slack penalty.
+def rx_to_slack_quad_penalty(expr, rx_dict, is_target, weights = None):
+    T, K = expr.shape
+    if weights is None:
+        weights = np.ones((T,K))
+    elif np.isscalar(weights):
+        weights = np.full((T,K), weights)
+    elif weights.shape != (T,K):
+        raise ValueError("weights must have dimensions ({0},{1})".format(T,K))
+    if np.any(weights < 0):
+        raise ValueError("weights must be non-negative")
+
+    penalty = 0
+    # Lower bound.
+    if "lower" in rx_dict:
+        rx_lower = rx_dict["lower"]
+        expr_oar = expr[:,~is_target]
+        w_lower = weights[:,~is_target]
+
+        if np.any(rx_lower == np.inf):
+            raise ValueError("Lower bound cannot be infinity")
+        if np.isscalar(rx_lower):
+            if np.isfinite(rx_lower):
+                penalty += sum(multiply(w_lower, pos(rx_lower - expr_oar)))
+        else:
+            if rx_lower.shape != expr_oar.shape:
+                raise ValueError("rx_lower must have dimensions {0}".format(expr_oar.shape))
+            is_finite = np.isfinite(rx_lower)
+            if np.any(is_finite):
+                penalty += sum(multiply(w_lower[is_finite], pos(rx_lower[is_finite] - expr_oar[is_finite])))
+
+    # Upper bound.
+    if "upper" in rx_dict:
+        rx_upper = rx_dict["upper"]
+        expr_ptv = expr[:,is_target]
+        w_upper = weights[is_target]
+
+        if np.any(rx_upper == -np.inf):
+            raise ValueError("Upper bound cannot be negative infinity")
+
+        if np.isscalar(rx_upper):
+            if np.isfinite(rx_upper):
+                penalty += sum(multiply(w_upper, pos(expr_ptv - rx_upper)))
+        else:
+            if rx_upper.shape != expr_ptv.shape:
+                raise ValueError("rx_upper must have dimensions {0}".format(expr_ptv.shape))
+            is_finite = np.isfinite(rx_upper)
+            if np.any(is_finite):
+                penalty += sum(multiply(w_upper[is_finite], pos(expr_ptv[is_finite] - rx_upper[is_finite])))
+    return penalty
+
 # Extract constraints from patient prescription.
 def rx_to_slack_quad_constrs(expr, rx_dict, is_target, slack):
     slack_lo, slack_hi = slack
@@ -92,7 +143,7 @@ def rx_to_slack_quad_constrs(expr, rx_dict, is_target, slack):
 
 # Construct optimal control problem with slack health/dose constraints.
 def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_h_dyn_slack = False,
-                              h_dyn_slack_weight = 0, bnd_slack_weights = None, bnd_slack_final = True):
+                              h_dyn_slack_weight = 0, h_bnd_slack_weights = 1):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     if h_init.shape[0] != K:
@@ -128,7 +179,6 @@ def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         constrs.append(h[t+1, ~patient_rx["is_target"]] <= h_quad[t, ~patient_rx["is_target"]])
 
     # Additional beam constraints.
-    s_vars = dict()
     if "beam_constrs" in patient_rx:
         constrs += rx_to_constrs(b, patient_rx["beam_constrs"])
 
@@ -136,13 +186,9 @@ def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_
     if "dose_constrs" in patient_rx:
         constrs += rx_to_constrs(d, patient_rx["dose_constrs"])
 
-    # Additional health constraints.
+    # Additional health constraints go into objective as a penalty.
     if "health_constrs" in patient_rx:
-        # TODO: Only create lower/upper slacks for organ-at-risk/target structures.
-        h_slack_lo = Variable((T_treat, K), nonneg=True, name="health lower slack")   # Slack for health status constraints.
-        h_slack_hi = Variable((T_treat, K), nonneg=True, name="health upper slack")
-        s_vars["health"] = {"lower": h_slack_lo, "upper": h_slack_hi}
-        constrs += rx_to_slack_quad_constrs(h[1:], patient_rx["health_constrs"], patient_rx["is_target"], s_vars["health"])
+        obj += rx_to_slack_quad_penalty(h[1:], patient_rx["health_constrs"], patient_rx["is_target"], h_bnd_slack_weights)
 
     # Health dynamics for recovery stage.
     # TODO: Should we return h_r or calculate it later?
@@ -154,17 +200,11 @@ def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         for t in range(T_recov - 1):
             constrs_r.append(h_r[t + 1] == h_r[t] + gamma_r[t + 1])
 
-        # Additional health constraints during recovery.
+        # Additional health constraints during recovery go into objective as a penalty.
         if "recov_constrs" in patient_rx:
-            h_r_slack_lo = Variable((T_recov, K), nonneg=True, name="health recovery lower slack")  # Slack for health status constraints in recovery phase.
-            h_r_slack_hi = Variable((T_recov, K), nonneg=True, name="health recovery upper slack")
-            s_vars["health_recov"] = {"lower": h_r_slack_lo, "upper": h_r_slack_hi}
-            # constrs_r += rx_to_slack_constrs(h_r, patient_rx["recov_constrs"], s_vars["health_recov"])
-            constrs_r += rx_to_slack_quad_constrs(h_r, patient_rx["recov_constrs"], patient_rx["is_target"], s_vars["health_recov"])
+            obj += rx_to_slack_quad_penalty(h_r, patient_rx["recov_constrs"], patient_rx["is_target"], h_bnd_slack_weights)
         constrs += constrs_r
 
     # Final problem.
-    obj += slack_quad_penalty(s_vars, patient_rx["is_target"], bnd_slack_weights)
-    constrs += slack_quad_constrs(s_vars, patient_rx["is_target"], bnd_slack_final)
     prob = Problem(Minimize(obj), constrs)
-    return prob, b, h, d, d_parm, h_dyn_slack, s_vars
+    return prob, b, h, d, d_parm, h_dyn_slack

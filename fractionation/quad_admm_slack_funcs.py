@@ -15,9 +15,9 @@ from fractionation.quadratic.slack_quad_prob import slack_quad_penalty
 from fractionation.quadratic.slack_quad_prob_admm import *
 from fractionation.utilities.data_utils import *
 
-def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, s_weights = None, s_final = True, *args, **kwargs):
+def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
     # Construct proximal dose problem.
-    prob_dose, b, d, s_vars = build_dyn_slack_quad_prob_dose_period(A, patient_rx, s_weights, s_final)
+    prob_dose, b, d = build_dyn_slack_quad_prob_dose_period(A, patient_rx)
     d_new = Parameter(d.shape, value = np.zeros(d.shape))
     u = Parameter(d.shape, value = np.zeros(d.shape))
     penalty = (rho/2)*sum_squares(d - d_new - u)
@@ -44,12 +44,11 @@ def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, s_weights = None, s_fin
 
     # Send final b_t^k and d_t^k along with slacks s_t^k.
     d_val = A.dot(b.value)
-    s_vals = {key: slack.value for key, slack in s_vars.items()}
-    pipe.send((b.value, d_val, s_vals))
+    pipe.send((b.value, d_val))
 
 def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
-                              use_ccp_slack = False, ccp_slack_weight = 0, mpc_slack_weights = None, mpc_slack_final = True,
-                              partial_results = False, admm_verbose = False, *args, **kwargs):
+                              use_ccp_slack = False, ccp_slack_weight = 0, mpc_slack_weights = 1, partial_results = False,
+                              admm_verbose = False, *args, **kwargs):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
@@ -81,13 +80,12 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         rx_cur = rx_slice(patient_rx, t, t + 1)   # Get prescription at time t.
         local, remote = Pipe()
         pipes += [local]
-        procs += [Process(target=run_slack_quad_dose_worker, args=(remote, A_list[t], rx_cur, rho, mpc_slack_weights,
-                                                                   mpc_slack_final) + args, kwargs=kwargs)]
+        procs += [Process(target=run_slack_quad_dose_worker, args=(remote, A_list[t], rx_cur, rho) + args, kwargs=kwargs)]
         procs[-1].start()
 
     # Proximal health problem.
-    prob_health, h, d_tld, d_parm, h_dyn_slack, h_bnd_slacks = build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init,
-                        patient_rx, T_treat, T_recov, use_ccp_slack, ccp_slack_weight, mpc_slack_weights, mpc_slack_final)
+    prob_health, h, d_tld, d_parm, h_dyn_slack = build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx,
+                                                    T_treat, T_recov, use_ccp_slack, ccp_slack_weight, mpc_slack_weights)
     d_new = Parameter(d_tld.shape, value=np.zeros(d_tld.shape))
     u = Parameter(d_tld.shape, value=np.zeros(d_tld.shape))
     penalty = (rho / 2) * sum_squares(d_tld - d_new + u)
@@ -119,8 +117,8 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
             d_tld_prev = np.zeros((T_treat, K))
         else:
             d_init = d_tld_prev = d_tld.value
-        result = ccp_solve(prox, d_tld, d_parm, d_init, max_iter = ccp_max_iter, ccp_eps = ccp_eps,
-                           ccp_verbose = ccp_verbose, *args, **kwargs)
+        result = ccp_solve(prox, d_tld, d_parm, d_init, max_iter = ccp_max_iter, ccp_eps = ccp_eps, ccp_verbose = ccp_verbose,
+                           *args, **kwargs)
         if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
             raise RuntimeError("CCP solve failed on slack problem with status {0}".format(result["status"]))
         solve_time += result["solve_time"]
@@ -182,15 +180,6 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
     obj = dyn_quad_obj(d_val, health_proj[:(T_treat + 1)], patient_rx).value
     if use_ccp_slack:
         obj += ccp_slack_weight*np.sum(h_dyn_slack.value)
-
-    # Add penalty on all slack variables/values.
-    s_vars = h_bnd_slacks.copy()
-    for d_t_slacks in d_slack_vals:
-        for key, val_list in d_t_slacks.items():
-            if key not in s_vars:
-                s_vars[key] = []
-            s_vars[key].append(val_list)
-    obj += slack_quad_penalty(s_vars, mpc_slack_weights).value
     return {"obj": obj, "status": status, "total_time": end - start, "solve_time": solve_time, "num_iters": k,
             "primal": np.array(r_prim[:k]), "dual": np.array(r_dual[:k]), "beams": beams_all, "doses": doses_all,
             "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est}

@@ -63,8 +63,8 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 			"health_slack": result["health_slack"]}
 
 def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
-					use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = True, mpc_slack_weights = None,
-					mpc_slack_final = True, mpc_verbose = False, *args, **kwargs):
+					use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = True, mpc_slack_weights = 1,
+					mpc_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
@@ -104,19 +104,17 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 			# warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(status), RuntimeWarning)
 			print("\nSolver failed with status {0}. Retrying with slack enabled...".format(status))
 
-			prob, b, h, d, d_parm, h_dyn_slack, s_vars = build_dyn_slack_quad_prob(T_left*[A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]),
+			prob, b, h, d, d_parm, h_dyn_slack = build_dyn_slack_quad_prob(T_left*[A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]),
 																	np.row_stack(T_left*[gamma[t_s]]), h_cur, rx_cur, T_recov, use_ccp_slack, ccp_slack_weight,
-																	mpc_slack_weights, mpc_slack_final)
+																	mpc_slack_weights)
 			result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, *args, **kwargs)
 			status = result["status"]
 			if status not in cvxpy_s.SOLUTION_PRESENT:
 				raise RuntimeError("Solver failed on slack problem with status {0}".format(status))
-		else:
-			s_vars = dict()
 		
 		if mpc_verbose:
 			print("\nStart Time:", t_s)
-			print_quad_results(result, patient_rx["is_target"], slack_dict = s_vars)
+			print_quad_results(result, patient_rx["is_target"])
 
 		# Save solver statistics.
 		num_iters += result["num_iters"]
