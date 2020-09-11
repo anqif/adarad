@@ -144,9 +144,9 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         for pipe in pipes:
             pipe.send(finished)
 
-    # Receive final values of b_t^k and d_t^k = A*b_t^k along with slacks s_t^k for t = 1,...,T.
-    bds_final = [pipe.recv() for pipe in pipes]
-    b_rows, d_rows, d_slack_vals = map(list, zip(*bds_final))
+    # Receive final values of b_t^k and d_t^k = A*b_t^k for t = 1,...,T.
+    bd_final = [pipe.recv() for pipe in pipes]
+    b_rows, d_rows = map(list, zip(*bd_final))
     b_val = np.row_stack(b_rows)
     d_val = np.row_stack(d_rows)
 

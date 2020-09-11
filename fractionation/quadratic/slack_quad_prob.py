@@ -57,7 +57,7 @@ def rx_to_slack_quad_penalty(expr, rx_dict, is_target, weights = None):
     penalty = 0
     # Lower bound.
     if "lower" in rx_dict:
-        rx_lower = rx_dict["lower"]
+        rx_lower = rx_dict["lower"][:,~is_target]
         expr_oar = expr[:,~is_target]
         w_lower = weights[:,~is_target]
 
@@ -75,9 +75,9 @@ def rx_to_slack_quad_penalty(expr, rx_dict, is_target, weights = None):
 
     # Upper bound.
     if "upper" in rx_dict:
-        rx_upper = rx_dict["upper"]
+        rx_upper = rx_dict["upper"][:,is_target]
         expr_ptv = expr[:,is_target]
-        w_upper = weights[is_target]
+        w_upper = weights[:,is_target]
 
         if np.any(rx_upper == -np.inf):
             raise ValueError("Upper bound cannot be negative infinity")
@@ -104,7 +104,7 @@ def rx_to_slack_quad_constrs(expr, rx_dict, is_target, slack):
     constrs = []
     # Lower bound.
     if "lower" in rx_dict:
-        rx_lower = rx_dict["lower"]
+        rx_lower = rx_dict["lower"][:,~is_target]
         expr_oar = expr[:,~is_target]
         slack_lo_oar = slack_lo[:,~is_target]
 
@@ -123,7 +123,7 @@ def rx_to_slack_quad_constrs(expr, rx_dict, is_target, slack):
 
     # Upper bound.
     if "upper" in rx_dict:
-        rx_upper = rx_dict["upper"]
+        rx_upper = rx_dict["upper"][:,is_target]
         expr_ptv = expr[:,is_target]
         slack_hi_ptv = slack_hi[:,is_target]
 

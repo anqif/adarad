@@ -210,7 +210,7 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
             "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est}
 
 def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
-					    use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = True, mpc_slack_weights = None,
+					    use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = False, mpc_slack_weights = None,
                         mpc_verbose = False, *args, **kwargs):
     T_treat = len(A_list)
     K, n = A_list[0].shape
@@ -232,19 +232,26 @@ def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
         # Solve optimal control problem from current period forward.
         # TODO: Warm start next ADMM solve, or better yet, rewrite so no teardown/rebuild process between ADMM solves.
         T_left = T_treat - t_s
-        result = dyn_quad_treat_admm(T_left * [A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]),
-                    np.row_stack(T_left * [gamma[t_s]]), h_cur, rx_cur, T_recov, d_init = d_init_cur, use_slack = use_ccp_slack,
-                    slack_weight = ccp_slack_weight, partial_results = True, *args, **kwargs)
-
-        # If not optimal, re-solve with slack constraints.
-        if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
-            if not use_mpc_slack:
-                raise RuntimeError("Solver failed with status {0}".format(result["status"]))
-            # warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(result["status"]), RuntimeWarning)
-            print("\nSolver failed with status {0}. Retrying with slack enabled...".format(result["status"]))
-            result = dyn_quad_treat_admm_slack(T_left*[A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]),
+        if use_mpc_slack:
+            result = dyn_quad_treat_admm_slack(T_left * [A_list[t_s]], np.row_stack(T_left * [alpha[t_s]]), np.row_stack(T_left * [beta[t_s]]),
                         np.row_stack(T_left * [gamma[t_s]]), h_cur, rx_cur, T_recov, d_init = d_init_cur, use_ccp_slack = use_ccp_slack,
                         ccp_slack_weight = ccp_slack_weight, mpc_slack_weights = mpc_slack_weights, partial_results = True, *args, **kwargs)
+        else:
+            result = dyn_quad_treat_admm(T_left * [A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]),
+                        np.row_stack(T_left * [gamma[t_s]]), h_cur, rx_cur, T_recov, d_init = d_init_cur, use_slack = use_ccp_slack,
+                        slack_weight = ccp_slack_weight, partial_results = True, *args, **kwargs)
+        if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
+            raise RuntimeError("Solver failed with status {0}".format(result["status"]))
+
+        # If not optimal, re-solve with slack constraints.
+        # if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
+        #     if not use_mpc_slack:
+        #         raise RuntimeError("Solver failed with status {0}".format(result["status"]))
+        #     # warnings.warn("\nSolver failed with status {0}. Retrying with slack enabled...".format(result["status"]), RuntimeWarning)
+        #     print("\nSolver failed with status {0}. Retrying with slack enabled...".format(result["status"]))
+        #     result = dyn_quad_treat_admm_slack(T_left*[A_list[t_s]], np.row_stack(T_left*[alpha[t_s]]), np.row_stack(T_left*[beta[t_s]]),
+        #                 np.row_stack(T_left * [gamma[t_s]]), h_cur, rx_cur, T_recov, d_init = d_init_cur, use_ccp_slack = use_ccp_slack,
+        #                 ccp_slack_weight = ccp_slack_weight, mpc_slack_weights = mpc_slack_weights, partial_results = True, *args, **kwargs)
 
         if mpc_verbose:
             print("\nStart Time:", t_s)
