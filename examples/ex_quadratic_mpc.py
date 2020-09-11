@@ -101,11 +101,11 @@ def main(figpath = "", datapath = ""):
 	# patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
 	# Dynamic treatment.
-	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_slack = True,
-	#							 slack_weight = 1e4, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
-	res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map,
-	 							use_slack = True, slack_weight = 1e4, ccp_max_iter = 15, solver = "MOSEK", rho = 5,
-	 							admm_max_iter = 50, admm_verbose = True)
+	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_slack = True,
+								 slack_weight = 1e4, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
+	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map,
+	# 							use_slack = True, slack_weight = 1e4, ccp_max_iter = 15, solver = "MOSEK", rho = 5,
+	# 							admm_max_iter = 50, admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])
@@ -129,12 +129,12 @@ def main(figpath = "", datapath = ""):
 
 	# Dynamic treatment with MPC.
 	print("\nStarting MPC algorithm...")
-	# res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
-	#						 ccp_slack_weight = 1e4, use_mpc_slack = True, mpc_slack_weights = 1e4, max_iter = 15,
-	#						 solver = "MOSEK", mpc_verbose = True)
-	res_mpc = mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
-								ccp_slack_weight = 1e4, ccp_max_iter = 15, use_mpc_slack = True, mpc_slack_weights = 1e4,
-								solver = "MOSEK", rho = 5, admm_max_iter = 50, mpc_verbose = True)
+	res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
+							 ccp_slack_weight = 1e4, use_mpc_slack = True, mpc_slack_weights = 1e4, max_iter = 100, # max_iter = 15,
+							 solver = "MOSEK", mpc_verbose = True)
+	# res_mpc = mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
+	#							ccp_slack_weight = 1e4, ccp_max_iter = 15, use_mpc_slack = True, mpc_slack_weights = 1e4,
+	#							solver = "MOSEK", rho = 5, admm_max_iter = 50, mpc_verbose = True)
 	# res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
 	#						 ccp_slack_weight = 1e4, max_iter = 15, solver = "MOSEK", mpc_verbose = True)
 	# res_mpc = mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,

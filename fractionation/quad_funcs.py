@@ -17,6 +17,7 @@ def print_quad_results(result, is_target, slack_dict=None):
 	print("Status:", result["status"])
 	print("Objective:", result["obj"])
 	print("Solve Time:", result["solve_time"])
+	print("Iterations:", result["num_iters"])
 	if len(slack_dict.items()) > 0:
 		def func_ss(slack):
 			slack_lo = slack["lower"][:,~is_target].value if "lower" in slack else 0
