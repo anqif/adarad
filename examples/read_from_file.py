@@ -13,7 +13,7 @@ from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	# Import data.
-	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_quadratic_model.yml")
+	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_quadratic_model_synthetic.yml")
 
 	# Patient data.
 	A_list = patient_bio["dose_matrices"]

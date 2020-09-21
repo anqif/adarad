@@ -1,0 +1,302 @@
+treatment_length : 30
+dose_matrix: /media/datdisk3/anqif/test/frac_test/head_and_neck/head_and_neck_17_structs_10125_beams-dose_matrix.npy
+beams:
+  lower_bound : 0
+structures:
+  - name : PTV 0-46 Gy
+    is_target : Yes
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 1.8718
+      goal : -2.7334
+      weight :
+        under : 0
+        over : 1
+      upper_bound : 0.4855
+    alpha : 0.3500
+    beta : 0.0437
+    gamma : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+  - name : Spinal Cord
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 2.1745
+      goal : 2.1745
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 1.5
+    alpha : 0.0445
+    beta : 0.0135
+    gamma : 0
+
+  - name : Brainstem
+    is_target : No
+    dose : 
+      goal : 0
+      weight : 1
+      lower_bound : 0
+      upper_bound : 5
+    health :
+      initial : 3.1469
+      goal : 3.1469
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 2.45
+    alpha : 0.0491
+    beta : 0.0234
+    gamma : 0
+
+  - name : R. Cochlea
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+      upper_bound : 4.25
+    health :
+      initial: 3.4543
+      goal: 3.4543
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 2.75
+    alpha : 0.0878
+    beta : 0.0293
+    gamma : 0
+
+  - name : L. Cochlea
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+      upper_bound : 4.25
+    health :
+      initial: 3.4543
+      goal: 3.4543
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 2.75
+    alpha : 0.0773
+    beta : 0.0258
+    gamma : 0
+
+  - name : R. Parotid
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 4.2480
+      goal : 4.2480
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 3.5
+    alpha : 0.0628
+    beta : 0.0209
+    gamma : 0
+
+- name : L. Parotid
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 4.2480
+      goal : 4.2480
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 3.5
+    alpha : 0.0341
+    beta : 0.0114
+    gamma : 0
+
+  - name : R. SMG
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 4.2480
+      goal : 4.2480
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 3.5
+    alpha : 0.0761
+    beta : 0.0217
+    gamma : 0
+
+- name : L. SMG
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 4.2480
+      goal : 4.2480
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 3.5
+    alpha : 0.0761
+    beta : 0.0217
+    gamma : 0
+
+  - name : Oral Cavity
+    is_target : No
+    dose : 
+      goal : 0
+      weight : 1
+      lower_bound : 0
+      upper_bound : 5
+    health :
+      initial : 3.1469
+      goal : 3.1469
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 2.45
+    alpha : 0.0878
+    beta : 0.0146
+    gamma : 0.0176
+
+  - name : External Ring
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 4.8394
+      goal : 4.8394
+      weight :
+        under : 0.5
+        over : 0
+    alpha : 0.1000
+    beta : 0.0335
+    gamma : 0
+
+  - name : Larynx
+    is_target : No
+    dose : 
+      goal : 0
+      weight : 1
+      lower_bound : 0
+      upper_bound : 5
+    health :
+      initial : 3.1469
+      goal : 3.1469
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 2.45
+    alpha : 0.0274
+    beta : 0.0072
+    gamma : 0
+
+  - name : MCS
+    is_target : No
+    dose : 
+      goal : 0
+      weight : 1
+      lower_bound : 0
+      upper_bound : 5
+    health :
+      initial : 3.1469
+      goal : 3.1469
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 2.45
+    alpha : 0.0878
+    beta : 0.0146
+    gamma : 0.0176
+
+  - name : MCM
+    is_target : No
+    dose : 
+      goal : 0
+      weight : 1
+      lower_bound : 0
+      upper_bound : 5
+    health :
+      initial : 3.1469
+      goal : 3.1469
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 2.45
+    alpha : 0.0878
+    beta : 0.0146
+    gamma : 0.0176
+
+  - name : MCI
+    is_target : No
+    dose : 
+      goal : 0
+      weight : 1
+      lower_bound : 0
+      upper_bound : 5
+    health :
+      initial : 3.1469
+      goal : 3.1469
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 2.45
+    alpha : 0.0878
+    beta : 0.0146
+    gamma : 0.0176
+
+  - name : MCP
+    is_target : No
+    dose : 
+      goal : 0
+      weight : 1
+      lower_bound : 0
+      upper_bound : 5
+    health :
+      initial : 3.1469
+      goal : 3.1469
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 2.45
+    alpha : 0.0878
+    beta : 0.0146
+    gamma : 0.0176
+
+  - name : Oesophagus
+    is_target : No
+    dose : 
+      goal : 0
+      weight : 1
+      lower_bound : 0
+      upper_bound : 5
+    health :
+      initial : 3.1469
+      goal : 3.1469
+      weight :
+        under : 1
+        over : 0
+      lower_bound : 2.45
+    alpha : 0.0708
+    beta : 0.0236
+    gamma : 0
