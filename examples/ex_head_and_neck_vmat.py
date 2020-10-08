@@ -46,16 +46,51 @@ def main(figpath = "", datapath = ""):
 	print("Objective:", res_dynamic["obj"])
 	print("Solve Time:", res_dynamic["solve_time"])
 	print("Iterations:", res_dynamic["num_iters"])
+	print("Beam Max:", np.max(res_dynamic["beams"]))
+	print("Beam Sum:", np.sum(res_dynamic["beams"]))
 
 	# Plot total slack in health dynamics per iteration.
-	plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_head_and_neck_VMAT_slacks.png")
+	plot_slacks(res_dynamic["health_slack"], show = False, filename = figpath + "ex_head_and_neck_VMAT_TROT-slacks.png")
 
 	# Plot dynamic health and treatment curves.
-	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_head_and_neck_VMAT_residuals.png")
+	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_head_and_neck_VMAT_TROT-residuals.png")
+	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, show = False, 
+	 				filename = figpath + "ex_head_and_neck_VMAT_TROT-doses.png")
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-	 				color = colors[0], one_idx = True, filename = figpath + "ex_head_and_neck_VMAT_health.png")
-	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, 
-	 				filename = figpath + "ex_head_and_neck_VMAT_doses.png")
+	 				color = colors[0], one_idx = True, show = False, filename = figpath + "ex_head_and_neck_VMAT_TROT-health.png")
+
+	# Plot health curve with rescaled axes (ignoring upper/lower bounds).
+	h_all_vec = np.concatenate([res_dynamic["health"].ravel(), h_prog.ravel()])
+	h_min = np.min(h_all_vec)
+	h_max = np.max(h_all_vec)
+	h_eps = 0.01*(h_max - h_min)
+	h_min = np.floor(h_min - h_eps)
+	h_max = np.ceil(h_max + h_eps)
+	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
+	 			color = colors[0], one_idx = True, ylim = (h_min, h_max), show = False, filename = figpath + "ex_head_and_neck_VMAT_TROT-health_ylim.png")
+
+	# Plot health curve of PTV only.
+	fig = plt.figure(figsize = (12,8))
+	plt.plot(range(T+1), res_dynamic["health"][:,0], label = "Treated", color = colors[0])
+	plt.plot(range(T+1), h_prog[:,0], label = "Untreated", color = colors[1])
+	plt.plot(range(1,T+1), health_lower[:,0], lw = 1, ls = "--", color = "cornflowerblue")
+	plt.plot(range(1,T+1), health_upper[:,0], lw = 1, ls = "--", color = "cornflowerblue")
+	# plt.title("Planning Target Volume (PTV)")
+	plt.legend()
+	# plt.show()
+	fig.savefig(figpath + "ex_head_and_neck_VMAT_TROT-health_ptv.png", bbox_inches = "tight", dpi = 300)
+
+	# Plot health curve of surrounding OARs on same figure.
+	# indices = [1, 2, 4, 5, 9, 11, 16, 10]
+	indices = [1, 2, 4, 5, 11, 10]
+	fig = plt.figure(figsize = (12,8))
+	for i in indices:
+		plt.plot(range(T+1), res_dynamic["health"][:,i], label = patient_bio["names"][i])
+	plt.plot(range(1,T+1), np.zeros(T), lw = 1, ls = "--", color = "cornflowerblue")
+	# plt.title("Surrounding Organs-at-Risk (OARs)")
+	plt.legend()
+	# plt.show()
+	fig.savefig(figpath + "ex_head_and_neck_VMAT_TROT-health_oar.png", bbox_inches = "tight", dpi = 300)
 
 	# Compare PTV health curves under linearized, linearized with slack, and linear-quadratic models.
 	# sidx = 0

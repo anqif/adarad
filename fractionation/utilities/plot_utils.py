@@ -142,7 +142,7 @@ def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardi
 
 # Plot health curves.
 def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, subtitles = None, 
-				label = "Treated", ylim = None, one_idx = False, show = True, filename = None, *args, **kwargs):
+				label = "Treated", ylim = None, one_idx = False, show = True, filename = None, figsize = (16,8), *args, **kwargs):
 	# if len(h.shape) == 1:
 	#	h = h[:,np.newaxis]
 	T = h.shape[0] - 1
@@ -164,7 +164,8 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 	left = rows*cols - m
 
 	fig, axs = plt.subplots(rows, cols, sharey = True)
-	fig.set_size_inches(16,8)
+	fig.set_size_inches(*figsize)
+	fig.tight_layout()
 	if ylim is not None:
 		plt.setp(axs, ylim = ylim)
 	for i in range(m):
@@ -216,7 +217,7 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 
 # Plot treatment curves.
 def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, subtitles = None, 
-				   label = "Treatment", ylim = None, one_idx = False, show = True, filename = None, *args, **kwargs):
+				   label = "Treatment", ylim = None, one_idx = False, show = True, filename = None, figsize = (16,8), *args, **kwargs):
 	T = d.shape[0]
 	n = d.shape[1]
 	
@@ -236,7 +237,8 @@ def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, b
 	left = rows*cols - n
 	
 	fig, axs = plt.subplots(rows, cols, sharey = True)
-	fig.set_size_inches(16,8)
+	fig.set_size_inches(*figsize)
+	fig.tight_layout()
 	if ylim is not None:
 		plt.setp(axs, ylim = ylim)
 	for j in range(n):
@@ -282,13 +284,13 @@ def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, b
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot primal and dual residuals.
-def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy = False, show = True, filename = None, *args, **kwargs):
+def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy = False, show = True, filename = None, figsize = (12,8), *args, **kwargs):
 	if normalize:
 		r_primal = r_primal/r_primal[0] if r_primal[0] != 0 else r_primal
 		r_dual = r_dual/r_dual[0] if r_dual[0] != 0 else r_dual
 	
 	fig = plt.figure()
-	fig.set_size_inches(12,8)
+	fig.set_size_inches(*figsize)
 	if semilogy:
 		plt.semilogy(range(len(r_primal)), r_primal, label = "Primal", *args, **kwargs)
 		plt.semilogy(range(len(r_dual)), r_dual, label = "Dual", *args, **kwargs)
@@ -308,9 +310,9 @@ def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy =
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot slack in health dynamics constraint.
-def plot_slacks(slack, title = None, semilogy = False, show = True, filename = None, *args, **kwargs):
+def plot_slacks(slack, title = None, semilogy = False, show = True, filename = None, figsize = (12,8), *args, **kwargs):
 	fig = plt.figure()
-	fig.set_size_inches(12, 8)
+	fig.set_size_inches(*figsize)
 
 	if semilogy:
 		plt.semilogy(range(len(slack)), slack, *args, **kwargs)

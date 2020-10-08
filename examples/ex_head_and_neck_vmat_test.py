@@ -55,9 +55,9 @@ def main(figpath = "", datapath = ""):
 	# Plot dynamic health and treatment curves.
 	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_head_and_neck_VMAT_TROT_test-residuals.png")
 	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, 
-	 				filename = figpath + "ex_head_and_neck_VMAT_TROT_test-doses.png")
+	 			   filename = figpath + "ex_head_and_neck_VMAT_TROT_test-doses.png")
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-	 				color = colors[0], one_idx = True, filename = figpath + "ex_head_and_neck_VMAT_TROT_test-health.png")
+	 			color = colors[0], one_idx = True, filename = figpath + "ex_head_and_neck_VMAT_TROT_test-health.png")
 
 	# Plot health curve with rescaled axes (ignoring upper/lower bounds).
 	h_all_vec = np.concatenate([res_dynamic["health"].ravel(), h_prog.ravel()])
@@ -67,7 +67,7 @@ def main(figpath = "", datapath = ""):
 	h_min = np.floor(h_min - h_eps)
 	h_max = np.ceil(h_max + h_eps)
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-	 				color = colors[0], one_idx = True, ylim = (h_min, h_max), filename = figpath + "ex_head_and_neck_VMAT_TROT_test-health_ylim.png")
+	 			color = colors[0], one_idx = True, ylim = (h_min, h_max), filename = figpath + "ex_head_and_neck_VMAT_TROT_test-health_ylim.png")
 
 	# Plot health curve of PTV only.
 	fig = plt.figure(figsize = (12,8))
@@ -82,8 +82,8 @@ def main(figpath = "", datapath = ""):
 	fig.savefig(figpath + "ex_head_and_neck_VMAT_TROT_test-health_ptv.png", bbox_inches = "tight", dpi = 300)
 
 	# Plot health curve of surrounding OARs on same figure.
-	# indices = [1, 2, 4, 5, 9, 10, 11, 16]
-	indices = [1, 2, 4, 5, 10, 11]
+	# indices = [1, 2, 4, 5, 9, 11, 16, 10]
+	indices = [1, 2, 4, 5, 11, 10]
 	fig = plt.figure(figsize = (12,8))
 	for i in indices:
 		plt.plot(range(T+1), res_dynamic["health"][:,i], label = patient_bio["names"][i])
