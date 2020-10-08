@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib
-matplotlib.use("TKAgg")
+# matplotlib.use("TKAgg")
 
 from fractionation.quad_funcs import dyn_quad_treat
 from fractionation.quad_admm_funcs import dyn_quad_treat_admm
@@ -37,10 +37,10 @@ def main(figpath = "", datapath = ""):
 	curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
 	# Dynamic treatment.
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-								 max_iter = 15, solver = "MOSEK", ccp_verbose = True)
-	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-	# 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 50, admm_verbose = True)
+	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+	#							 max_iter = 15, solver = "MOSEK", ccp_verbose = True)
+	res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+	 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 50, admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])
@@ -48,13 +48,13 @@ def main(figpath = "", datapath = ""):
 	print("Iterations:", res_dynamic["num_iters"])
 
 	# Plot total slack in health dynamics per iteration.
-	plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_prostate_fmo_slacks.png")
+	# plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_prostate_fmo_slacks.png")
 
 	# Plot dynamic health and treatment curves.
-	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_prostate_fmo_residuals.png")
+	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, show = False, filename = figpath + "ex_prostate_fmo_residuals.png")
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-	 				color = colors[0], one_idx = True, filename = figpath + "ex_prostate_fmo_health.png")
-	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, 
+	 				color = colors[0], one_idx = True, show = False, filename = figpath + "ex_prostate_fmo_health.png")
+	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, show = False, 
 	 				filename = figpath + "ex_prostate_fmo_doses.png")
 
 	# Compare PTV health curves under linearized, linearized with slack, and linear-quadratic models.
@@ -77,7 +77,7 @@ def main(figpath = "", datapath = ""):
 	# curves = [{"h": ptv_health_est, "label": "Linearized", "kwargs": {"color": colors[3], "linestyle": "dashed"}}]
 	# curves += [{"h": ptv_health_opt, "label": "Linearized with Slack", "kwargs": {"color": colors[2], "linestyle": "dashed"}}]
 	# plot_health(ptv_health, curves = curves, stepsize = 10, label = "Linear-Quadratic", indices = np.array(iters), one_idx = True,
-	# 			filename = figpath + "ex_prostate_fmo_PTV_health.png")
+	# 			show = False, filename = figpath + "ex_prostate_fmo_PTV_health.png")
 
 if __name__ == '__main__':
 	main(figpath = "/media/datdisk3/anqif/test/frac_test/figures/",
