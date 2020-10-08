@@ -1,0 +1,123 @@
+treatment_length : 45
+dose_matrix: C:/Users/Anqi/Documents/Software/fractionation/examples/data/prostate/prostate_7_structs_1000_beams_mean-dose_matrix.npy
+beams:
+  lower_bound : 0
+structures:
+  - name : Prostate
+    is_target : Yes
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 4.6052
+      goal : 0
+      weight :
+        under : 0
+        over : 1
+      upper_bound : 5.0106
+    alpha : 0.1500
+    beta : 0.0500
+    gamma : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173]
+
+  - name : Urethra
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 0
+      goal : 0
+      weight :
+        under : 1
+        over : 0
+      lower_bound : -83.7778
+    alpha : 1
+    beta : 0.2000
+    gamma : 0
+
+  - name : Bladder
+    is_target : No
+    dose : 
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 0
+      goal : 0
+      weight :
+        under : 1
+        over : 0
+      lower_bound : -83.7778
+    alpha : 1
+    beta : 0.2000
+    gamma : 0
+
+  - name : Rectum
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial: 0
+      goal: 0
+      weight :
+        under : 1
+        over : 0
+      lower_bound : -61.1111
+    alpha : 1
+    beta : 0.2000
+    gamma : 0
+
+  - name : L. Femoral Head
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 0
+      goal : 0
+      weight :
+        under : 1
+        over : 0
+      lower_bound : -48.8889
+    alpha : 1
+    beta : 0.2500
+    gamma : 0
+
+  - name : R. Femoral Head
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 0
+      goal : 0
+      weight :
+        under : 1
+        over : 0
+      lower_bound : -48.8889
+    alpha : 1
+    beta : 0.2500
+    gamma : 0
+
+  - name : Ring
+    is_target : No
+    dose :
+      goal : 0
+      weight : 1
+      lower_bound : 0
+    health :
+      initial : 0
+      goal : 0
+      weight :
+        under : 0.5
+        over : 0
+      lower_bound : -116.6667
+    alpha : 1
+    beta : 0.3333
+    gamma : 0

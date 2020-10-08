@@ -1,7 +1,8 @@
 treatment_length : 35
-dose_matrix: /media/datdisk3/anqif/test/frac_test/head_and_neck/head_and_neck_17_structs_10125_beams-dose_matrix.npy
+dose_matrix: C:/Users/Anqi/Documents/Software/fractionation/examples/data/head_and_neck/head_and_neck_17_structs_500_beams_mean-dose_matrix.npy
 beams:
   lower_bound : 0
+  upper_bound : 50
 structures:
   - name : PTV 0-46 Gy
     is_target : Yes
@@ -10,14 +11,14 @@ structures:
       weight : 1
       lower_bound : 0
     health :
-      initial : 1.8718
-      goal : -2.7334
+      initial : 4.6052
+      goal : 0
       weight :
         under : 0
         over : 1
-      upper_bound : 0.4855
+      upper_bound : [5.0106, 5.0106, 5.0106, 5.0106, 5.0106, 5.0106, 5.0106, 5.0106, 5.0106, 5.0106, 5.0106, 5.0106, 5.0106, 5.0106, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 2.8134, 2.8134, 2.8134, 2.8134, 2.8134, 2.8134, 2.8134]
     alpha : 0.3500
-    beta : 0.0437
+    beta : 0.0350
     gamma : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1733, 0.1733, 0.1733, 0.1733, 0.1733, 0.1733, 0.1733, 0.1733, 0.1733, 0.1733, 0.1733, 0.1733, 0.1733, 0.1733]
 
   - name : Spinal Cord
@@ -27,14 +28,14 @@ structures:
       weight : 1
       lower_bound : 0
     health :
-      initial : 4.0275
-      goal : 4.0275
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 1.5
-    alpha : 0.0445
-    beta : 0.0135
+      lower_bound : -1.6163
+    alpha : 1
+    beta : 0.2000
     gamma : 0
 
   - name : Brainstem
@@ -43,16 +44,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 5
+      upper_bound : 50
     health :
-      initial : 3.3512
-      goal : 3.3512
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.45
-    alpha : 0.0491
-    beta : 0.0234
+      lower_bound : -1.8367
+    alpha : 1
+    beta : 0.2000
     gamma : 0
 
   - name : R. Cochlea
@@ -61,16 +62,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 4.25
+      upper_bound : 45
     health :
-      initial: 2.7442
-      goal: 2.7442
+      initial: 0
+      goal: 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.75
-    alpha : 0.0878
-    beta : 0.0293
+      lower_bound : -2.1088
+    alpha : 1
+    beta : 0.3333
     gamma : 0
 
   - name : L. Cochlea
@@ -79,16 +80,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 4.25
+      upper_bound : 45
     health :
-      initial: 2.7442
-      goal: 2.7442
+      initial: 0
+      goal: 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.75
-    alpha : 0.0773
-    beta : 0.0258
+      lower_bound : -2.1088
+    alpha : 1
+    beta : 0.3333
     gamma : 0
 
   - name : R. Parotid
@@ -97,32 +98,34 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
+      upper_bound : 28
     health :
-      initial : 2.5772
-      goal : 2.5772
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 3.5
-    alpha : 0.0628
-    beta : 0.0209
+      lower_bound : -0.9600
+    alpha : 1
+    beta : 0.2500
     gamma : 0
 
-- name : L. Parotid
+  - name : L. Parotid
     is_target : No
     dose :
       goal : 0
       weight : 1
       lower_bound : 0
+      upper_bound : 28
     health :
-      initial : 2.5772
-      goal : 2.5772
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 3.5
-    alpha : 0.0341
-    beta : 0.0114
+      lower_bound : -0.9600
+    alpha : 1
+    beta : 0.2500
     gamma : 0
 
   - name : R. SMG
@@ -131,32 +134,34 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
+      upper_bound : 28
     health :
-      initial : 1.4725
-      goal : 1.4725
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 3.5
-    alpha : 0.0761
-    beta : 0.0217
+      lower_bound : -0.9600
+    alpha : 1
+    beta : 0.2500
     gamma : 0
 
-- name : L. SMG
+  - name : L. SMG
     is_target : No
     dose :
       goal : 0
       weight : 1
       lower_bound : 0
+      upper_bound : 28
     health :
-      initial : 1.4725
-      goal : 1.4725
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 3.5
-    alpha : 0.0761
-    beta : 0.0217
+      lower_bound : -0.9600
+    alpha : 1
+    beta : 0.2500
     gamma : 0
 
   - name : Oral Cavity
@@ -165,16 +170,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 5
+      upper_bound : 50
     health :
-      initial : 2.9450
-      goal : 2.9450
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.45
-    alpha : 0.0507
-    beta : 0.0145
+      lower_bound : -2.1088
+    alpha : 1
+    beta : 0.3333
     gamma : 0
 
   - name : External Ring
@@ -183,14 +188,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
+      upper_bound : 75
     health :
-      initial : 4.8394
-      goal : 4.8394
+      initial : 0
+      goal : 0
       weight :
         under : 0.5
         over : 0
-    alpha : 0.1000
-    beta : 0.0335
+      lower_bound: -3.6735
+    alpha : 1
+    beta : 0.3333
     gamma : 0
 
   - name : Larynx
@@ -199,16 +206,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 5
+      upper_bound : 50
     health :
-      initial : 3.1469
-      goal : 3.1469
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.45
-    alpha : 0.0274
-    beta : 0.0072
+      lower_bound : -2.1088
+    alpha : 1
+    beta : 0.3333
     gamma : 0
 
   - name : MCS
@@ -217,16 +224,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 5
+      upper_bound : 35
     health :
-      initial : 3.1469
-      goal : 3.1469
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.45
-    alpha : 0.0651
-    beta : 0.0217
+      lower_bound : -2.7891
+    alpha : 1
+    beta : 0.2500
     gamma : 0
 
   - name : MCM
@@ -235,16 +242,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 5
+      upper_bound : 35
     health :
-      initial : 3.1469
-      goal : 3.1469
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.45
-    alpha : 0.0761
-    beta : 0.0254
+      lower_bound : -2.7891
+    alpha : 1
+    beta : 0.2500
     gamma : 0
 
   - name : MCI
@@ -253,16 +260,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 5
+      upper_bound : 35
     health :
-      initial : 3.1469
-      goal : 3.1469
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.45
-    alpha : 0.0435
-    beta : 0.0145
+      lower_bound : -2.7891
+    alpha : 1
+    beta : 0.2500
     gamma : 0
 
   - name : MCP
@@ -271,16 +278,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 5
+      upper_bound : 35
     health :
-      initial : 3.1469
-      goal : 3.1469
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.45
-    alpha : 0.0507
-    beta : 0.0169
+      lower_bound : -2.7891
+    alpha : 1
+    beta : 0.2500
     gamma : 0
 
   - name : Oesophagus
@@ -289,14 +296,14 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 5
+      upper_bound : 35
     health :
-      initial : 3.1469
-      goal : 3.1469
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.45
-    alpha : 0.0708
-    beta : 0.0236
+      lower_bound : -1.3333
+    alpha : 1
+    beta : 0.3333
     gamma : 0

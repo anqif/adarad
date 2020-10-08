@@ -35,7 +35,7 @@ def run_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
 		# Receive \tilde d_t^k.
 		d_new.value = pipe.recv()
 
-		# Update and send u_t^^k.
+		# Update and send u_t^k.
 		u.value += d_new.value - d.value
 		pipe.send(u.value)
 
@@ -137,13 +137,13 @@ def dynamic_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patie
 
 		# Calculate residuals.
 		r_prim_mat = d_new.value - d_tld.value
-		r_dual_mat = rho*(d_tld.value - d_tld_prev)
+		r_dual_mat = -rho*(d_tld.value - d_tld_prev)
 		r_prim[k] = LA.norm(r_prim_mat)
 		r_dual[k] = LA.norm(r_dual_mat)
 
 		# Check stopping criteria.
 		eps_prim = eps_abs*np.sqrt(T_treat*K) + eps_rel*np.maximum(LA.norm(d_new.value), LA.norm(d_tld.value))
-		eps_dual = eps_abs*np.sqrt(T_treat*K) + eps_rel*LA.norm(u.value)
+		eps_dual = eps_abs*np.sqrt(T_treat*K) + eps_rel*LA.norm(rho*u.value)
 		finished = (k + 1) >= max_iter or (r_prim[k] <= eps_prim and r_dual[k] <= eps_dual)
 		k = k + 1
 		for pipe in pipes:

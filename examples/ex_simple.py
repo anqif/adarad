@@ -41,8 +41,8 @@ def main(figpath = "", datapath = ""):
 	curves = [{"h": h_prog, "label": "Untreated"}]
 
 	# Penalty function.
-	# rx_health_weights = [K*[1], K*[1]]
-	rx_health_weights = np.ones(K)
+	rx_health_weights = [np.ones(K), np.ones(K)]
+	# rx_health_weights = np.ones(K)
 	rx_health_goal = np.zeros((T,K))
 	# rx_dose_weights = np.ones(K)
 	rx_dose_weights = np.array([0.01, 1, 1, 1, 0.001])

@@ -13,7 +13,7 @@ from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	# Import data.
-	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_prostate_FMO_stanford.yml")
+	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_head_and_neck_VMAT_TROT.yml")
 
 	# Patient data.
 	A_list = patient_bio["dose_matrices"]
@@ -48,14 +48,14 @@ def main(figpath = "", datapath = ""):
 	print("Iterations:", res_dynamic["num_iters"])
 
 	# Plot total slack in health dynamics per iteration.
-	plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_prostate_FMO_slacks.png")
+	plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_head_and_neck_VMAT_slacks.png")
 
 	# Plot dynamic health and treatment curves.
-	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_prostate_FMO_residuals.png")
+	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_head_and_neck_VMAT_residuals.png")
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-	 				color = colors[0], one_idx = True, filename = figpath + "ex_prostate_FMO_health.png")
+	 				color = colors[0], one_idx = True, filename = figpath + "ex_head_and_neck_VMAT_health.png")
 	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, 
-	 				filename = figpath + "ex_prostate_FMO_doses.png")
+	 				filename = figpath + "ex_head_and_neck_VMAT_doses.png")
 
 	# Compare PTV health curves under linearized, linearized with slack, and linear-quadratic models.
 	# sidx = 0
@@ -77,8 +77,8 @@ def main(figpath = "", datapath = ""):
 	# curves = [{"h": ptv_health_est, "label": "Linearized", "kwargs": {"color": colors[3], "linestyle": "dashed"}}]
 	# curves += [{"h": ptv_health_opt, "label": "Linearized with Slack", "kwargs": {"color": colors[2], "linestyle": "dashed"}}]
 	# plot_health(ptv_health, curves = curves, stepsize = 10, label = "Linear-Quadratic", indices = np.array(iters), one_idx = True,
-	# 			filename = figpath + "ex_prostate_FMO_PTV_health.png")
+	# 			filename = figpath + "ex_head_and_neck_VMAT_health.png")
 
 if __name__ == '__main__':
 	main(figpath = "/media/datdisk3/anqif/test/frac_test/figures/",
-		 datapath = "/media/datdisk3/anqif/test/frac_test/prostate/")
+		 datapath = "/media/datdisk3/anqif/test/frac_test/head_and_neck/")

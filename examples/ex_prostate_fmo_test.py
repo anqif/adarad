@@ -13,7 +13,7 @@ from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	# Import data.
-	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_prostate_FMO_stanford.yml")
+	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_prostate_FMO_stanford_test.yml")
 
 	# Patient data.
 	A_list = patient_bio["dose_matrices"]
@@ -48,37 +48,15 @@ def main(figpath = "", datapath = ""):
 	print("Iterations:", res_dynamic["num_iters"])
 
 	# Plot total slack in health dynamics per iteration.
-	plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_prostate_FMO_slacks.png")
+	plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_prostate_FMO_stanford_test-slacks.png")
 
 	# Plot dynamic health and treatment curves.
-	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_prostate_FMO_residuals.png")
+	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_prostate_FMO_stanford_test-residuals.png")
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-	 				color = colors[0], one_idx = True, filename = figpath + "ex_prostate_FMO_health.png")
+	 				color = colors[0], one_idx = True, filename = figpath + "ex_prostate_FMO_stanford_test-health.png")
 	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, 
-	 				filename = figpath + "ex_prostate_FMO_doses.png")
-
-	# Compare PTV health curves under linearized, linearized with slack, and linear-quadratic models.
-	# sidx = 0
-	# iters = np.array([1, 2, 5])
-	# M = len(iters)
-	#
-	# ptv_health = np.zeros((T+1,M))
-	# ptv_health_est = np.zeros((T+1,M))
-	# ptv_health_opt = np.zeros((T+1,M))
-	#
-	# for j in range(M):
-	# 	print("\nDynamic Treatment with Maximum Iterations {0}".format(iters[j]))
-	# 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True,
-	# 								slack_weight = 1e4, max_iter = iters[j], solver = "MOSEK", ccp_verbose = True)
-	# 	ptv_health[:,j] = res_dynamic["health"][:,sidx]
-	# 	ptv_health_est[:,j] = res_dynamic["health_est"][:,sidx]
-	# 	ptv_health_opt[:,j] = res_dynamic["health_opt"][:,sidx]
-	#
-	# curves = [{"h": ptv_health_est, "label": "Linearized", "kwargs": {"color": colors[3], "linestyle": "dashed"}}]
-	# curves += [{"h": ptv_health_opt, "label": "Linearized with Slack", "kwargs": {"color": colors[2], "linestyle": "dashed"}}]
-	# plot_health(ptv_health, curves = curves, stepsize = 10, label = "Linear-Quadratic", indices = np.array(iters), one_idx = True,
-	# 			filename = figpath + "ex_prostate_FMO_PTV_health.png")
+	 				filename = figpath + "ex_prostate_FMO_stanford_test-doses.png")
 
 if __name__ == '__main__':
-	main(figpath = "/media/datdisk3/anqif/test/frac_test/figures/",
-		 datapath = "/media/datdisk3/anqif/test/frac_test/prostate/")
+	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/",
+		 datapath = "C:/Users/Anqi/Documents/Software/fractionation/examples/data/prostate/")

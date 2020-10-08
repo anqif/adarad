@@ -17,6 +17,7 @@ def yaml_to_dict(path):
 	
 	# Patient biology.
 	bio = dict()
+	bio["names"] = []
 	bio["dose_matrices"] = A_list
 	bio["alpha"] = np.zeros((T,K))
 	bio["beta"] = np.zeros((T,K))
@@ -38,6 +39,7 @@ def yaml_to_dict(path):
 	for i in range(K):
 		struct = data["structures"][i]
 		
+		bio["names"].append(struct["name"])
 		bio["alpha"][:,i] = struct["alpha"]
 		bio["beta"][:,i] = struct["beta"]
 		bio["gamma"][:,i] = struct["gamma"]

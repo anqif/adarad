@@ -141,8 +141,8 @@ def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardi
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot health curves.
-def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treated",
-				ylim = None, indices = None, one_idx = False, show = True, filename = None, *args, **kwargs):
+def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, subtitles = None, 
+				label = "Treated", ylim = None, one_idx = False, show = True, filename = None, *args, **kwargs):
 	# if len(h.shape) == 1:
 	#	h = h[:,np.newaxis]
 	T = h.shape[0] - 1
@@ -152,8 +152,12 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 		lower, upper = bounds
 	else:
 		lower = upper = None
-	if indices is None:
-		indices = np.arange(m) + int(one_idx)
+	
+	indices = np.arange(m) + int(one_idx)
+	if subtitles is None:
+		subtitles = ["$h_{{{0}}}(t)$".format(index) for index in indices]
+	if len(subtitles) != m:
+		raise ValueError("subtitles must be a list of length", m)
 	
 	rows = 1 if m <= maxcols else int(np.ceil(m / maxcols))
 	cols = min(m, maxcols)
@@ -177,7 +181,8 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 			lcurve, = ax.plot(range(T+1), curve["h"][:,i], label = curve["label"], **curve_kw)
 			handles += [lcurve]
 		# lnone, = ax.plot(range(T+1), h_prog[:,i], ls = '--', color = "red")
-		ax.set_title("$h_{{{0}}}(t)$".format(indices[i]))
+		ax.set_title(subtitles[i])
+		# ax.set_title("$h_{{{0}}}(t)$".format(indices[i]))
 		# ax.set_title("$s = {{{0}}}$".format(indices[i]))
 		
 		# Label transition from treatment to recovery period.
@@ -210,8 +215,8 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot treatment curves.
-def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, label = "Treatment",
-				   ylim = None, one_idx = False, show = True, filename = None, *args, **kwargs):
+def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, subtitles = None, 
+				   label = "Treatment", ylim = None, one_idx = False, show = True, filename = None, *args, **kwargs):
 	T = d.shape[0]
 	n = d.shape[1]
 	
@@ -219,6 +224,12 @@ def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, b
 		lower, upper = bounds
 	else:
 		lower = upper = None
+
+	indices = np.arange(n) + int(one_idx)
+	if subtitles is None:
+		subtitles = ["$d_{{{0}}}(t)$".format(index) for index in indices]
+	if len(subtitles) != n:
+		raise ValueError("subtitles must be a list of length", n)
 	
 	rows = 1 if n <= maxcols else int(np.ceil(n / maxcols))
 	cols = min(n, maxcols)
@@ -240,7 +251,8 @@ def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, b
 			lcurve, = ax.plot(range(1,T+1), curve["d"][:,j], label = curve["label"], **curve_kw)
 			handles += [lcurve]
 		# ax.plot(range(1,T+1), d[:,j])
-		ax.set_title("$d_{{{0}}}(t)$".format(j + int(one_idx)))
+		ax.set_title(subtitles[j])
+		# ax.set_title("$d_{{{0}}}(t)$".format(j + int(one_idx)))
 		
 		# Label transition from treatment to recovery period.
 		xt = np.arange(1, T, stepsize)

@@ -160,3 +160,47 @@ def simple_parms(T = 60, fast = True):
 	gamma[:,4] = norm_early_lq["gamma"]
 
 	return alpha, beta, gamma
+
+def proc_parms(struct_dict, T, N0):
+	for key, value in struct_dict.items():
+		D_max = value["D_max"]
+		D_max_per_frac = D_max/T
+
+		if "alpha" in value.keys():
+			beta = value["alpha_over_beta"]/value["alpha"]
+			H_min_per_frac = -(value["alpha"]*D_max_per_frac + beta*D_max_per_frac**2)
+		else:
+			H_min_per_frac = -(D_max_per_frac + (1/value["alpha_over_beta"])*D_max_per_frac**2)
+
+		struct_dict[key]["D_max_per_frac"] = D_max_per_frac
+		struct_dict[key]["H_min_per_frac"] = H_min_per_frac
+		struct_dict[key]["H_min"] = T*H_min_per_frac
+	return struct_dict
+
+def head_and_neck_parms(T = 35, N0 = 100):
+	struct_dict = {"PTV 0-46 Gy": {"alpha": 0.35, "alpha_over_beta": 10, "D_max": 80},
+	 			   "Spinal Cord": {"alpha_over_beta": 5, "D_max": 45},
+	 			   "Brainstem":   {"alpha_over_beta": 5, "D_max": 50},
+	 			   "Cochlea":     {"alpha_over_beta": 3, "D_max": 45},
+	 			   "Parotid":     {"alpha_over_beta": 4, "D_max": 28},
+	 			   "SMG":         {"alpha_over_beta": 4, "D_max": 28},
+	 			   "Oral Cavity": {"alpha_over_beta": 3, "D_max": 50},
+	 			   "Ring":        {"alpha_over_beta": 3, "D_max": 75},
+	 			   "Larynx":      {"alpha_over_beta": 3, "D_max": 50},
+	 			   "MCS":         {"alpha_over_beta": 4, "D_max": 35},
+	 			   "MCM":         {"alpha_over_beta": 4, "D_max": 35},
+	 			   "MCI":         {"alpha_over_beta": 4, "D_max": 35},
+	 			   "MCP":         {"alpha_over_beta": 4, "D_max": 35},
+	 			   "Oesophagus":  {"alpha_over_beta": 3, "D_max": 35}
+	 			  }
+	return proc_parms(struct_dict, T, N0)
+
+def prostate_parms(T = 45, N0 = 100):
+	struct_dict = {"Prostate":     {"alpha": 0.15, "alpha_over_beta": 3, "D_max": 80}, 
+				   "Urethra":      {"alpha_over_beta": 5, "D_max": 65},
+				   "Bladder":      {"alpha_over_beta": 5, "D_max": 65},
+				   "Rectum":       {"alpha_over_beta": 5, "D_max": 50},
+				   "Femoral Head": {"alpha_over_beta": 4, "D_max": 40},
+				   "Ring":         {"alpha_over_beta": 3, "D_max": 75}
+	              }
+	return proc_parms(struct_dict, T, N0)
