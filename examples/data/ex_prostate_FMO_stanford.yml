@@ -1,5 +1,5 @@
-treatment_length : 50
-dose_matrix: /media/datdisk3/anqif/test/frac_test/prostate/prostate_7_structs_10000_beams-dose_matrix.npy
+treatment_length : 45
+dose_matrix: /media/datdisk3/anqif/test/frac_test/prostate/prostate_7_structs_10000_beams_mean-dose_matrix.npy
 beams:
   lower_bound : 0
 structures:
@@ -10,15 +10,15 @@ structures:
       weight : 1
       lower_bound : 0
     health :
-      initial : 1.8718
-      goal : -2.7334
+      initial : 4.6052
+      goal : 0
       weight :
         under : 0
         over : 1
-      upper_bound : [2.0116, 2.0116, 2.0116, 2.0116, 2.0116, 2.0116, 2.0116, 2.0116, 2.0116, 2.0116, 2.0116, 2.0116, 2.0116, 2.0116, 1.5841, 1.5841, 1.5841, 1.5841, 1.5841, 1.5841, 1.5841, 1.1787, 1.1787, 1.1787, 1.1787, 1.1787, 1.1787, 1.1787, 0.4855, 0.4855, 0.4855, 0.4855, 0.4855, 0.4855, 0.4855, -0.0253, -0.0253, -0.0253, -0.0253, -0.0253, -0.0253, -0.0253, -1.1239, -1.1239, -1.1239, -1.1239, -1.1239, -1.1239, -1.1239, -1.1239]
-    alpha : 0.16
-    beta : 0.0541
-    gamma : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359, 0.1359]
+      upper_bound : [4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 2.8134, 2.8134, 2.8134, 2.8134, 2.8134, 2.8134, 2.8134, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259]
+    alpha : 0.1500
+    beta : 0.0500
+    gamma : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173]
 
   - name : Urethra
     is_target : No
@@ -27,15 +27,15 @@ structures:
       weight : 1
       lower_bound : 0
     health :
-      initial : 2.1745
-      goal : 2.1745
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 1.5
-    alpha : 0.0923
-    beta : 0.0142
-    gamma : 0.0323
+      lower_bound : -83.7778
+    alpha : 1
+    beta : 0.2000
+    gamma : 0
 
   - name : Bladder
     is_target : No
@@ -43,17 +43,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 5
     health :
-      initial : 3.1469
-      goal : 3.1469
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.45
-    alpha : 0.0878
-    beta : 0.0146
-    gamma : 0.0176
+      lower_bound : -83.7778
+    alpha : 1
+    beta : 0.2000
+    gamma : 0
 
   - name : Rectum
     is_target : No
@@ -61,17 +60,16 @@ structures:
       goal : 0
       weight : 1
       lower_bound : 0
-      upper_bound : 4.25
     health :
-      initial: 3.4543
-      goal: 3.4543
+      initial: 0
+      goal: 0
       weight :
         under : 1
         over : 0
-      lower_bound : 2.75
-    alpha : 0.0484
-    beta : 0.0124
-    gamma : 0.0145
+      lower_bound : -61.1111
+    alpha : 1
+    beta : 0.2000
+    gamma : 0
 
   - name : L. Femoral Head
     is_target : No
@@ -80,14 +78,14 @@ structures:
       weight : 1
       lower_bound : 0
     health :
-      initial : 4.2480
-      goal : 4.2480
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 3.5
-    alpha : 0.0349
-    beta : 0.0388
+      lower_bound : -48.8889
+    alpha : 1
+    beta : 0.2500
     gamma : 0
 
   - name : R. Femoral Head
@@ -97,14 +95,14 @@ structures:
       weight : 1
       lower_bound : 0
     health :
-      initial : 4.2562
-      goal : 4.2562
+      initial : 0
+      goal : 0
       weight :
         under : 1
         over : 0
-      lower_bound : 3.5
-    alpha : 0.0346
-    beta : 0.0432
+      lower_bound : -48.8889
+    alpha : 1
+    beta : 0.2500
     gamma : 0
 
   - name : Ring
@@ -114,11 +112,12 @@ structures:
       weight : 1
       lower_bound : 0
     health :
-      initial : 4.8394
-      goal : 4.8394
+      initial : 0
+      goal : 0
       weight :
         under : 0.5
         over : 0
-    alpha : 0.1000
-    beta : 0.0100
-    gamma : 0.04
+      lower_bound : -116.6667
+    alpha : 1
+    beta : 0.3333
+    gamma : 0

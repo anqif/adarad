@@ -1,5 +1,6 @@
 import matplotlib
 matplotlib.use("TKAgg")
+import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 from fractionation.utilities.plot_utils import *

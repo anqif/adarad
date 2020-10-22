@@ -165,7 +165,7 @@ def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, boun
 
 	fig, axs = plt.subplots(rows, cols, sharey = True)
 	fig.set_size_inches(*figsize)
-	fig.tight_layout()
+	# fig.tight_layout()
 	if ylim is not None:
 		plt.setp(axs, ylim = ylim)
 	for i in range(m):
@@ -238,7 +238,7 @@ def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, b
 	
 	fig, axs = plt.subplots(rows, cols, sharey = True)
 	fig.set_size_inches(*figsize)
-	fig.tight_layout()
+	# fig.tight_layout()
 	if ylim is not None:
 		plt.setp(axs, ylim = ylim)
 	for j in range(n):
@@ -260,7 +260,7 @@ def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, b
 		xt = np.arange(1, T, stepsize)
 		xt = np.append(xt, T)
 		if T_treat is not None:
-			ax.axvline(x = T_treat, lw = 1, ls = ':', color = "grey")
+			ax.axvline(x = T_treat, lw = 1, ls = ":", color = "grey")
 			xt = np.append(xt, T_treat)
 		ax.set_xticks(xt)
 		

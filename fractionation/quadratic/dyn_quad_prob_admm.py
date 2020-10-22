@@ -13,7 +13,7 @@ def build_dyn_quad_prob_dose(A_list, patient_rx):
 
     # Define variables.
     b = Variable((T_treat, n), nonneg=True, name="beams")   # Beams.
-    d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
+    d = vstack([A_list[t] @ b[t] for t in range(T_treat)])  # Doses.
 
     # Dose penalty function.
     obj = sum([dose_penalty(d[t], patient_rx["dose_goal"][t], patient_rx["dose_weights"]) for t in range(T_treat)])
@@ -35,7 +35,7 @@ def build_dyn_quad_prob_dose_period(A, patient_rx):
 
     # Define variables for period.
     b_t = Variable(n, nonneg=True, name="beams")  # Beams.
-    d_t = A * b_t
+    d_t = A @ b_t
 
     # Dose penalty current period.
     obj = dose_penalty(d_t, patient_rx["dose_goal"], patient_rx["dose_weights"])
@@ -74,7 +74,7 @@ def build_dyn_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, 
     h_dyn_slack = Constant(0)
     if use_slack:
         h_dyn_slack = Variable((T_treat, K), nonneg=True, name="health dynamics slack")
-        obj += slack_weight * sum(h_dyn_slack)  # TODO: Set slack weight relative to overall health penalty.
+        obj += slack_weight*sum(h_dyn_slack)  # TODO: Set slack weight relative to overall health penalty.
         h_taylor -= h_dyn_slack
 
     constrs = [h[0] == h_init]

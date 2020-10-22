@@ -13,6 +13,7 @@ from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	# Import data.
+	figprefix = "ex_head_and_neck_VMAT_TROT_test"
 	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_head_and_neck_VMAT_TROT_test.yml")
 
 	# Patient data.
@@ -37,27 +38,30 @@ def main(figpath = "", datapath = ""):
 	curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
 	# Dynamic treatment.
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4, 
-								 max_iter = 15, solver = "MOSEK", ccp_verbose = True)
-	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-	# 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 50, admm_verbose = True)
+	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4, 
+	#							   max_iter = 15, solver = "MOSEK", ccp_verbose = True)
+	res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+								      ccp_max_iter = 30, solver = "ECOS", rho = 5, admm_max_iter = 1000, admm_verbose = True,
+								      max_iters = 1000, verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
-	print("Objective:", res_dynamic["obj"])
-	print("Solve Time:", res_dynamic["solve_time"])
 	print("Iterations:", res_dynamic["num_iters"])
+	print("Solve Time:", res_dynamic["solve_time"])
+	print("Objective:", res_dynamic["obj"])
 	print("Beam Max:", np.max(res_dynamic["beams"]))
 	print("Beam Sum:", np.sum(res_dynamic["beams"]))
 
 	# Plot total slack in health dynamics per iteration.
-	plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_head_and_neck_VMAT_TROT_test-slacks.png")
+	if "health_slack" in res_dynamic:
+		plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_head_and_neck_VMAT_TROT_test-admm-slacks.png")
 
 	# Plot dynamic health and treatment curves.
-	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_head_and_neck_VMAT_TROT_test-residuals.png")
+	if "primal" in res_dynamic and "dual" in res_dynamic:
+		plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + figprefix + "-admm-residuals.png")
 	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, 
 	 			   filename = figpath + "ex_head_and_neck_VMAT_TROT_test-doses.png")
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-	 			color = colors[0], one_idx = True, filename = figpath + "ex_head_and_neck_VMAT_TROT_test-health.png")
+	 			color = colors[0], one_idx = True, filename = figpath + figprefix + "-admm-health.png")
 
 	# Plot health curve with rescaled axes (ignoring upper/lower bounds).
 	h_all_vec = np.concatenate([res_dynamic["health"].ravel(), h_prog.ravel()])
@@ -67,7 +71,7 @@ def main(figpath = "", datapath = ""):
 	h_min = np.floor(h_min - h_eps)
 	h_max = np.ceil(h_max + h_eps)
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-	 			color = colors[0], one_idx = True, ylim = (h_min, h_max), filename = figpath + "ex_head_and_neck_VMAT_TROT_test-health_ylim.png")
+	 			color = colors[0], one_idx = True, ylim = (h_min, h_max), filename = figpath + figprefix + "-admm-health_ylim.png")
 
 	# Plot health curve of PTV only.
 	fig = plt.figure(figsize = (12,8))
@@ -79,7 +83,7 @@ def main(figpath = "", datapath = ""):
 	plt.title("Planning Target Volume (PTV)")
 	plt.legend()
 	plt.show()
-	fig.savefig(figpath + "ex_head_and_neck_VMAT_TROT_test-health_ptv.png", bbox_inches = "tight", dpi = 300)
+	fig.savefig(figpath + figprefix + "-admm-health_ptv.png", bbox_inches = "tight", dpi = 300)
 
 	# Plot health curve of surrounding OARs on same figure.
 	# indices = [1, 2, 4, 5, 9, 11, 16, 10]
@@ -91,7 +95,7 @@ def main(figpath = "", datapath = ""):
 	plt.title("Surrounding Organs-at-Risk (OARs)")
 	plt.legend()
 	plt.show()
-	fig.savefig(figpath + "ex_head_and_neck_VMAT_TROT_test-health_oar.png", bbox_inches = "tight", dpi = 300)
+	fig.savefig(figpath + figprefix + "-health_oar.png", bbox_inches = "tight", dpi = 300)
 
 if __name__ == '__main__':
 	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/",

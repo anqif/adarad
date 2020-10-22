@@ -70,7 +70,7 @@ def build_dyn_prob_health(F_list, G_list, q_list, r_list, h_init, patient_rx, T_
     constrs = [h[0] == h_init]
     for t in range(T_treat):
         if np.all(q_list[t] == 0):
-            constrs.append(h[t + 1] == F_list[t] * h[t] + G_list[t] * d[t] + r_list[t])
+            constrs.append(h[t + 1] == F_list[t] @ h[t] + G_list[t] @ d[t] + r_list[t])
         else:
             # For PTV, approximate dynamics via a first-order Taylor expansion.
             h_lin = F_list[t] * h[t] + G_list[t] * d[t] + r_list[t]
@@ -92,9 +92,9 @@ def build_dyn_prob_health(F_list, G_list, q_list, r_list, h_init, patient_rx, T_
         r_recov = r_list[T_treat:]
 
         h_r = Variable((T_recov, K), name="recovery")
-        constrs_r = [h_r[0] == F_recov[0] * h[-1] + r_recov[0]]
+        constrs_r = [h_r[0] == F_recov[0] @ h[-1] + r_recov[0]]
         for t in range(T_recov - 1):
-            constrs_r.append(h_r[t + 1] == F_recov[t + 1] * h_r[t] + r_recov[t + 1])
+            constrs_r.append(h_r[t + 1] == F_recov[t + 1] @ h_r[t] + r_recov[t + 1])
 
         # Additional health constraints during recovery.
         if "recov_constrs" in patient_rx:

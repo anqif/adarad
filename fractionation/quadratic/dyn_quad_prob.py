@@ -78,7 +78,7 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
     # Define variables.
     b = Variable((T_treat, n), nonneg=True, name="beams")   # Beams.
     h = Variable((T_treat + 1, K), name="health")           # Health statuses.
-    d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
+    d = vstack([A_list[t] @ b[t] for t in range(T_treat)])  # Doses.
     d_parm = Parameter(d.shape, nonneg=True, name="dose parameter")  # Dose around which to linearize target dynamics.
 
     # Objective function.
