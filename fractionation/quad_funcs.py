@@ -28,7 +28,7 @@ def print_quad_results(result, is_target, slack_dict=None):
 		for key, value in slack_dict.items():
 			print("\t{0} (Lower, Upper):".format(key.title()), func_ss(value))
 
-def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
+def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
 					use_slack = False, slack_weight = 0, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
@@ -63,7 +63,7 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 			"beams": beams_all, "doses": doses_all, "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est,
 			"health_slack": result["health_slack"]}
 
-def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
+def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
 				   use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = False, mpc_slack_weights = 1, mpc_verbose = False,
 				   *args, **kwargs):
 	T_treat = len(A_list)

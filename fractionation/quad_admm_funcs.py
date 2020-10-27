@@ -50,7 +50,7 @@ def run_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
     d_val = A.dot(b.value)
     pipe.send((b.value, d_val))
 
-def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
+def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
                         use_slack = False, slack_weight = 0, partial_results = False, admm_verbose = False, *args, **kwargs):
     T_treat = len(A_list)
     K, n = A_list[0].shape
@@ -209,7 +209,7 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
             "primal": np.array(r_prim[:k]), "dual": np.array(r_dual[:k]), "beams": beams_all, "doses": doses_all,
             "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est}
 
-def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
+def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
 					    use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = False, mpc_slack_weights = None,
                         mpc_verbose = False, *args, **kwargs):
     T_treat = len(A_list)

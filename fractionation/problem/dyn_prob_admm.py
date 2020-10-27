@@ -12,7 +12,7 @@ def build_dyn_prob_dose(A_list, patient_rx):
 
     # Define variables.
     b = Variable((T_treat, n), nonneg=True, name="beams")  # Beams.
-    d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
+    d = vstack([A_list[t] @ b[t] for t in range(T_treat)])  # Doses.
 
     # Dose penalty function.
     obj = sum([dose_penalty(d[t], patient_rx["dose_goal"][t], patient_rx["dose_weights"]) for t in range(T_treat)])
@@ -35,7 +35,7 @@ def build_dyn_prob_dose_period(A, patient_rx):
 
     # Define variables for period.
     b_t = Variable(n, nonneg=True, name="beams")  # Beams.
-    d_t = A * b_t
+    d_t = A @ b_t
 
     # Dose penalty current period.
     obj = dose_penalty(d_t, patient_rx["dose_goal"], patient_rx["dose_weights"])
@@ -73,7 +73,7 @@ def build_dyn_prob_health(F_list, G_list, q_list, r_list, h_init, patient_rx, T_
             constrs.append(h[t + 1] == F_list[t] @ h[t] + G_list[t] @ d[t] + r_list[t])
         else:
             # For PTV, approximate dynamics via a first-order Taylor expansion.
-            h_lin = F_list[t] * h[t] + G_list[t] * d[t] + r_list[t]
+            h_lin = F_list[t] @ h[t] + G_list[t] @ d[t] + r_list[t]
             h_taylor = h_lin + multiply(q_list[t], square(d_parm[t])) + 2 * q_list[t] * d_parm[t] * (d[t] - d_parm[t])
             constrs.append(h[t + 1, patient_rx["is_target"]] == h_taylor[patient_rx["is_target"]])
 

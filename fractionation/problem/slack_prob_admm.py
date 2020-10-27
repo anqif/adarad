@@ -14,7 +14,7 @@ def build_dyn_slack_prob_dose(A_list, patient_rx, s_weights = None, s_final = Tr
 
     # Main variables.
     b = Variable((T_treat, n), nonneg=True, name="beams")  # Beams.
-    d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
+    d = vstack([A_list[t] @ b[t] for t in range(T_treat)])  # Doses.
 
     # Dose penalty function.
     obj = sum([dose_penalty(d[t], patient_rx["dose_goal"][t], patient_rx["dose_weights"]) for t in range(T_treat)])
@@ -49,7 +49,7 @@ def build_dyn_slack_prob_dose_period(A, patient_rx, s_weights = None, s_final = 
 
     # Define variables for period.
     b_t = Variable(n, nonneg=True, name="beams")  # Beams.
-    d_t = A * b_t
+    d_t = A @ b_t
 
     # Dose penalty current period.
     obj = dose_penalty(d_t, patient_rx["dose_goal"], patient_rx["dose_weights"])
@@ -96,10 +96,10 @@ def build_dyn_slack_prob_health(F_list, G_list, q_list, r_list, h_init, patient_
     constrs = [h[0] == h_init]
     for t in range(T_treat):
         if np.all(q_list[t] == 0):
-            constrs.append(h[t + 1] == F_list[t] * h[t] + G_list[t] * d[t] + r_list[t])
+            constrs.append(h[t + 1] == F_list[t] @ h[t] + G_list[t] @ d[t] + r_list[t])
         else:
             # For PTV, approximate dynamics via a first-order Taylor expansion.
-            h_lin = F_list[t] * h[t] + G_list[t] * d[t] + r_list[t]
+            h_lin = F_list[t] @ h[t] + G_list[t] @ d[t] + r_list[t]
             h_taylor = h_lin + multiply(q_list[t], square(d_parm[t])) + 2 * q_list[t] * d_parm[t] * (d[t] - d_parm[t])
             constrs.append(h[t + 1, patient_rx["is_target"]] == h_taylor[patient_rx["is_target"]])
 
@@ -122,9 +122,9 @@ def build_dyn_slack_prob_health(F_list, G_list, q_list, r_list, h_init, patient_
         r_recov = r_list[T_treat:]
 
         h_r = Variable((T_recov, K), name="recovery")
-        constrs_r = [h_r[0] == F_recov[0] * h[-1] + r_recov[0]]
+        constrs_r = [h_r[0] == F_recov[0] @ h[-1] + r_recov[0]]
         for t in range(T_recov - 1):
-            constrs_r.append(h_r[t + 1] == F_recov[t + 1] * h_r[t] + r_recov[t + 1])
+            constrs_r.append(h_r[t + 1] == F_recov[t + 1] @ h_r[t] + r_recov[t + 1])
 
         # Additional health constraints during recovery.
         if "recov_constrs" in patient_rx:

@@ -152,7 +152,7 @@ def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_
     # Main variables.
     b = Variable((T_treat, n), nonneg=True, name="beams")  # Beams.
     h = Variable((T_treat + 1, K), name="health")  # Health statuses.
-    d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
+    d = vstack([A_list[t] @ b[t] for t in range(T_treat)])  # Doses.
     d_parm = Parameter(d.shape, nonneg=True, name="dose parameter")  # Dose point around which to linearize dynamics.
 
     # Objective function.

@@ -46,7 +46,8 @@ def run_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
 	d_val = A.dot(b.value)
 	pipe.send((b.value, d_val))
 
-def dynamic_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, partial_results = False, admm_verbose = False, *args, **kwargs):
+def dynamic_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, \
+							partial_results = False, admm_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	F_list, G_list, q_list, r_list = check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov)
@@ -181,7 +182,7 @@ def dynamic_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patie
 	return {"obj": obj, "status": status, "num_iters": k, "total_time": end - start, "solve_time": solve_time,
 			"beams": beams_all, "doses": doses_all, "health": health_all, "primal": np.array(r_prim[:k]), "dual": np.array(r_dual[:k])}
 
-def mpc_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
+def mpc_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, \
 					   use_slack = True, slack_weights = None, slack_final = True, mpc_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
@@ -233,9 +234,9 @@ def mpc_treatment_admm(A_list, F_list, G_list, q_list, r_list, h_init, patient_r
 		doses[t_s] = A_list[t_s].dot(beams[t_s])
 
 		# Update health for next period.
-		# h_cur = health_map(result["health"][1], t_s)
+		# h_cur = health_map(result["health"][1], doses[t_s], t_s)
 		h_start = F_list[t_s].dot(h_cur) + G_list[t_s].dot(doses[t_s]) + q_list[t_s]*doses[t_s]**2 + r_list[t_s]
-		h_cur = health_map(h_start, t_s)
+		h_cur = health_map(h_start, doses[t_s], t_s)
 
 	# Construct full results.
 	beams_all = pad_matrix(beams, T_recov)

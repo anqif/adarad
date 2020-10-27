@@ -13,6 +13,7 @@ from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	# Import data.
+	figprefix = "ex_prostate_FMO_stanford_test-"
 	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_prostate_FMO_stanford_test.yml")
 
 	# Patient data.
@@ -38,7 +39,7 @@ def main(figpath = "", datapath = ""):
 
 	# Dynamic treatment.
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-								 max_iter = 15, solver = "MOSEK", ccp_verbose = True)
+								 max_iter = 30, solver = "MOSEK", ccp_verbose = True)
 	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
 	# 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 50, admm_verbose = True)
 	print("Dynamic Treatment")
@@ -46,17 +47,19 @@ def main(figpath = "", datapath = ""):
 	print("Objective:", res_dynamic["obj"])
 	print("Solve Time:", res_dynamic["solve_time"])
 	print("Iterations:", res_dynamic["num_iters"])
+	print("Beam Max:", np.max(res_dynamic["beams"]))
+	print("Beam Sum:", np.sum(res_dynamic["beams"]))
 
 	# Plot total slack in health dynamics per iteration.
-	plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_prostate_FMO_stanford_test-slacks.png")
+	# plot_slacks(res_dynamic["health_slack"], filename = figpath + figprefix + "slacks.png")
 
 	# Plot dynamic health and treatment curves.
-	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_prostate_FMO_stanford_test-residuals.png")
+	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + figprefix + "residuals.png")
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-	 				color = colors[0], one_idx = True, filename = figpath + "ex_prostate_FMO_stanford_test-health.png")
+	 				color = colors[0], one_idx = True, filename = figpath + figprefix + "health.png")
 	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, 
-	 				filename = figpath + "ex_prostate_FMO_stanford_test-doses.png")
+	 				filename = figpath + figprefix + "doses.png")
 
 if __name__ == '__main__':
 	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/",
-		 datapath = "C:/Users/Anqi/Documents/Software/fractionation/examples/data/prostate/")
+		 datapath = "C:/Users/Anqi/Documents/Software/fractionation/examples/data/")

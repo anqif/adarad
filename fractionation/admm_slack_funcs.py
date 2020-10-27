@@ -43,7 +43,7 @@ def run_slack_dose_worker(pipe, A, patient_rx, rho, s_weights = None, s_final = 
 	s_vals = {key: slack.value for key, slack in s_vars.items()}
 	pipe.send((b.value, d_val, s_vals))
 
-def dynamic_treatment_admm_slack(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
+def dynamic_treatment_admm_slack(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, \
 								 slack_weights = None, slack_final = True, partial_results = False, admm_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape

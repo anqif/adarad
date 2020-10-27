@@ -2,6 +2,7 @@ treatment_length : 45
 dose_matrix: C:/Users/Anqi/Documents/Software/fractionation/examples/data/prostate/prostate_7_structs_1000_beams_mean-dose_matrix.npy
 beams:
   lower_bound : 0
+  upper_bound : 1
 structures:
   - name : Prostate
     is_target : Yes
@@ -10,12 +11,12 @@ structures:
       weight : 1
       lower_bound : 0
     health :
-      initial : 4.6052
+      initial : 6.9078
       goal : 0
       weight :
         under : 0
         over : 1
-      upper_bound : [4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 4.6052, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 3.9120, 2.8134, 2.8134, 2.8134, 2.8134, 2.8134, 2.8134, 2.8134, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259, 2.30259]
+      upper_bound : [6.9078, 6.9078, 6.9078, 6.9078, 6.9078, 6.9078, 6.9078, 6.9078, 6.9078, 6.9078, 6.9078, 6.9078, 6.9078, 6.9078, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 3.5066, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     alpha : 0.1500
     beta : 0.0500
     gamma : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173, 0.0173]
@@ -32,7 +33,6 @@ structures:
       weight :
         under : 1
         over : 0
-      lower_bound : -83.7778
     alpha : 1
     beta : 0.2000
     gamma : 0
@@ -49,7 +49,7 @@ structures:
       weight :
         under : 1
         over : 0
-      lower_bound : -83.7778
+      lower_bound : -5.0
     alpha : 1
     beta : 0.2000
     gamma : 0
@@ -66,7 +66,6 @@ structures:
       weight :
         under : 1
         over : 0
-      lower_bound : -61.1111
     alpha : 1
     beta : 0.2000
     gamma : 0
@@ -83,7 +82,6 @@ structures:
       weight :
         under : 1
         over : 0
-      lower_bound : -48.8889
     alpha : 1
     beta : 0.2500
     gamma : 0
@@ -100,7 +98,6 @@ structures:
       weight :
         under : 1
         over : 0
-      lower_bound : -48.8889
     alpha : 1
     beta : 0.2500
     gamma : 0
@@ -117,7 +114,6 @@ structures:
       weight :
         under : 0.5
         over : 0
-      lower_bound : -116.6667
     alpha : 1
     beta : 0.3333
     gamma : 0

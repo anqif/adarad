@@ -65,10 +65,10 @@ def main(figpath = "", datapath = ""):
 	# Health constraints.
 	health_lower = np.full((T,K), -np.inf)
 	health_upper = np.full((T,K), np.inf)
-	health_lower[:,1] = -1.0     # Lower bound on OARs.
-	health_lower[:,2] = -2.0
-	health_lower[:,3] = -2.0
-	health_lower[:,4] = -3.0
+	# health_lower[:,1] = -1.0     # Lower bound on OARs.
+	# health_lower[:,2] = -2.0
+	# health_lower[:,3] = -2.0
+	# health_lower[:,4] = -3.0
 	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 

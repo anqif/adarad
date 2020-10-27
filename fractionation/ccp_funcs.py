@@ -56,7 +56,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 	return {"obj": obj_cur, "status": status, "num_iters": k, "solve_time": solve_time, "doses": d.value,
 			"health_slack": np.array(h_slack_sum[:k])}
 
-def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda h,t: h):
+def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]
 	h_prog = np.zeros((T+1,K))
 	h_prog[0] = h_init
@@ -76,7 +76,7 @@ def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda 
 		R_mat = np.diag(betas/alphas)
 	
 	for t in range(T):
-		h_prog[t+1] = health_map(h_prog[t] - doses[t] - R_mat.dot(doses[t]**2), t)
+		h_prog[t+1] = health_map(h_prog[t] - doses[t] - R_mat.dot(doses[t]**2), doses[t], t)
 	return h_prog
 
 def bed_lin(d, d_k, R_mat):
@@ -97,7 +97,7 @@ def bed_lin_dyn_mats(d_k, R_mat, T_treat, T_recov = 0):
 	r_list += T_recov*[np.zeros(K)]
 	return F_list, G_list, q_list, r_list
 
-def bed_ccp_dyn_treat(A_list, alphas, betas, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None, *args, **kwargs):
+def bed_ccp_dyn_treat(A_list, alphas, betas, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None, *args, **kwargs):
 	T_treat = len(A_list)
 	K = h_init.shape[0]
 	

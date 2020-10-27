@@ -46,7 +46,7 @@ def main(figpath = "", datapath = ""):
 	sigma = 0.05   # 0.025
 	h_noise = mu + sigma*np.random.randn(T,K)
 	# health_map = lambda h,t: h
-	def health_map(h,t):
+	def health_map(h, d, t):
 		h_jitter = h + h_noise[t]
 		h_jitter[0] = np.maximum(h_jitter[0], 0)     # PTV: h_t >= 0.
 		h_jitter[1:] = np.minimum(h_jitter[1:], 0)   # OAR: h_t <= 0.

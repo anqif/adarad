@@ -42,7 +42,7 @@ def single_treatment(A, patient_rx, *args, **kwargs):
 	# h = F.dot(h_init) + G.dot(d.value)
 	return {"obj": prob.value, "status": prob.status, "beams": b.value, "doses": d.value}
 
-def dynamic_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, *args, **kwargs):
+def dynamic_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	F_list, G_list, q_list, r_list = check_dyn_matrices(F_list, G_list, q_list, r_list, K, T_treat, T_recov)
@@ -62,7 +62,7 @@ def dynamic_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx
 	obj = dyn_objective(d.value, health_all[:(T_treat+1)], patient_rx).value
 	return {"obj": obj, "status": prob.status, "solve_time": prob.solver_stats.solve_time, "beams": beams_all, "doses": doses_all, "health": health_all}
 
-def mpc_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, \
+def mpc_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, \
 				  use_slack = True, slack_weights = None, slack_final = True, mpc_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
@@ -119,7 +119,7 @@ def mpc_treatment(A_list, F_list, G_list, q_list, r_list, h_init, patient_rx, T_
 		doses[t_s] = d.value[0]
 		
 		# Update health for next period.
-		h_cur = health_map(h.value[1], t_s)
+		h_cur = health_map(h.value[1], doses[t_s], t_s)
 		# h_cur = health_map(F_list[t_s].dot(h_cur) + G_list[t_s].dot(doses[t_s]) + q_list[t_s]*doses[t_s]**2 + r_list[t_s], t_s)
 	
 	# Construct full results.

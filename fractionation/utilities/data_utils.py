@@ -297,7 +297,7 @@ def check_prog_parms(alpha, beta, gamma, doses, K, T, is_range = False):
 	return alpha, beta, gamma, doses
 
 # Health prognosis with a given treatment.
-def health_prognosis(h_init, T, F_list, G_list = None, q_list = None, r_list = None, doses = None, health_map = lambda h,t: h):
+def health_prognosis(h_init, T, F_list, G_list = None, q_list = None, r_list = None, doses = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]
 
 	# Defaults to no treatment.
@@ -325,20 +325,20 @@ def health_prognosis(h_init, T, F_list, G_list = None, q_list = None, r_list = N
 	h_prog = np.zeros((T+1,K))
 	h_prog[0] = h_init
 	for t in range(T):
-		h_prog[t+1] = health_map(F_list[t].dot(h_prog[t]) + G_list[t].dot(doses[t]) + q_list[t]*doses[t]**2 + r_list[t], t)
+		h_prog[t+1] = health_map(F_list[t].dot(h_prog[t]) + G_list[t].dot(doses[t]) + q_list[t]*doses[t]**2 + r_list[t], doses[t], t)
 	return h_prog
 
-def health_prog_quad(h_init, T, alpha = None, beta = None, gamma = None, doses = None, health_map = lambda h,t: h):
+def health_prog_quad(h_init, T, alpha = None, beta = None, gamma = None, doses = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]
 	alpha, beta, gamma, doses = check_prog_parms(alpha, beta, gamma, doses, K, T)
 
 	h_prog = np.zeros((T+1,K))
 	h_prog[0] = h_init
 	for t in range(T):
-		h_prog[t+1] = health_map(h_prog[t] - alpha[t]*doses[t] - beta[t]*doses[t]**2 + gamma[t], t)
+		h_prog[t+1] = health_map(h_prog[t] - alpha[t]*doses[t] - beta[t]*doses[t]**2 + gamma[t], doses[t], t)
 	return h_prog
 
-def health_prog_lin(h_init, T, alpha = None, beta = None, gamma = None, doses = None, d_parm = None, health_map = lambda h,t: h):
+def health_prog_lin(h_init, T, alpha = None, beta = None, gamma = None, doses = None, d_parm = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]
 	alpha, beta, gamma, doses = check_prog_parms(alpha, beta, gamma, doses, K, T)
 	if d_parm is None:
@@ -347,16 +347,16 @@ def health_prog_lin(h_init, T, alpha = None, beta = None, gamma = None, doses = 
 	h_prog = np.zeros((T + 1, K))
 	h_prog[0] = h_init
 	for t in range(T):
-		h_prog[t+1] = health_map(h_prog[t] - alpha[t]*doses[t] - beta[t]*d_parm[t]*(2*doses[t] - d_parm[t]) + gamma[t], t)
+		h_prog[t+1] = health_map(h_prog[t] - alpha[t]*doses[t] - beta[t]*d_parm[t]*(2*doses[t] - d_parm[t]) + gamma[t], doses[t], t)
 	return h_prog
 
-def health_prog_act(h_init, T, alpha = None, beta = None, gamma = None, doses = None, is_target = None, health_map = lambda h,t: h):
+def health_prog_act(h_init, T, alpha = None, beta = None, gamma = None, doses = None, is_target = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]
 	alpha, beta, gamma, doses = check_prog_parms(alpha, beta, gamma, doses, K, T)
 	return health_prog_act_range(h_init, 0, T, alpha = alpha, beta = beta, gamma = gamma, doses = doses,
 								 is_target = is_target, health_map = health_map)
 
-def health_prog_act_range(h_init, t_s, T, alpha = None, beta = None, gamma = None, doses = None, is_target = None, health_map = lambda h,t: h):
+def health_prog_act_range(h_init, t_s, T, alpha = None, beta = None, gamma = None, doses = None, is_target = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]
 	if t_s > T or t_s < 0:
 		raise ValueError("t_s must be an integer in [0, {0}]".format(T))
@@ -392,12 +392,12 @@ def health_prog_act_range(h_init, t_s, T, alpha = None, beta = None, gamma = Non
 	h_idx = 0
 	for t in range(t_s, T):
 		h_quad_expr = h_prog[h_idx] - alpha[t]*doses[t] - beta[t]*doses[t]**2 + gamma[t]
-		h_prog[h_idx+1,is_target] = health_map_ptv(h_quad_expr[is_target], t)
-		h_prog[h_idx+1,~is_target] = health_map_oar(h_quad_expr[~is_target], t)
+		h_prog[h_idx+1,is_target] = health_map_ptv(h_quad_expr[is_target], doses[t,is_target], t)
+		h_prog[h_idx+1,~is_target] = health_map_oar(h_quad_expr[~is_target], doses[t,~is_target], t)
 		h_idx = h_idx + 1
 	return h_prog
 
-def health_prog_est(h_init, T, alpha = None, beta = None, gamma = None, doses = None, d_parm = None, is_target = None, health_map = lambda h,t: h):
+def health_prog_est(h_init, T, alpha = None, beta = None, gamma = None, doses = None, d_parm = None, is_target = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]
 	alpha, beta, gamma, doses = check_prog_parms(alpha, beta, gamma, doses, K, T)
 	if d_parm is None:

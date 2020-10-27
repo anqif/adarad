@@ -46,7 +46,7 @@ def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
     d_val = A.dot(b.value)
     pipe.send((b.value, d_val))
 
-def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,t: h, d_init = None,
+def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
                               use_ccp_slack = False, ccp_slack_weight = 0, mpc_slack_weights = 1, partial_results = False,
                               admm_verbose = False, *args, **kwargs):
     T_treat = len(A_list)
@@ -168,8 +168,8 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
     beta_pad = np.vstack([beta, np.zeros((T_recov, K))])
 
     # Extend optimal health status into recovery stage using linear-quadratic model.
-    health_recov = health_prog_act_range(h.value[-1], T_treat - 1, T_treat + T_recov, gamma=gamma,
-                                         is_target=patient_rx["is_target"], health_map=health_map)
+    health_recov = health_prog_act_range(h.value[-1], T_treat - 1, T_treat + T_recov, gamma = gamma,
+                                         is_target = patient_rx["is_target"], health_map = health_map)
     health_opt_recov = np.row_stack([h.value, health_recov[1:]])
 
     # Compute health status from optimal doses using linearized/linear-quadratic models.

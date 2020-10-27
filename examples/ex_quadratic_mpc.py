@@ -45,11 +45,11 @@ def main(figpath = "", datapath = ""):
 	# health_map = lambda h,t: h + h_noise[t]
 
 	# PTV: h_t >= 0.
-	def health_map_ptv(h, t):
+	def health_map_ptv(h, d, t):
 		h_jitter = h + h_noise[t,is_target]
 		return np.maximum(h_jitter, 0)
 	# OAR: h_t <= 0.
-	def health_map_oar(h, t):
+	def health_map_oar(h, d, t):
 		h_jitter = h + h_noise[t,~is_target]
 		return np.minimum(h_jitter, 0)
 	health_map = {"target": health_map_ptv, "organ": health_map_oar}

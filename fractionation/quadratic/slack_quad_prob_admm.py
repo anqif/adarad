@@ -14,7 +14,7 @@ def build_dyn_slack_quad_prob_dose(A_list, patient_rx):
 
     # Main variables.
     b = Variable((T_treat, n), nonneg=True, name="beams")  # Beams.
-    d = vstack([A_list[t] * b[t] for t in range(T_treat)])  # Doses.
+    d = vstack([A_list[t] @ b[t] for t in range(T_treat)])  # Doses.
 
     # Dose penalty function.
     obj = sum([dose_penalty(d[t], patient_rx["dose_goal"][t], patient_rx["dose_weights"]) for t in range(T_treat)])
