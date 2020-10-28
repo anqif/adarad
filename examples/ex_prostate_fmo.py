@@ -13,6 +13,7 @@ from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	# Import data.
+	figprefix = "ex_prostate_FMO_stanford-trial_05-"
 	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_prostate_FMO_stanford.yml")
 
 	# Patient data.
@@ -46,16 +47,20 @@ def main(figpath = "", datapath = ""):
 	print("Objective:", res_dynamic["obj"])
 	print("Solve Time:", res_dynamic["solve_time"])
 	print("Iterations:", res_dynamic["num_iters"])
+	print("Beam Max:", np.max(res_dynamic["beams"]))
+	print("Beam Sum:", np.sum(res_dynamic["beams"]))
 
 	# Plot total slack in health dynamics per iteration.
-	plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_prostate_FMO_slacks.png")
+	if "health_slack" in res_dynamic:
+		plot_slacks(res_dynamic["health_slack"], show = False, filename = figpath + figprefix + "slacks.png")
 
 	# Plot dynamic health and treatment curves.
-	plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_prostate_FMO_residuals.png")
+	if "primal" in res_dynamic and "dual" in res_dynamic:
+		plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, show = False, filename = figpath + figprefix + "residuals.png")
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-	 				color = colors[0], one_idx = True, filename = figpath + "ex_prostate_FMO_health.png")
-	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, 
-	 				filename = figpath + "ex_prostate_FMO_doses.png")
+	 				color = colors[0], one_idx = True, show = False, filename = figpath + figprefix + "health.png")
+	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, show = False, 
+	 				filename = figpath + figprefix + "doses.png")
 
 	# Compare PTV health curves under linearized, linearized with slack, and linear-quadratic models.
 	# sidx = 0
@@ -80,5 +85,5 @@ def main(figpath = "", datapath = ""):
 	# 			filename = figpath + "ex_prostate_FMO_PTV_health.png")
 
 if __name__ == '__main__':
-	main(figpath = "/media/datdisk3/anqif/test/frac_test/figures/",
-		 datapath = "/media/datdisk3/anqif/test/frac_test/prostate/")
+	main(figpath = "/home/anqif/fractionation/examples/output/figures/",
+		 datapath = "/home/anqif/fractionation/examples/data/")

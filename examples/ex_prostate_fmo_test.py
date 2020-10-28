@@ -51,10 +51,12 @@ def main(figpath = "", datapath = ""):
 	print("Beam Sum:", np.sum(res_dynamic["beams"]))
 
 	# Plot total slack in health dynamics per iteration.
-	# plot_slacks(res_dynamic["health_slack"], filename = figpath + figprefix + "slacks.png")
+	if "health_slack" in res_dynamic:
+		plot_slacks(res_dynamic["health_slack"], filename = figpath + figprefix + "slacks.png")
 
 	# Plot dynamic health and treatment curves.
-	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + figprefix + "residuals.png")
+	if "primal" in res_dynamic and "dual" in res_dynamic:
+		plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + figprefix + "residuals.png")
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
 	 				color = colors[0], one_idx = True, filename = figpath + figprefix + "health.png")
 	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, 
