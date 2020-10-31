@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib
-matplotlib.use("TKAgg")
+# matplotlib.use("TKAgg")
 
 from fractionation.quad_funcs import dyn_quad_treat
 from fractionation.quad_admm_funcs import dyn_quad_treat_admm

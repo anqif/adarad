@@ -13,7 +13,7 @@ from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	# Import data.
-	figprefix = "ex_prostate_FMO_stanford_test-"
+	figprefix = "ex_prostate_FMO_stanford_test-admm-"
 	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_prostate_FMO_stanford_test.yml")
 
 	# Patient data.
@@ -38,10 +38,10 @@ def main(figpath = "", datapath = ""):
 	curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
 	# Dynamic treatment.
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-								 max_iter = 30, solver = "MOSEK", ccp_verbose = True)
-	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-	# 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 50, admm_verbose = True)
+	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+	#							 max_iter = 30, solver = "MOSEK", ccp_verbose = True)
+	res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+	 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 1000, admm_verbose = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])

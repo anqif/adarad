@@ -37,7 +37,7 @@ def build_dyn_slack_quad_prob_dose_period(A, patient_rx):
 
     # Define variables for period.
     b_t = Variable(n, nonneg=True, name="beams")  # Beams.
-    d_t = A * b_t
+    d_t = A @ b_t
 
     # Dose penalty current period.
     obj = dose_penalty(d_t, patient_rx["dose_goal"], patient_rx["dose_weights"])
