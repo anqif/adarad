@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib
-matplotlib.use("TKAgg")
+# matplotlib.use("TKAgg")
 
 from fractionation.quad_funcs import dyn_quad_treat
 from fractionation.quad_admm_funcs import dyn_quad_treat_admm
@@ -60,10 +60,10 @@ def main(figpath = "", datapath = ""):
 
 		# Plot dynamic health and treatment curves.
 		if "primal" in res_dynamic and "dual" in res_dynamic:
-			plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + figprefix + rhoprefix + "residuals.png")
+			plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, show = False, filename = figpath + figprefix + rhoprefix + "residuals.png")
 		plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
-		 				color = colors[0], one_idx = True, filename = figpath + figprefix + rhoprefix + "health.png")
-		plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, 
+		 				color = colors[0], one_idx = True, show = False, filename = figpath + figprefix + rhoprefix + "health.png")
+		plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, show = False, 
 		 				filename = figpath + figprefix + rhoprefix + "doses.png")
 
 if __name__ == '__main__':
