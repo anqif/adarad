@@ -13,7 +13,8 @@ from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	# Import data.
-	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_prostate_fmo_model.yml")
+	# patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_prostate_fmo_model.yml")
+	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_prostate_fmo_500_beams_model.yml")
 
 	# Patient data.
 	A_list = patient_bio["dose_matrices"]
@@ -80,5 +81,5 @@ def main(figpath = "", datapath = ""):
 	# 			show = False, filename = figpath + "ex_prostate_fmo_PTV_health.png")
 
 if __name__ == '__main__':
-	main(figpath = "/media/datdisk3/anqif/test/frac_test/figures/",
-		 datapath = "/media/datdisk3/anqif/test/frac_test/prostate/")
+	main(figpath = "/home/anqi/Documents/software/fractionation/examples/output/figures/",
+		 datapath = "/home/anqi/Documents/software/fractionation/examples/data/")
