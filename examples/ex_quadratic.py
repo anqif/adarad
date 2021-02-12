@@ -65,10 +65,10 @@ def main(figpath = "", datapath = ""):
 	# Health constraints.
 	health_lower = np.full((T,K), -np.inf)
 	health_upper = np.full((T,K), np.inf)
-	# health_lower[:,1] = -1.0     # Lower bound on OARs.
-	# health_lower[:,2] = -2.0
-	# health_lower[:,3] = -2.0
-	# health_lower[:,4] = -3.0
+	health_lower[:,1] = -1.0     # Lower bound on OARs.
+	health_lower[:,2] = -2.0
+	health_lower[:,3] = -2.0
+	health_lower[:,4] = -3.0
 	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 
@@ -76,10 +76,12 @@ def main(figpath = "", datapath = ""):
 	# patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
 	# Dynamic treatment.
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-								 max_iter = 15, solver = "MOSEK", ccp_verbose = True)
-	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-	# 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 50, admm_verbose = True)
+	# TODO: Add dose auto-init to all functions and compare solve times.
+	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+	#							 max_iter = 15, solver = "MOSEK", ccp_verbose = True)
+	res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+	 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 500, admm_verbose = True,
+									  auto_init = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])

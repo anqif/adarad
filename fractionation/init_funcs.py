@@ -7,7 +7,7 @@ from fractionation.problem.dyn_prob import dose_penalty, health_penalty
 from fractionation.quadratic.dyn_quad_prob import rx_to_quad_constrs
 from fractionation.utilities.data_utils import check_quad_vectors
 
-def dyn_init_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=0, use_slack = False, slack_weight = 0, *args, **kwargs):
+def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=0, use_slack = False, slack_weight = 0, *args, **kwargs):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
@@ -20,7 +20,7 @@ def dyn_init_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=0, us
 
     # Constant dose per fraction
     d_init = np.array(T_treat*[d.value])
-    return d_init
+    return {"dose": d_init, "solve_time": prob.solver_stats.solve_time}
 
 # Objective function for initialization problem.
 def dyn_obj_init(d_var, h_var, patient_rx):
@@ -28,13 +28,14 @@ def dyn_obj_init(d_var, h_var, patient_rx):
     T = T_plus1 - 1
     if d_var.shape[0] not in [(K,), (K,1)]:
         raise ValueError("d_var must have dimensions ({0},)".format(K))
-    if patient_rx["dose_goal"].shape not in [(K,), (K,1)]:
-        raise ValueError("dose_goal must have dimensions ({0},)".format(K))
+    if patient_rx["dose_goal"].shape != (T, K):
+        raise ValueError("dose_goal must have dimensions ({0},{1})".format(T, K))
     if patient_rx["health_goal"].shape != (T, K):
         raise ValueError("health_goal must have dimensions ({0},{1})".format(T, K))
 
+    dose_init_goal = np.mean(patient_rx["dose_goal"], axis = 0)   # Average dose goal over time.
     h_penalties = [health_penalty(h_var[t + 1], patient_rx["health_goal"][t], patient_rx["health_weights"]) for t in range(T)]
-    d_penalty = T * dose_penalty(d_var, patient_rx["dose_goal"])   # Same dose in each fraction.
+    d_penalty = T * dose_penalty(d_var, dose_init_goal)   # Same dose in each fraction.
     return sum(h_penalties) + d_penalty
 
 # Change time-varying bounds to static bound per fraction.
@@ -103,14 +104,15 @@ def build_dyn_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
 
     b = Variable((n,), nonneg=True, name="beams")  # Beams per fraction.
     h = Variable((T_treat + 1, K), name="health")  # Health statuses.
-    d = A_list[0] @ b   # Dose per fraction.
+    d = A_list[0] @ b   # Constant dose per fraction.
+    d_rep = vstack(T_treat*[d])
 
     # Objective function.
     obj = dyn_obj_init(d, h, patient_rx)
 
     # Health dynamics for treatment stage.
-    h_lin = h[:-1] - multiply(alpha, d) + gamma[:T_treat]
-    h_quad = h_lin - multiply(beta, square(d))
+    h_lin = h[:-1] - multiply(alpha, d_rep) + gamma[:T_treat]
+    h_quad = h_lin - multiply(beta, square(d_rep))
 
     # Allow slack in PTV health dynamics constraint.
     h_slack = Constant(0)
