@@ -7,6 +7,7 @@ from multiprocessing import Process, Pipe
 from collections import defaultdict, Counter
 
 from fractionation.ccp_funcs import ccp_solve
+from fractionation.init_funcs import dyn_init_dose
 from fractionation.mpc_funcs import print_results
 from fractionation.problem.dyn_prob import rx_slice
 
@@ -47,7 +48,7 @@ def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
     pipe.send((b.value, d_val))
 
 def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
-                              use_ccp_slack = False, ccp_slack_weight = 0, mpc_slack_weights = 1, partial_results = False,
+                              auto_init = False, use_ccp_slack = False, ccp_slack_weight = 0, mpc_slack_weights = 1, partial_results = False,
                               admm_verbose = False, *args, **kwargs):
     T_treat = len(A_list)
     K, n = A_list[0].shape
@@ -72,6 +73,21 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         raise ValueError("eps_abs must be a non-negative scalar.")
     if eps_rel < 0:
         raise ValueError("eps_rel must be a non-negative scalar.")
+
+    # Initialize dose.
+    solve_time = 0
+    if d_init is None:
+        if auto_init:
+            if admm_verbose:
+                print("Calculating initial dose...")
+            result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_ccp_slack,
+                                        ccp_slack_weight, *args, **kwargs)
+            d_init = result_init["dose"]
+            solve_time += result_init["solve_time"]
+        else:
+            d_init = np.zeros((T_treat, K))
+    if admm_verbose:
+        print("Initial dose per fraction: {0}".format(d_init[0]))
 
     # Set up dose workers.
     pipes = []
@@ -99,7 +115,6 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
     status_list = []
 
     start = time()
-    solve_time = 0
     while not finished:
         if admm_verbose and k % 10 == 0:
             print("ADMM Iteration:", k)

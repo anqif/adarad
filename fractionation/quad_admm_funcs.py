@@ -84,7 +84,8 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
         if auto_init:
             if admm_verbose:
                 print("Calculating initial dose...")
-            result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_slack, slack_weight, *args, **kwargs)
+            result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_slack, slack_weight,
+                                        *args, **kwargs)
             d_init = result_init["dose"]
             solve_time += result_init["solve_time"]
         else:

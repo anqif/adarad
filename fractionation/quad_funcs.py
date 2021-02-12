@@ -4,6 +4,7 @@ from cvxpy import SolverError
 from collections import Counter
 
 from fractionation.ccp_funcs import ccp_solve
+from fractionation.init_funcs import dyn_init_dose
 from fractionation.mpc_funcs import print_results
 from fractionation.problem.dyn_prob import rx_slice
 
@@ -29,17 +30,38 @@ def print_quad_results(result, is_target, slack_dict=None):
 			print("\t{0} (Lower, Upper):".format(key.title()), func_ss(value))
 
 def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
-					use_slack = False, slack_weight = 0, *args, **kwargs):
+					auto_init = False, use_slack = False, slack_weight = 0, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
+
+	# Problem parameters.
+	max_iter = kwargs.pop("max_iter", 50)  # Maximum iterations.
+	ccp_eps = kwargs.pop("ccp_eps", 1e-3)  # Stopping tolerance.
+	ccp_verbose = kwargs.pop("ccp_verbose", False)
+
+	# Initialize dose.
+	solve_time = 0
+	if d_init is None:
+		if auto_init:
+			if ccp_verbose:
+				print("Calculating initial dose...")
+			result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_slack, slack_weight)
+			d_init = result_init["dose"]
+			solve_time += result_init["solve_time"]
+		else:
+			d_init = np.zeros((T_treat, K))
+	if ccp_verbose:
+		print("Initial dose per fraction: {0}".format(d_init[0]))
 	
 	# Build problem for treatment stage.
 	prob, b, h, d, d_parm, h_dyn_slack = build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov,
 															 use_slack, slack_weight)
-	result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, *args, **kwargs)
+	result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, ccp_verbose, max_iter = max_iter, ccp_eps = ccp_eps,
+					   *args, **kwargs)
 	if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
 		raise RuntimeError("CCP solve failed with status {0}".format(result["status"]))
+	solve_time += result["solve_time"]
 	
 	# Construct full results.
 	beams_all = pad_matrix(b.value, T_recov)
@@ -59,17 +81,37 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	obj = dyn_quad_obj(d, health_proj[:(T_treat+1)], patient_rx).value
 	if use_slack:
 		obj += slack_weight*np.sum(h_dyn_slack.value)
-	return {"obj": obj, "status": result["status"], "solve_time": result["solve_time"], "num_iters": result["num_iters"],
+	return {"obj": obj, "status": result["status"], "solve_time": solve_time, "num_iters": result["num_iters"],
 			"beams": beams_all, "doses": doses_all, "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est,
 			"health_slack": result["health_slack"]}
 
 def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
-				   use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = False, mpc_slack_weights = 1, mpc_verbose = False,
-				   *args, **kwargs):
+				   auto_init = False, use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = False, mpc_slack_weights = 1,
+				   mpc_verbose = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
-	
+
+	# Problem parameters.
+	max_iter = kwargs.pop("max_iter", 50)  # Maximum iterations.
+	ccp_eps = kwargs.pop("ccp_eps", 1e-3)  # Stopping tolerance.
+	ccp_verbose = kwargs.pop("ccp_verbose", False)
+
+	# Initialize dose.
+	solve_time = 0
+	if d_init is None:
+		if auto_init:
+			if mpc_verbose:
+				print("Calculating initial dose...")
+			result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_ccp_slack,
+										ccp_slack_weight)
+			d_init = result_init["dose"]
+			solve_time += result_init["solve_time"]
+		else:
+			d_init = np.zeros((T_treat, K))
+	if mpc_verbose:
+		print("Initial dose per fraction: {0}".format(d_init[0]))
+
 	# Initialize values.
 	beams = np.zeros((T_treat,n))
 	doses = np.zeros((T_treat,K))
@@ -79,7 +121,6 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	health_opt[0] = h_init
 
 	num_iters = 0
-	solve_time = 0
 	status_list = []
 	h_cur = h_init
 	for t_s in range(T_treat):
@@ -97,7 +138,8 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 			# prob, b, h, d, d_parm, h_dyn_slack = build_dyn_quad_prob(A_list[t_s:], alpha[t_s:], beta[t_s:], gamma[t_s:],
 			# 											h_cur, rx_cur, T_recov, use_ccp_slack, ccp_slack_weight)
 		try:
-			result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, *args, **kwargs)
+			result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, ccp_verbose, max_iter = max_iter, ccp_eps = ccp_eps,
+							   *args, **kwargs)
 			status = result["status"]
 		except SolverError:
 			status = "SolverError"
