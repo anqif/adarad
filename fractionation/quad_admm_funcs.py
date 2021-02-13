@@ -86,7 +86,7 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
                 print("Calculating initial dose...")
             result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_slack, slack_weight,
                                         *args, **kwargs)
-            d_init = result_init["dose"]
+            d_init = result_init["doses"]
             solve_time += result_init["solve_time"]
         else:
             d_init = np.zeros((T_treat, K))

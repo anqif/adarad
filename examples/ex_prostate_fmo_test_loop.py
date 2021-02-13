@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib
 # matplotlib.use("TKAgg")
 
+from fractionation.init_funcs import dyn_init_dose
 from fractionation.quad_funcs import dyn_quad_treat
 from fractionation.quad_admm_funcs import dyn_quad_treat_admm
 
@@ -35,16 +36,30 @@ def main(figpath = "", datapath = ""):
 	prop_cycle = plt.rcParams["axes.prop_cycle"]
 	colors = prop_cycle.by_key()["color"]
 	h_prog = health_prog_act(h_init, T, gamma = gamma)
-	curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
+	h_curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
+
+	res_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4, solver = "MOSEK")
+	d_init = res_init["doses"]
+	h_equal = health_prog_act(h_init, T, alpha, beta, gamma, d_init, patient_rx["is_target"])
+
+	# Plot initial health, and treatment curves.
+	plot_health(h_equal, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Initial Stage: Health Status vs. Time", 
+				label = "Treated", color = colors[0], one_idx = True)
+	plot_treatment(d_init, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Initial Stage: Treatment Dose vs. Time", one_idx = True)
 
 	# Dynamic treatment.
-	admm_max_iter = 500
+	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+	#							 max_iter = 30, solver = "MOSEK", ccp_verbose = True, d_init = d_init)
+	h_curves += [{"h": h_equal, "label": "Initial", "kwargs": {"color": colors[2]}}]
+	d_curves  = [{"d": d_init, "label": "Initial", "kwargs": {"color": colors[2]}}]
+
+	# Dynamic treatment with ADMM.
+	admm_max_iter = 100
 	rho_list = [1, 5, 20, 50]
 	for rho in rho_list:
-		# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-		#							 max_iter = 30, solver = "MOSEK", ccp_verbose = True)
 		res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-		 								  ccp_max_iter = 15, solver = "MOSEK", rho = rho, admm_max_iter = admm_max_iter, admm_verbose = True)
+		 								  ccp_max_iter = 15, solver = "MOSEK", rho = rho, admm_max_iter = admm_max_iter, admm_verbose = True,
+		 								  d_init = d_init)
 		print("Dynamic Treatment with ADMM (rho = {0})".format(rho))
 		print("Status:", res_dynamic["status"])
 		print("Objective:", res_dynamic["obj"])
@@ -56,16 +71,17 @@ def main(figpath = "", datapath = ""):
 		# Plot total slack in health dynamics per iteration.
 		rhoprefix = "rho_{0}-".format(rho)
 		if "health_slack" in res_dynamic:
-			plot_slacks(res_dynamic["health_slack"], filename = figpath + figprefix + rhoprefix + "slacks.png")
+			plot_slacks(res_dynamic["health_slack"], show = False, filename = figpath + figprefix + rhoprefix + "slacks.png")
 
 		# Plot dynamic health and treatment curves.
-		if "primal" in res_dynamic and "dual" in res_dynamic:
-			plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, show = False, filename = figpath + figprefix + rhoprefix + "residuals.png")
-		plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
+		plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, show = False, filename = figpath + figprefix + rhoprefix + "residuals.png")
+		plot_health(res_dynamic["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 
 		 				color = colors[0], one_idx = True, show = False, filename = figpath + figprefix + rhoprefix + "health.png")
-		plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, show = False, 
+		plot_treatment(res_dynamic["doses"], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, show = False, 
 		 				filename = figpath + figprefix + rhoprefix + "doses.png")
 
 if __name__ == '__main__':
-	main(figpath = "/home/anqif/fractionation/examples/output/figures/",
-		 datapath = "/home/anqif/fractionation/examples/data/")
+	# main(figpath = "/home/anqif/fractionation/examples/output/figures/",
+	#	 datapath = "/home/anqif/fractionation/examples/data/")
+	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/",
+		 datapath = "C:/Users/Anqi/Documents/Software/fractionation/examples/data/")

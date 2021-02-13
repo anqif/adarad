@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("TKAgg")
 
+from fractionation.init_funcs import dyn_init_dose
 from fractionation.quad_funcs import dyn_quad_treat
 from fractionation.quad_admm_funcs import dyn_quad_treat_admm
 from fractionation.utilities.plot_utils import *
@@ -39,7 +40,7 @@ def main(figpath = "", datapath = ""):
 	prop_cycle = plt.rcParams['axes.prop_cycle']
 	colors = prop_cycle.by_key()['color']
 	h_prog = health_prog_act(h_init, T, gamma = gamma)
-	curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
+	h_curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
 	# Penalty functions.
 	w_lo = np.array([0] + (K-1)*[1])
@@ -75,59 +76,33 @@ def main(figpath = "", datapath = ""):
 	patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
 	# patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
+	res_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4, solver = "MOSEK")
+	d_init = res_init["doses"]
+	print("Initial dose per fraction: {0}".format(d_init[0]))
+	h_equal = health_prog_act(h_init, T, alpha, beta, gamma, d_init, patient_rx["is_target"])
+
+	# Plot initial beam, health, and treatment curves.
+	plot_beams(res_init["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
+			   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Initial Stage: Beam Intensities vs. Time", one_idx = True,
+			   structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
+	plot_health(h_equal, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Initial Stage: Health Status vs. Time", 
+				label = "Treated", color = colors[0], one_idx = True)
+	plot_treatment(d_init, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Initial Stage: Treatment Dose vs. Time", one_idx = True)
+
 	# Dynamic treatment.
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-								 max_iter = 15, solver = "MOSEK", ccp_verbose = True, auto_init = True)
-	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-	# 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 500, admm_verbose = True,
-	#								  auto_init = True)
-	print("Dynamic Treatment")
-	print("Status:", res_dynamic["status"])
-	print("Objective:", res_dynamic["obj"])
-	print("Solve Time:", res_dynamic["solve_time"])
-	print("Iterations:", res_dynamic["num_iters"])
-
-	# Plot total slack in health dynamics per iteration.
-	# plot_slacks(res_dynamic["health_slack"], title = "Health Dynamics Slack vs. Iteration")
-	# plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_cardioid_lq_ccp_slacks.png")
+								 max_iter = 15, solver = "MOSEK", ccp_verbose = True, d_init = d_init)
 
 	# Plot dynamic beam, health, and treatment curves.
-	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True)
+	h_curves += [{"h": h_equal, "label": "Initial", "kwargs": {"color": colors[2]}}]
+	d_curves  = [{"d": d_init, "label": "Initial", "kwargs": {"color": colors[2]}}]
 	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
 			   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Beam Intensities vs. Time", one_idx = True,
 			   structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
-	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper),
+	plot_health(res_dynamic["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
 				title = "Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True)
-	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper),
+	plot_treatment(res_dynamic["doses"], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper),
 				   title = "Treatment Dose vs. Time", one_idx = True)
-
-	# plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5),
-	#			one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, filename = figpath + "ex_cardioid_lq_ccp_beams.png")
-	# plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), one_idx = True, filename = figpath + "ex_cardioid_lq_ccp_health.png")
-	# plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, filename = figpath + "ex_cardioid_lq_ccp_doses.png")
-
-	# Compare PTV health curves under linearized, linearized with slack, and linear-quadratic models.
-	# sidx = 0
-	# iters = np.array([1, 2, 5])
-	# M = len(iters)
-	#
-	# ptv_health = np.zeros((T+1,M))
-	# ptv_health_est = np.zeros((T+1,M))
-	# ptv_health_opt = np.zeros((T+1,M))
-	#
-	# for j in range(M):
-	# 	print("\nDynamic Treatment with Maximum Iterations {0}".format(iters[j]))
-	# 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, d_init = d_init, use_slack = True,
-	# 								slack_weight = 1e4, max_iter = iters[j], solver = "MOSEK", ccp_verbose = True)
-	# 	ptv_health[:,j] = res_dynamic["health"][:,sidx]
-	# 	ptv_health_est[:,j] = res_dynamic["health_est"][:,sidx]
-	# 	ptv_health_opt[:,j] = res_dynamic["health_opt"][:,sidx]
-	#
-	# curves = [{"h": ptv_health_est, "label": "Linearized", "kwargs": {"color": colors[3], "linestyle": "dashed"}}]
-	# curves += [{"h": ptv_health_opt, "label": "Linearized with Slack", "kwargs": {"color": colors[2], "linestyle": "dashed"}}]
-	# plot_health(ptv_health, curves = curves, stepsize = 10, label = "Linear-Quadratic", one_idx = True)
-	# plot_health(ptv_health, curves = curves, stepsize = 10, label = "Linear-Quadratic", indices = np.array(iters), one_idx = True,
-	# 			filename = figpath + "ex_cardioid_ccp_PTV_health.png")
 
 if __name__ == '__main__':
 	main(figpath = "/home/anqi/Dropbox/Research/Fractionation/Figures/", \

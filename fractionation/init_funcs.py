@@ -19,8 +19,9 @@ def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov=0, use
         raise RuntimeError("Solver failed with status {0}".format(prob.status))
 
     # Constant dose per fraction
+    b_init = np.array(T_treat*[b.value])
     d_init = np.array(T_treat*[d.value])
-    return {"dose": d_init, "solve_time": prob.solver_stats.solve_time}
+    return {"beams": b_init, "doses": d_init, "solve_time": prob.solver_stats.solve_time}
 
 # Objective function for initialization problem.
 def dyn_obj_init(d_var, h_var, patient_rx):

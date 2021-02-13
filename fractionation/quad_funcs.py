@@ -46,8 +46,8 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 		if auto_init:
 			if ccp_verbose:
 				print("Calculating initial dose...")
-			result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_slack, slack_weight)
-			d_init = result_init["dose"]
+			result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_slack, slack_weight, *args, **kwargs)
+			d_init = result_init["doses"]
 			solve_time += result_init["solve_time"]
 		else:
 			d_init = np.zeros((T_treat, K))
@@ -104,8 +104,8 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 			if mpc_verbose:
 				print("Calculating initial dose...")
 			result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_ccp_slack,
-										ccp_slack_weight)
-			d_init = result_init["dose"]
+										ccp_slack_weight, *args, **kwargs)
+			d_init = result_init["doses"]
 			solve_time += result_init["solve_time"]
 		else:
 			d_init = np.zeros((T_treat, K))
