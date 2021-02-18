@@ -6,7 +6,7 @@ from cvxpy import Constant
 from fractionation.utilities.data_utils import pad_matrix
 from fractionation.mpc_funcs import build_dyn_prob, dyn_objective
 
-def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose = False, *args, **kwargs):
+def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose = False, full_hist = False, *args, **kwargs):
 	if d_init is None:
 		d_init = np.zeros(d_parm.shape)
 
@@ -26,6 +26,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 	finished = False
 	obj_cur = np.inf
 	d_cur = d_init
+	dose_list = []
 	status_list = []
 	h_slack_sum = np.zeros(max_iter)
 
@@ -41,6 +42,10 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 		solve_time += prob.solver_stats.solve_time
 		status_list.append(prob.status)
 
+		# Save entire history of doses.
+		if full_hist:
+			dose_list.append(d.value.copy())
+
 		# Check stopping criterion.
 		obj_diff = obj_cur - prob.value
 		finished = (k + 1) >= max_iter or obj_diff <= ccp_eps
@@ -53,7 +58,8 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 
 	# Take majority as final status.
 	status, status_count = Counter(status_list).most_common(1)[0]
-	return {"obj": obj_cur, "status": status, "num_iters": k, "solve_time": solve_time, "doses": d.value,
+	doses = dose_list if full_hist else d.value
+	return {"obj": obj_cur, "status": status, "num_iters": k, "solve_time": solve_time, "doses": doses,
 			"health_slack": np.array(h_slack_sum[:k])}
 
 def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda h,d,t: h):

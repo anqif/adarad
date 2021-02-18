@@ -30,7 +30,7 @@ def print_quad_results(result, is_target, slack_dict=None):
 			print("\t{0} (Lower, Upper):".format(key.title()), func_ss(value))
 
 def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
-					auto_init = False, use_slack = False, slack_weight = 0, *args, **kwargs):
+					auto_init = False, use_slack = False, slack_weight = 0, full_hist = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
@@ -57,12 +57,12 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	# Build problem for treatment stage.
 	prob, b, h, d, d_parm, h_dyn_slack = build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov,
 															 use_slack, slack_weight)
-	result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, ccp_verbose, max_iter = max_iter, ccp_eps = ccp_eps,
+	result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, ccp_verbose, full_hist, max_iter = max_iter, ccp_eps = ccp_eps, 
 					   *args, **kwargs)
 	if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
 		raise RuntimeError("CCP solve failed with status {0}".format(result["status"]))
 	solve_time += result["solve_time"]
-	
+
 	# Construct full results.
 	beams_all = pad_matrix(b.value, T_recov)
 	doses_all = pad_matrix(d.value, T_recov)
@@ -78,12 +78,23 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	# Compute health status from optimal doses using linearized/linear-quadratic models.
 	health_proj = health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, patient_rx["is_target"], health_map)
 	health_est = health_prog_est(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, doses_parms, patient_rx["is_target"], health_map)
+	
+	# Compute health status in each CCP iteration.
+	if full_hist:
+		doses_hist = result["doses"]
+		health_hist = [health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, d_cur, patient_rx["is_target"], health_map) for d_cur in doses_hist]
+	else:
+		doses_hist = health_hist = []
+
+	# Compute objective with final dose.
 	obj = dyn_quad_obj(d, health_proj[:(T_treat+1)], patient_rx).value
+	if ccp_verbose:
+		print("Final objective without slack: {0}".format(obj))
 	if use_slack:
 		obj += slack_weight*np.sum(h_dyn_slack.value)
 	return {"obj": obj, "status": result["status"], "solve_time": solve_time, "num_iters": result["num_iters"],
 			"beams": beams_all, "doses": doses_all, "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est,
-			"health_slack": result["health_slack"]}
+			"health_slack": result["health_slack"], "doses_hist": doses_hist, "health_hist": health_hist}
 
 def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
 				   auto_init = False, use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = False, mpc_slack_weights = 1,

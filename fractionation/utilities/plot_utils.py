@@ -27,7 +27,7 @@ def plot_structures(x, y, structures, title = None, one_idx = False, show = True
 		raise ValueError("y must have dimensions ({0},{1})".format(m,n))
 	if structures.shape != (m,n):
 		raise ValueError("structures must have dimensions ({0},{1})".format(m,n))
-	
+		
 	fig = plt.figure()
 	fig.set_size_inches(10,8)
 	
@@ -52,6 +52,33 @@ def plot_structures(x, y, structures, title = None, one_idx = False, show = True
 	if filename is not None:
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
+def plot_struct_beams(x, y, structures, b, angles, offsets, n_grid, title = None, one_idx = False, show = True, filename = None, 
+					  beam_kw = dict(), *args, **kwargs):
+	n = b.shape[0]
+	xlim = kwargs.pop("xlim", (-1,1))
+	ylim = kwargs.pop("ylim", (-1,1))
+	vmax_eps = 1e-3*(np.max(b) - np.min(b))
+	# norm = beam_kw.pop("norm", Normalize(vmin = np.min(b), vmax = np.max(b)))
+	norm = beam_kw.pop("norm", Normalize(vmin = 0, vmax = np.max(b) + vmax_eps))
+
+	if len(angles)*len(offsets) != n:
+		raise ValueError("len(angles)*len(offsets) must equal {0}".format(n))
+
+	plot_structures(x, y, structures, title = title, one_idx = one_idx, show = False, filename = None, *args, **kwargs)
+	ax = plt.gca()    # Get plot axis.
+	fig = plt.gcf()   # Get plot figure.
+
+	# Plot beam intensities.
+	segments = line_segments(angles, offsets, n_grid, xlim, ylim)
+	lc = LineCollection(segments, norm = norm, **beam_kw)
+	lc.set_array(np.asarray(b))
+	ax.add_collection(lc)
+
+	if show:
+		plt.show()
+	if filename is not None:
+		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
+	
 # Plot beams.
 def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardize = False, title = None, one_idx = False,
 			   show = True, filename = None, structures = None, struct_kw = dict(), *args, **kwargs):
