@@ -68,38 +68,30 @@ def rx_to_quad_constrs(expr, rx_dict, is_target):
                 constrs.append(expr_ptv[is_finite] <= rx_upper[is_finite])
     return constrs
 
-# Construct optimal control problem.
-def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_slack = False, slack_weight = 0):
-    T_treat = len(A_list)
-    K, n = A_list[0].shape
-    if h_init.shape[0] != K:
-        raise ValueError("h_init must be a vector of {0} elements".format(K))
-
-    # Define variables.
-    b = Variable((T_treat, n), nonneg=True, name="beams")   # Beams.
-    h = Variable((T_treat + 1, K), name="health")           # Health statuses.
-    d = vstack([A_list[t] @ b[t] for t in range(T_treat)])  # Doses.
-    d_parm = Parameter(d.shape, nonneg=True, name="dose parameter")  # Dose around which to linearize target dynamics.
-
-    # Objective function.
-    obj = dyn_quad_obj(d, h, patient_rx)
-
+def form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = 0, use_taylor = True, use_slack = False, slack_weight = 0):
     # Health dynamics for treatment stage.
     h_lin = h[:-1] - multiply(alpha, d) + gamma[:T_treat]
     h_quad = h_lin - multiply(beta, square(d))
-    h_taylor = h_lin - multiply(multiply(beta, d_parm), 2*d - d_parm)
 
-    # Allow slack in health dynamics constraints.
-    h_dyn_slack = Constant(0)
+    d_parm = Constant(np.zeros(d.shape))
+    h_approx = h_lin
+    if use_taylor:
+        d_parm = Parameter(d.shape, nonneg=True, name="dose parameter")  # Dose point around which to linearize dynamics.
+        h_approx -= multiply(multiply(beta, d_parm), 2*d - d_parm)   # First-order Taylor expansion of quadratic.
+
+    # Allow slack in PTV health dynamics constraints.
     if use_slack:
         h_dyn_slack = Variable((T_treat, K), nonneg=True, name="health dynamics slack")
-        obj += slack_weight*sum(h_dyn_slack)   # TODO: Set slack weight relative to overall health penalty.
-        h_taylor -= h_dyn_slack
+        obj_slack = slack_weight*sum(h_dyn_slack)   # TODO: Set slack weight relative to overall health penalty.
+        h_approx -= h_dyn_slack
+    else:
+        h_dyn_slack = Constant(0)
+        obj_slack = 0
 
     constrs = [h[0] == h_init]
     for t in range(T_treat):
         # For PTV, approximate dynamics via a first-order Taylor expansion.
-        constrs.append(h[t+1, patient_rx["is_target"]] == h_taylor[t, patient_rx["is_target"]])
+        constrs.append(h[t+1, patient_rx["is_target"]] == h_approx[t, patient_rx["is_target"]])
 
         # For OAR, relax dynamics constraint to an upper bound that is always tight at optimum.
         constrs.append(h[t+1, ~patient_rx["is_target"]] <= h_quad[t, ~patient_rx["is_target"]])
@@ -131,6 +123,37 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
             # constrs_r += rx_to_constrs(h_r, patient_rx["recov_constrs"])
             constrs_r += rx_to_quad_constrs(h[1:], patient_rx["health_constrs"], patient_rx["is_target"])
         constrs += constrs_r
+    return constrs, d_parm, obj_slack, h_dyn_slack
 
+# PTV health dynamics is just linear portion: h_{t+1} = h_t - alpha_t*d_t + gamma_t
+def form_lin_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = 0, use_slack = False, slack_weight = 0):
+    return form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = T_recov, use_taylor = False, 
+                            use_slack = use_slack, slack_weight = slack_weight)
+
+# PTV health dynamics is first-order Taylor expansion: h_{t+1} = h_t - alpha_t*d_t - beta*d_t^{parm}*(2*d_t - d_t^{parm}) + gamma_t
+def form_taylor_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = 0, use_slack = False, slack_weight = 0):
+    return form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = T_recov, use_taylor = True, 
+                            use_slack = use_slack, slack_weight = slack_weight)
+
+# Construct optimal control problem.
+def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_slack = False, slack_weight = 0):
+    T_treat = len(A_list)
+    K, n = A_list[0].shape
+    if h_init.shape[0] != K:
+        raise ValueError("h_init must be a vector of {0} elements".format(K))
+
+    # Define variables.
+    b = Variable((T_treat, n), nonneg=True, name="beams")   # Beams.
+    h = Variable((T_treat + 1, K), name="health")           # Health statuses.
+    d = vstack([A_list[t] @ b[t] for t in range(T_treat)])  # Doses.
+    
+    # Objective function.
+    obj_base = dyn_quad_obj(d, h, patient_rx)
+
+    # Form constraints with slack.
+    constrs, d_parm, obj_slack, h_dyn_slack = form_taylor_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, 
+                                                        T_recov = T_recov, use_slack = use_slack, slack_weight = slack_weight)
+
+    obj = obj_base + obj_slack
     prob = Problem(Minimize(obj), constrs)
     return prob, b, h, d, d_parm, h_dyn_slack

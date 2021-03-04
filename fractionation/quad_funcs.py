@@ -80,11 +80,14 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	health_est = health_prog_est(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, doses_parms, patient_rx["is_target"], health_map)
 	
 	# Compute health status in each CCP iteration.
+	doses_hist = []
+	health_hist = []
 	if full_hist:
-		doses_hist = result["doses"]
-		health_hist = [health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, d_cur, patient_rx["is_target"], health_map) for d_cur in doses_hist]
-	else:
-		doses_hist = health_hist = []
+		for d_cur in result["doses"]:
+			d_cur_all = pad_matrix(d_cur, T_recov)
+			h_cur_proj = health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, d_cur_all, patient_rx["is_target"], health_map)
+			doses_hist.append(d_cur_all)
+			health_hist.append(h_cur_proj)
 
 	# Compute objective with final dose.
 	obj = dyn_quad_obj(d, health_proj[:(T_treat+1)], patient_rx).value
@@ -98,7 +101,7 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 
 def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
 				   auto_init = False, use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = False, mpc_slack_weights = 1,
-				   mpc_verbose = False, *args, **kwargs):
+				   mpc_verbose = False, full_hist = False, *args, **kwargs):
 	T_treat = len(A_list)
 	K, n = A_list[0].shape
 	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov)
@@ -132,6 +135,7 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	health_opt[0] = h_init
 
 	num_iters = 0
+	dose_list = []
 	status_list = []
 	h_cur = h_init
 	for t_s in range(T_treat):
@@ -181,6 +185,10 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 		solve_time += result["solve_time"]
 		status_list.append(status)
 
+		# Save entire history of doses.
+		if full_hist:
+			dose_list.append(d.value.copy())
+
 		# Save beams, doses, and health statuses for current period.
 		beams[t_s] = b.value[0]
 		doses[t_s] = d.value[0]
@@ -208,10 +216,24 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	health_est = health_prog_est(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, parms_all,
 								 patient_rx["is_target"], health_map)
 	health_proj = health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, patient_rx["is_target"], health_map)
+
+	# Compute health status in each CCP iteration.
+	doses_hist = []
+	health_hist = []
+	if full_hist:
+		for t_s in range(T_treat):
+			d_cur = np.row_stack([doses[:t_s], dose_list[t_s]])   # Prepend doses delivered in sessions \tau = 1,...,t-1.
+			d_cur_all = pad_matrix(d_cur, T_recov)
+			h_cur_proj = health_prog_act(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, d_cur_all, patient_rx["is_target"], health_map)
+			doses_hist.append(d_cur_all)
+			health_hist.append(h_cur_proj)
+
+	# Compute objective with final dose.
 	obj = dyn_quad_obj(doses, health_proj[:(T_treat + 1)], patient_rx).value
 	if use_ccp_slack:
 		obj += ccp_slack_weight*np.sum(dyn_slacks)
 	# TODO: How should we handle constraint violations?
 	status, status_count = Counter(status_list).most_common(1)[0]   # Take majority as final status.
 	return {"obj": obj, "status": status, "num_iters": num_iters, "solve_time": solve_time, "beams": beams_all,
-			"doses": doses_all, "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est}
+			"doses": doses_all, "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est,
+			"doses_hist": doses_hist, "health_hist": health_hist}

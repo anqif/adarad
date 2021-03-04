@@ -23,7 +23,7 @@ def main(figpath = "", datapath = ""):
 	# Display structures.
 	x_grid, y_grid, regions = simple_structures(n_grid, n_grid)
 	struct_kw = simple_colormap(one_idx = True)
-	plot_structures(x_grid, y_grid, regions, title = "Anatomical Structures", one_idx = True, **struct_kw)
+	# plot_structures(x_grid, y_grid, regions, title = "Anatomical Structures", one_idx = True, **struct_kw)
 	# plot_structures(x_grid, y_grid, regions, one_idx = True, filename = figpath + "ex_cardioid5_structures.png", **struct_kw)
 
 	# Problem data.
@@ -103,43 +103,19 @@ def main(figpath = "", datapath = ""):
 
 	# Dynamic treatment.
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_slack = True,
-								 slack_weight = 1e4, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
-	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map,
-	# 							use_slack = True, slack_weight = 1e4, ccp_max_iter = 15, solver = "MOSEK", rho = 5,
-	# 							admm_max_iter = 50, admm_verbose = True)
+								 slack_weight = 1e4, max_iter = 15, solver = "MOSEK", ccp_verbose = True, auto_init = False,
+								 full_hist = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])
 	print("Solve Time:", res_dynamic["solve_time"])
 	print("Iterations:", res_dynamic["num_iters"])
 
-	# Calculate actual health constraint violation.
-	h_viol_dyn = health_viol(res_dynamic["health"][1:], patient_rx["health_constrs"], is_target)
-	print("Average Health Violation:", h_viol_dyn)
-
-	# Plot dynamic beam, health, and treatment curves.
-	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5),
-				title = "Beam Intensities vs. Time", one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
-	plot_health(res_dynamic["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", one_idx = True)
-	plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", one_idx = True)
-
-	# plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5),
-	#			one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw, filename = figpath + "ex2_beams.png")
-	# plot_health(res_dynamic["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), one_idx = True, filename = figpath + "ex2_health.png")
-	# plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, filename = figpath + "ex2_doses.png")
-
 	# Dynamic treatment with MPC.
 	print("\nStarting MPC algorithm...")
 	res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
-							 ccp_slack_weight = 1e4, use_mpc_slack = True, mpc_slack_weights = 1e4, max_iter = 100,   # max_iter = 15,
-							 solver = "MOSEK", mpc_verbose = True)
-	# res_mpc = mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
-	#							ccp_slack_weight = 1e4, ccp_max_iter = 15, use_mpc_slack = True, mpc_slack_weights = 1e4,
-	#							solver = "MOSEK", rho = 5, admm_max_iter = 50, mpc_verbose = True)
-	# res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
-	#						 ccp_slack_weight = 1e4, max_iter = 15, solver = "MOSEK", mpc_verbose = True)
-	# res_mpc = mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
-	#							  ccp_slack_weight = 1e4, ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 50, mpc_verbose = True)
+							 ccp_slack_weight = 1e4, use_mpc_slack = True, mpc_slack_weights = 1e4, max_iter = 100,
+							 solver = "MOSEK", mpc_verbose = True, auto_init = False, full_hist = True)
 	print("\nMPC Treatment")
 	print("Status:", res_mpc["status"])
 	print("Objective:", res_mpc["obj"])
@@ -156,22 +132,29 @@ def main(figpath = "", datapath = ""):
 	h_curves = h_naive + h_curves
 
 	# Plot dynamic MPC beam, health, and treatment curves.
-	plot_beams(res_mpc["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
-			   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Beam Intensities vs. Time", one_idx = True,
-			   structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
-	plot_health(res_mpc["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
-				title = "Health Status vs. Time", label = "Treated (MPC)", color = colors[2], one_idx = True)
-	plot_treatment(res_mpc["doses"], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper),
-				title = "Treatment Dose vs. Time", label = "MPC", color = colors[2], one_idx = True)
-
 	# plot_beams(res_mpc["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
- 	#			cmap = transp_cmap(plt.cm.Reds, upper = 0.5), one_idx = True, structures = (x_grid, y_grid, regions),
-	#			struct_kw = struct_kw, filename = figpath + "ex2_mpc_beams.png")
-	# plot_health(res_mpc["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
-	#			label = "Treated (MPC)", color = colors[2], one_idx = True, filename = figpath + "ex2_mpc_health.png")
-	# plot_treatment(res_mpc["doses"], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper),
-	#			label = "MPC", color = colors[2], one_idx = True, filename = figpath + "ex2_mpc_doses.png")
+	#		   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Beam Intensities vs. Time", one_idx = True,
+	#		   structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
+
+	print("Plotting results for all iterations")
+	for i in range(T):
+		# plot_health(res_mpc["health_hist"][i], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
+		#		label = "Treated (MPC)", color = colors[2], one_idx = True)
+		# plot_treatment(res_mpc["doses_hist"][i], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper),
+		#		label = "MPC", color = colors[2], one_idx = True)
+
+		# plot_health(res_mpc["health_hist"][i], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
+		#			label = "Treated (MPC)", color = colors[2], one_idx = True, filename = figpath + "ex2_mpc_health_iter_{0}.png".format(i+1))
+		# plot_treatment(res_mpc["doses_hist"][i], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper),
+		#			label = "MPC", color = colors[2], one_idx = True, filename = figpath + "ex2_mpc_doses_iter_{0}.png".format(i+1))
+
+		h_dict = {"v": res_mpc["health_hist"][i], "varname": "h", "curves": h_curves, "stepsize": 10, 
+				  "bounds": (health_lower, health_upper), "label": "Treated (MPC)", "color": colors[2], "one_idx": True, "one_shift": False}
+		d_dict = {"v": res_mpc["doses_hist"][i], "varname": "d", "curves": d_curves, "stepsize": 10, 
+				  "bounds": (dose_lower, dose_upper), "label": "MPC", "color": colors[2], "one_idx": True, "one_shift": True}
+		# plot_stacked([h_dict, d_dict], title = "Health Status and Treatment Dose vs. Time", figsize = (16,10))
+		plot_stacked([h_dict, d_dict], figsize = (16,10), show = False, filename = figpath + "ex2_mpc_health_doses_iter_{0}.png".format(i+1))
 
 if __name__ == '__main__':
-	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/", 
+	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/movie/", 
 		 datapath = "C:/Users/Anqi/Documents/Software/fractionation/examples/data/")

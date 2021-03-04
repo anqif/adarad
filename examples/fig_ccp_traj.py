@@ -95,12 +95,24 @@ def main(figpath = "", datapath = ""):
 
 	print("Plotting results for all iterations")
 	for i in range(res_dynamic["num_iters"]):
-		plot_health(res_dynamic["health_hist"][i], curves = curves, stepsize = 10, bounds = (health_lower, health_upper),
-					label = "Treated", color = colors[0], one_idx = True, show = False, 
-					filename = figpath + "ex1_health_iter_{0}.png".format(i+1))
-		plot_treatment(res_dynamic["doses_hist"][i], stepsize = 10, bounds = (dose_lower, dose_upper),
-				    one_idx = True, show = False, filename = figpath + "ex1_doses_iter_{0}.png".format(i+1))
+		# plot_health(res_dynamic["health_hist"][i], curves = curves, stepsize = 10, bounds = (health_lower, health_upper),
+		#			label = "Treated", color = colors[0], one_idx = True)
+		# plot_treatment(res_dynamic["doses_hist"][i], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True)
+
+		# plot_health(res_dynamic["health_hist"][i], curves = curves, stepsize = 10, bounds = (health_lower, health_upper),
+		#			label = "Treated", color = colors[0], one_idx = True, show = False, 
+		#			filename = figpath + "ex1_health_iter_{0}.png".format(i+1))
+		# plot_treatment(res_dynamic["doses_hist"][i], stepsize = 10, bounds = (dose_lower, dose_upper),
+		#		    one_idx = True, show = False, filename = figpath + "ex1_doses_iter_{0}.png".format(i+1))
+
+		h_dict = {"v": res_dynamic["health_hist"][i], "varname": "h", "curves": curves, "stepsize": 10, 
+				  "bounds": (health_lower, health_upper), "label": "Treated", "color": colors[0], "one_idx": True, 
+				  "one_shift": False}
+		d_dict = {"v": res_dynamic["doses_hist"][i], "varname": "d", "stepsize": 10, "bounds": (dose_lower, dose_upper), 
+				  "one_idx": True, "one_shift": True}
+		# plot_stacked([h_dict, d_dict], title = "Health Status and Treatment Dose vs. Time", figsize = (16,10))
+		plot_stacked([h_dict, d_dict], figsize = (16,10), show = False, filename = figpath + "ex1_health_doses_iter_{0}.png".format(i+1))
 
 if __name__ == '__main__':
-	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/",
+	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/movie/",
 		 datapath = "C:/Users/Anqi/Documents/Software/fractionation/examples/data/")

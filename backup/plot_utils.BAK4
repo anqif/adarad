@@ -52,7 +52,6 @@ def plot_structures(x, y, structures, title = None, one_idx = False, show = True
 	if filename is not None:
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
-# Single plot of structure with beams.
 def plot_struct_beams(x, y, structures, b, angles, offsets, n_grid, title = None, one_idx = False, show = True, filename = None, 
 					  beam_kw = dict(), *args, **kwargs):
 	n = b.shape[0]
@@ -169,126 +168,54 @@ def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardi
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot health curves.
-plot_health = lambda h, *args, **kwargs: plot_single(h, "h", one_shift = False, *args, **kwargs)
-
-# Plot treatment curves.
-plot_treatment = lambda d, *args, **kwargs: plot_single(d, "d", one_shift = True, *args, **kwargs)
-
-def plot_stacked(v_list, maxcols = 5, T_treat = None, title = None, ylim = None, show = True, filename = None, figsize = (16,16), *args, **kwargs):
-	v_len = len(v_list)
-	sharex = kwargs.pop("sharex", "col")
-	sharey = kwargs.pop("sharey", "row")
-
-	if "v" not in v_list[0]:
-		raise ValueError("v_list dicts must all contain a key 'v' mapped to a matrix")
-	m = v_list[0]["v"].shape[1]
-
-	for v_dict in v_list:
-		if "v" not in v_dict:
-			raise ValueError("v_list dicts must all contain a key 'v' mapped to a matrix")
-		if "varname" not in v_dict:
-			raise ValueError("v_list dicts must all contain a key 'varname' mapped to a string")
-		if v_dict["v"].shape[1] != m:
-			raise ValueError("v_list['v'] must be matrices with the same number of columns {0}".format(m))
-
-	rows = 1 if m <= maxcols else int(np.ceil(m / maxcols))
-	cols = min(m, maxcols)
-	fig, axs = plt.subplots(v_len*rows, cols, sharex = sharex, sharey = sharey, *args, **kwargs)
-	fig.set_size_inches(*figsize)
-	# fig.tight_layout()
-	if ylim is not None:
-		plt.setp(axs, ylim = ylim)
-
-	r_start = 0
-	for v_dict in v_list:
-		v = v_dict.pop("v")
-		varname = v_dict.pop("varname")
-		plot_internal(v, axs[r_start:(r_start + rows)], varname, maxcols = maxcols, T_treat = T_treat, **v_dict)
-		r_start = r_start + rows
-
-	if title is not None:
-		plt.suptitle(title)
-	if show:
-		plt.show()
-	if filename is not None:
-		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
-
-def plot_single(h, varname, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, subtitles = None, label = "Treated", 
-				ylim = None, one_idx = False, one_shift = False, show = True, filename = None, figsize = (16,8), *args, **kwargs):
+def plot_health(h, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, subtitles = None, 
+				label = "Treated", ylim = None, one_idx = False, show = True, filename = None, figsize = (16,8), *args, **kwargs):
 	# if len(h.shape) == 1:
 	#	h = h[:,np.newaxis]
+	T = h.shape[0] - 1
 	m = h.shape[1]
+	
+	if bounds is not None:
+		lower, upper = bounds
+	else:
+		lower = upper = None
+	
+	indices = np.arange(m) + int(one_idx)
+	if subtitles is None:
+		subtitles = ["$h_{{{0}}}(t)$".format(index) for index in indices]
+	if len(subtitles) != m:
+		raise ValueError("subtitles must be a list of length", m)
+	
 	rows = 1 if m <= maxcols else int(np.ceil(m / maxcols))
 	cols = min(m, maxcols)
+	left = rows*cols - m
 
 	fig, axs = plt.subplots(rows, cols, sharey = True)
 	fig.set_size_inches(*figsize)
 	# fig.tight_layout()
 	if ylim is not None:
 		plt.setp(axs, ylim = ylim)
-
-	plot_internal(h, axs, varname, curves, stepsize, maxcols, T_treat, bounds, subtitles, label, one_idx, one_shift, *args, **kwargs)
-
-	if title is not None:
-		plt.suptitle(title)
-	if show:
-		plt.show()
-	if filename is not None:
-		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
-
-def plot_internal(h, axs, varname, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, subtitles = None, label = "Treated", 
-				  one_idx = False, one_shift = False, *args, **kwargs):
-	# if len(h.shape) == 1:
-	#	h = h[:,np.newaxis]
-	T = h.shape[0]
-	m = h.shape[1]
-	T_start = int(one_shift)
-	T_end = T + int(one_shift)
-
-	if bounds is not None:
-		lower, upper = bounds
-	else:
-		lower = upper = None
-
-	indices = np.arange(m) + int(one_idx)
-	if subtitles is None:
-		subtitles = ["${0}_{{{1}}}(t)$".format(varname, index) for index in indices]
-	if len(subtitles) != m:
-		raise ValueError("subtitles must be a list of length", m)
-
-	# Determine plot dimensions.
-	if hasattr(axs, "shape"):
-		if len(axs.shape) == 1:
-			ax_type = 1
-		else:
-			ax_type = 2
-	else:
-		ax_type = 0
-
 	for i in range(m):
-		if ax_type == 0:
-			ax = axs
-		elif ax_type == 1:
-			ax = axs[i]
+		if rows == 1:
+			ax = axs if cols == 1 else axs[i]
 		else:
 			ax = axs[int(i / maxcols), i % maxcols]
-
-		ltreat, = ax.plot(range(T_start, T_end), h[:,i], label = label, *args, **kwargs)
+		ltreat, = ax.plot(range(T+1), h[:,i], label = label, *args, **kwargs)
 		handles = [ltreat]
 		for curve in curves:
-			# if len(curve[varname].shape) == 1:
-			#	curve[varname] = curve[varname][:,np.newaxis]
+			# if len(curve["h"].shape) == 1:
+			#	curve["h"] = curve["h"][:,np.newaxis]
 			curve_kw = curve.get("kwargs", {})
-			lcurve, = ax.plot(range(T_start, T_end), curve[varname][:,i], label = curve["label"], **curve_kw)
+			lcurve, = ax.plot(range(T+1), curve["h"][:,i], label = curve["label"], **curve_kw)
 			handles += [lcurve]
-		# lnone, = ax.plot(range(T_start, T_end), h_prog[:,i], ls = '--', color = "red")
+		# lnone, = ax.plot(range(T+1), h_prog[:,i], ls = '--', color = "red")
 		ax.set_title(subtitles[i])
-		# ax.set_title("${0}_{{{1}}}(t)$".format(varname, indices[i]))
+		# ax.set_title("$h_{{{0}}}(t)$".format(indices[i]))
 		# ax.set_title("$s = {{{0}}}$".format(indices[i]))
 		
 		# Label transition from treatment to recovery period.
-		xt = np.arange(T_start, T_end - 1, stepsize)
-		xt = np.append(xt, T_end - 1)
+		xt = np.arange(0, T, stepsize)
+		xt = np.append(xt, T)
 		if T_treat is not None:
 			ax.axvline(x = T_treat, lw = 1, ls = ':', color = "grey")
 			xt = np.append(xt, T_treat)
@@ -296,11 +223,10 @@ def plot_internal(h, axs, varname, curves = [], stepsize = 10, maxcols = 5, T_tr
 		
 		# Plot lower and upper bounds on h(t) for t = 1,...,T.
 		if lower is not None:
-			ax.plot(range(1, T_end), lower[:,i], lw = 1, ls = "--", color = "cornflowerblue")
+			ax.plot(range(1,T+1), lower[:,i], lw = 1, ls = "--", color = "cornflowerblue")
 		if upper is not None:
-			ax.plot(range(1, T_end), upper[:,i], lw = 1, ls = "--", color = "cornflowerblue")
+			ax.plot(range(1,T+1), upper[:,i], lw = 1, ls = "--", color = "cornflowerblue")
 	
-	left = axs.size - m if hasattr(axs, "size") else 0
 	for col in range(left):
 		axs[rows-1, maxcols-1-col].set_axis_off()
 	
@@ -308,6 +234,81 @@ def plot_internal(h, axs, varname, curves = [], stepsize = 10, maxcols = 5, T_tr
 		ax.legend(handles = handles, loc = "upper right", borderaxespad = 1)
 		# fig.legend(handles = handles, loc = "center right", borderaxespad = 1)
 		# fig.legend(handles = [ltreat, lnone], labels = ["Treated", "Untreated"], loc = "center right", borderaxespad = 1)
+	
+	if title is not None:
+		plt.suptitle(title)
+	if show:
+		plt.show()
+	if filename is not None:
+		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
+
+# Plot treatment curves.
+def plot_treatment(d, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, title = None, subtitles = None, 
+				   label = "Treatment", ylim = None, one_idx = False, show = True, filename = None, figsize = (16,8), *args, **kwargs):
+	T = d.shape[0]
+	n = d.shape[1]
+	
+	if bounds is not None:
+		lower, upper = bounds
+	else:
+		lower = upper = None
+
+	indices = np.arange(n) + int(one_idx)
+	if subtitles is None:
+		subtitles = ["$d_{{{0}}}(t)$".format(index) for index in indices]
+	if len(subtitles) != n:
+		raise ValueError("subtitles must be a list of length", n)
+	
+	rows = 1 if n <= maxcols else int(np.ceil(n / maxcols))
+	cols = min(n, maxcols)
+	left = rows*cols - n
+	
+	fig, axs = plt.subplots(rows, cols, sharey = True)
+	fig.set_size_inches(*figsize)
+	# fig.tight_layout()
+	if ylim is not None:
+		plt.setp(axs, ylim = ylim)
+	for j in range(n):
+		if rows == 1:
+			ax = axs if cols == 1 else axs[j]
+		else:
+			ax = axs[int(j / maxcols), j % maxcols]
+		ldose, = ax.plot(range(1,T+1), d[:,j], label = label, *args, **kwargs)
+		handles = [ldose]
+		for curve in curves:
+			curve_kw = curve.get("kwargs", {})
+			lcurve, = ax.plot(range(1,T+1), curve["d"][:,j], label = curve["label"], **curve_kw)
+			handles += [lcurve]
+		# ax.plot(range(1,T+1), d[:,j])
+		ax.set_title(subtitles[j])
+		# ax.set_title("$d_{{{0}}}(t)$".format(j + int(one_idx)))
+		
+		# Label transition from treatment to recovery period.
+		xt = np.arange(1, T, stepsize)
+		xt = np.append(xt, T)
+		if T_treat is not None:
+			ax.axvline(x = T_treat, lw = 1, ls = ":", color = "grey")
+			xt = np.append(xt, T_treat)
+		ax.set_xticks(xt)
+		
+		# Plot lower and upper bounds on d(t) for t = 1,...,T.
+		if lower is not None:
+			ax.plot(range(1,T+1), lower[:,j], lw = 1, ls = "--", color = "cornflowerblue")
+		if upper is not None:
+			ax.plot(range(1,T+1), upper[:,j], lw = 1, ls = "--", color = "cornflowerblue")
+	
+	for col in range(left):
+		axs[rows-1, maxcols-1-col].set_axis_off()
+	
+	if len(curves) != 0:
+		ax.legend(handles = handles, loc = "upper right", borderaxespad = 1)
+	
+	if title is not None:
+		plt.suptitle(title)
+	if show:
+		plt.show()
+	if filename is not None:
+		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot primal and dual residuals.
 def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy = False, show = True, filename = None, figsize = (12,8), *args, **kwargs):

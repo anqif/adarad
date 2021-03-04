@@ -77,6 +77,12 @@ def main(figpath = ""):
 	plt.xlim(x_min, x_max)
 	plt.ylim(y_min, y_max)
 	plt.xlabel("$d_{ti}$")
+
+	ax = plt.gca()
+	x_locs = list(ax.get_xticks())
+	x_locs = x_locs[1:-1]
+	ax.set_xticks(x_locs + [d_lin])
+	ax.set_xticklabels([int(x) for x in x_locs] + ["$d_{ti}^s$"])
 	plt.legend()
 
 	# Label slack gap.
