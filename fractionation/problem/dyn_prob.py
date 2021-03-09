@@ -74,41 +74,55 @@ def rx_slice(patient_rx, t_start, t_end, t_step=1, squeeze=True):
                     rx_cur[constr_key][lu_key] = rx_old_slice
     return rx_cur
 
+# Extract lower bound constraints from patient prescription.
+def rx_to_lower_constrs(expr, rx_lower, only_oar = False):
+    if np.any(rx_lower == np.inf):
+        raise ValueError("Lower bound cannot be infinity")
+
+    if np.isscalar(rx_lower):
+        if np.isfinite(rx_lower):
+            return expr >= rx_lower
+    else:
+        if rx_lower.shape != expr.shape:
+            bnd_str = "rx_lower" if only_oar else "rx_lower of non-targets"
+            raise ValueError("{0} must have dimensions {1}".format(bnd_str, expr.shape))
+        is_finite = np.isfinite(rx_lower)
+        if np.any(is_finite):
+            return expr[is_finite] >= rx_lower[is_finite]
+    return
+
+# Extract upper bound constraints from patient prescription.
+def rx_to_upper_constrs(expr, rx_upper, only_ptv = False):
+    if np.any(rx_upper == -np.inf):
+        raise ValueError("Upper bound cannot be negative infinity")
+
+    if np.isscalar(rx_upper):
+        if np.isfinite(rx_upper):
+            return expr <= rx_upper
+    else:
+        if rx_upper.shape != expr.shape:
+            bnd_str = "rx_upper" if only_ptv else "rx_upper of targets"
+            raise ValueError("{0} must have dimensions {1}".format(bnd_str, expr.shape))
+        is_finite = np.isfinite(rx_upper)
+        if np.any(is_finite):
+            return expr[is_finite] <= rx_upper[is_finite]
+    return
+
 # Extract constraints from patient prescription.
 def rx_to_constrs(expr, rx_dict):
     constrs = []
 
     # Lower bound.
     if "lower" in rx_dict:
-        rx_lower = rx_dict["lower"]
-        if np.any(rx_lower == np.inf):
-            raise ValueError("Lower bound cannot be infinity")
-
-        if np.isscalar(rx_lower):
-            if np.isfinite(rx_lower):
-                constrs.append(expr >= rx_lower)
-        else:
-            if rx_lower.shape != expr.shape:
-                raise ValueError("rx_lower must have dimensions {0}".format(expr.shape))
-            is_finite = np.isfinite(rx_lower)
-            if np.any(is_finite):
-                constrs.append(expr[is_finite] >= rx_lower[is_finite])
+        c_lower = rx_to_lower_constrs(expr, rx_dict["lower"])
+        if c_lower is not None:
+            constrs.append(c_lower)
 
     # Upper bound.
     if "upper" in rx_dict:
-        rx_upper = rx_dict["upper"]
-        if np.any(rx_upper == -np.inf):
-            raise ValueError("Upper bound cannot be negative infinity")
-
-        if np.isscalar(rx_upper):
-            if np.isfinite(rx_upper):
-                constrs.append(expr <= rx_upper)
-        else:
-            if rx_upper.shape != expr.shape:
-                raise ValueError("rx_upper must have dimensions {0}".format(expr.shape))
-            is_finite = np.isfinite(rx_upper)
-            if np.any(is_finite):
-                constrs.append(expr[is_finite] <= rx_upper[is_finite])
+        c_upper = rx_to_upper_constrs(expr, rx_dict["upper"])
+        if c_upper is not None:
+            constrs.append(c_upper)
     return constrs
 
 # Construct optimal control problem.

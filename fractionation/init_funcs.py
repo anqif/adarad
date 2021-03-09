@@ -3,9 +3,36 @@ import numpy as np
 import cvxpy.settings as cvxpy_s
 from cvxpy import *
 
-from fractionation.problem.dyn_prob import dose_penalty, health_penalty, rx_slice
-from fractionation.quadratic.dyn_quad_prob import rx_to_quad_constrs, form_taylor_constrs
+from fractionation.ccp_funcs import ccp_solve
+from fractionation.problem.dyn_prob import *
+from fractionation.quadratic.dyn_quad_prob import dyn_quad_obj, get_constrs_by_struct, form_dyn_constrs
 from fractionation.utilities.data_utils import check_quad_vectors
+
+# Pos penalty function.
+def pos_penalty(var, goal=None, weight=None):
+    if goal is None:
+        goal = np.zeros(var.shape)
+    if weight is None:
+        weight = np.ones(var.shape)
+    # if weight.shape[1] != var.shape[0]:
+    #    raise ValueError("weight must have {0} columns".format(var.shape[0]))
+    if np.any(weight < 0):
+        raise ValueError("weight must be nonnegative")
+
+    return weight @ pos(var - goal)
+
+# Neg penalty function.
+def neg_penalty(var, goal=None, weight=None):
+    if goal is None:
+        goal = np.zeros(var.shape)
+    if weight is None:
+        weight = np.ones(var.shape)
+    # if weight.shape[1] != var.shape[0]:
+    #    raise ValueError("weight must have {0} columns".format(var.shape[0]))
+    if np.any(weight < 0):
+        raise ValueError("weight must be nonnegative")
+
+    return weight @ neg(var - goal)
 
 def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_slack = False, slack_weight = 0, *args, **kwargs):
     T_treat = len(A_list)
@@ -22,14 +49,15 @@ def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, u
 
     # Stage 1: Solve static (convex) problem in initial session.
     if init_verbose:
-        print("Stage 1: Solving static problem in session {0}".(t_static))
-    prob_1, b, h, d, h_slack = build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static = t_static, use_slack = use_slack, 
-                                                    slack_weight = slack_weight)
+        print("Stage 1: Solving static problem in session {0}".format(t_static))
+    prob_1, b, h, d, h_slack = build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static = t_static)
+    # prob_1, b, h, d, h_slack = build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static = t_static, use_slack = use_slack, 
+    #                                                slack_weight = slack_weight/T_treat)
     prob_1.solve(*args, **kwargs)
     if prob_1.status not in cvxpy_s.SOLUTION_PRESENT:
         raise RuntimeError("Stage 1: Solver failed with status {0}".format(prob_1.status))
     solve_time += prob_1.solver_stats.solve_time
-    b_static = b.value   # Save optimal static beams.
+    b_static = b.value/T_treat   # Save optimal static beams.
 
     # Stage 2a: Solve for best constant scaling factor u^{const} >= 0.
     if init_verbose:
@@ -43,7 +71,7 @@ def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, u
     d_init = d.value
     if init_verbose:
         print("Stage 2a: Optimal scaling factor = {0}".format(u.value))
-        print("Stage 2a: Optimal doses = {0}".format(d.value))
+        # print("Stage 2a: Optimal doses = {0}".format(d.value))
 
     # Stage 2b: Solve dynamic (nonconvex) problem with scaled static beams.
     if init_verbose:
@@ -72,6 +100,36 @@ def dyn_stat_obj(d_var, h_var, patient_rx):
     h_penalty = health_penalty(h_var, patient_rx["health_goal"], patient_rx["health_weights"])
     return d_penalty + h_penalty
 
+# Health bound constraints for PTV.
+def rx_to_ptv_constrs(h_ptv, rx_dict_ptv):
+    constrs = []
+
+    # Lower bound.
+    if "lower" in rx_dict_ptv and not np.all(np.isneginf(rx_dict_ptv["lower"])):
+        raise ValueError("Lower bound must be negative infinity for all targets")
+
+    # Upper bound.
+    if "upper" in rx_dict_ptv:
+        c_upper = rx_to_upper_constrs(h_ptv, rx_dict_ptv["upper"], only_ptv = True)
+        if c_upper is not None:
+            constrs.append(c_upper)
+    return constrs
+
+# Health bound constraints for OAR.
+def rx_to_oar_constrs(h_oar, rx_dict_oar):
+    constrs = []
+
+    # Lower bound.
+    if "lower" in rx_dict_oar:
+        c_lower = rx_to_lower_constrs(h_oar, rx_dict_oar["lower"], only_oar = True)
+        if c_lower is not None:
+            constrs.append(c_lower)
+
+    # Upper bound.
+    if "upper" in rx_dict_oar and not np.all(np.isinf(rx_dict_oar["upper"])):
+        raise ValueError("Upper bound must be infinity for all non-targets")
+    return constrs
+
 # Static optimal control problem in session t_static.
 # OAR health status is linear-quadratic, while PTV health status is linear (beta = 0) with an optional slack term.
 def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static = 0, use_slack = False, slack_weight = 0):
@@ -79,19 +137,19 @@ def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_stati
     K, n = A_list[0].shape
     if h_init.shape[0] != K:
         raise ValueError("h_init must be a vector of {0} elements".format(K))
-    if t_static < 0 or t_static >= T or int(t_static) != t_static:
-        raise ValueError("t_static must be an integer in [0, {0}]".format(T-1))
+    if t_static < 0 or t_static >= T_treat or int(t_static) != t_static:
+        raise ValueError("t_static must be an integer in [0, {0}]".format(T_treat-1))
     
     # Extract parameters for session t_static.
     A_t     = A_list[t_static]
     alpha_t = alpha[t_static]
     beta_t  = beta[t_static]
     gamma_t = gamma[t_static]
-    patient_rx_t = rx_slice(patient_rx, t_static, t_static + 1)
+    patient_rx_t = rx_slice(patient_rx, t_static, t_static + 1, squeeze = True)
 
     # Define variables.
-    b = Variable((n,), nonneg=True, name="beams")  # Beams per session.
-    d = A_t @ b                                    # Dose per session.
+    b = Variable((n,), nonneg=True, name="beams")  # Beams.
+    d = A_t @ b                                    # Dose.
 
     # Health status after treatment.
     h_lin = h_init - multiply(alpha_t, d) + gamma_t   # Linear terms only.
@@ -99,21 +157,30 @@ def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_stati
 
     # Allow slack in PTV health dynamics.
     if use_slack:
-        h_slack = Variable((T_treat, K), nonneg=True, name="health dynamics slack")
+        h_slack = Variable((K,), nonneg=True, name="health dynamics slack")
         obj_slack = slack_weight * sum(h_slack)  # TODO: Set slack weight relative to overall health penalty.
-        h_approx = h_lin - h_slack
+        h_lin_s = h_lin - h_slack
     else:
         h_slack = Constant(0)
         obj_slack = 0
+        h_lin_s = h_lin
 
     # Approximate PTV health status by linearizing around d = 0 (drop quadratic dose term).
     # Keep modeling OAR health status with linear-quadratic dynamics.
-    h = multiply(patient_rx_t["is_target"], h_approx) + multiply(~patient_rx_t["is_target"], h_quad)
-
+    is_target = patient_rx_t["is_target"]
+    h_app_ptv = h_lin_s[is_target]
+    h_app_oar = h_quad[~is_target]
+    
     # Objective function.
-    obj_base = dyn_stat_obj(d, h, patient_rx_t)
+    d_penalty = dose_penalty(d, patient_rx_t["dose_goal"], patient_rx_t["dose_weights"])
+    h_penalty_ptv = pos_penalty(h_app_ptv, patient_rx_t["health_goal"][is_target], patient_rx_t["health_weights"][1][is_target])
+    # h_penalty_oar = hinge_penalty(h_app_oar[~is_target], patient_rx_t["health_goal"][~is_target], [w[~is_target] for w in patient_rx_t["health_weights"]])
+    h_penalty_oar = neg_penalty(h_app_oar, patient_rx_t["health_goal"][~is_target], patient_rx_t["health_weights"][0][~is_target])
+    obj_base = d_penalty + h_penalty_ptv + h_penalty_oar
 
+    # TODO: Constraints must be modified, e.g., PTV health bound taken from last session T.
     # Additional beam constraints.
+    constrs = []
     if "beam_constrs" in patient_rx_t:
         constrs += rx_to_constrs(b, patient_rx_t["beam_constrs"])
 
@@ -123,11 +190,16 @@ def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_stati
 
     # Additional health constraints.
     if "health_constrs" in patient_rx_t:
-        constrs += rx_to_quad_constrs(h, patient_rx_t["health_constrs"], patient_rx_t["is_target"])
+        # constrs += rx_to_quad_constrs(h, patient_rx_t["health_constrs"], patient_rx_t["is_target"], struct_dim = 0)
+        rx_t_health_constrs_ptv = get_constrs_by_struct(patient_rx_t["health_constrs"], is_target, struct_dim = 0)
+        rx_t_health_constrs_oar = get_constrs_by_struct(patient_rx_t["health_constrs"], ~is_target, struct_dim = 0)
+        # TODO: Translate RX to PTV/OAR constraints with proper bound checks.
+        constrs += rx_to_ptv_constrs(h_app_ptv, rx_t_health_constrs_ptv)
+        constrs += rx_to_oar_constrs(h_app_oar, rx_t_health_constrs_oar)
 
     obj = obj_base + obj_slack
     prob = Problem(Minimize(obj), constrs)
-    return prob, b, h, d, h_slack
+    return prob, b, h_quad, d, h_slack
 
 # Scaled beam problem with b_t = u_t*b^{static}, where u_t >= 0 are scaling factors and b^{static} is a beam constant.
 def build_scale_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_static, use_slack = False, slack_weight = 0):
@@ -141,7 +213,7 @@ def build_scale_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_stat
         raise ValueError("b_static must be a nonnegative vector")
 
     # Define variables.
-    u = Variable((T,), nonneg=True, name="beam weights")   # Beam scaling factors.
+    u = Variable((T_treat,), nonneg=True, name="beam weights")   # Beam scaling factors.
     h = Variable((T_treat + 1, K), name="health")          # Health statuses.
 
     b_list = []
@@ -157,8 +229,8 @@ def build_scale_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_stat
     obj_base = dyn_quad_obj(d, h, patient_rx)
 
     # Form constraints with slack.
-    constrs, d_parm, obj_slack, h_dyn_slack = form_taylor_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, 
-                                                T_recov = 0, use_slack = use_slack, slack_weight = slack_weight)
+    constrs, d_parm, obj_slack, h_dyn_slack = form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov = 0,
+                                                use_taylor = True, use_slack = use_slack, slack_weight = slack_weight)
 
     obj = obj_base + obj_slack
     prob = Problem(Minimize(obj), constrs)
@@ -184,15 +256,27 @@ def build_scale_const_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, 
     # Objective function.
     obj_base = dyn_quad_obj(d, h, patient_rx)
 
+    # Since beams are same across sessions, set constraints to max(B_t^{lower}) <= b <= min(B_t^{upper}),
+    # where the max/min are taken over sessions t = 1,...,T.
+    patient_rx_bcond = patient_rx
+    if "beam_constrs" in patient_rx and patient_rx["beam_constrs"]:
+        rx_b = patient_rx["beam_constrs"]
+        patient_rx_bcond = patient_rx.copy()
+        patient_rx_bcond["beam_constrs"] = {}
+        if "lower" in rx_b:
+            patient_rx_bcond["beam_constrs"]["lower"] = np.max(rx_b["lower"], axis = 0)
+        if "upper" in rx_b:
+            patient_rx_bcond["beam_constrs"]["upper"] = np.min(rx_b["upper"], axis = 0)
+
     # Form constraints with slack.
-    constrs, d_parm, obj_slack, h_dyn_slack = form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, 
-                                                T_recov = 0, use_taylor = use_taylor, use_slack = use_slack, slack_weight = slack_weight)
+    constrs, d_parm, obj_slack, h_dyn_slack = form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx_bcond, T_recov = 0,
+                                                use_taylor = use_taylor, use_slack = use_slack, slack_weight = slack_weight)
 
     obj = obj_base + obj_slack
     prob = Problem(Minimize(obj), constrs)
     return prob, u, b, h, d, d_parm, h_dyn_slack
 
-# Scaled beam problem with constant scaling factor and linear model (beta_t = 0) of PTV health status.
+# Scaled beam problem with constant scaling factor (u >= 0) and linear model (beta_t = 0) of PTV health status.
 def build_scale_lin_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_static, use_slack = False, slack_weight = 0):
     prob, u, b, h, d, d_parm, h_dyn_slack = build_scale_const_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_static, 
             use_taylor = False, use_slack = use_slack, slack_weight = slack_weight)

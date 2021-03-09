@@ -21,7 +21,7 @@ def main(figpath = "", datapath = ""):
 	# Display structures on a polar grid.
 	x_grid, y_grid, regions = simple_structures(n_grid, n_grid)
 	struct_kw = simple_colormap(one_idx = True)
-	plot_structures(x_grid, y_grid, regions, title = "Anatomical Structures", one_idx = True, **struct_kw)
+	# plot_structures(x_grid, y_grid, regions, title = "Anatomical Structures", one_idx = True, **struct_kw)
 	# plot_structures(x_grid, y_grid, regions, one_idx = True, filename = figpath + "ex_cardioid5_structures.png", **struct_kw)
 
 	# Problem data.
@@ -76,7 +76,8 @@ def main(figpath = "", datapath = ""):
 	patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
 	# patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
-	res_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4, solver = "MOSEK")
+	# res_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, solver = "MOSEK", init_verbose = True)
+	res_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4, solver = "MOSEK", init_verbose = True)
 	d_init = res_init["doses"]
 	print("Initial dose per fraction: {0}".format(d_init[0]))
 	h_equal = health_prog_act(h_init, T, alpha, beta, gamma, d_init, patient_rx["is_target"])

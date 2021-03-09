@@ -2,7 +2,7 @@ import cvxpy
 import numpy as np
 from cvxpy import *
 
-from fractionation.problem.dyn_prob import dose_penalty, health_penalty, rx_to_constrs
+from fractionation.problem.dyn_prob import dose_penalty, health_penalty, rx_to_lower_constrs, rx_to_upper_constrs, rx_to_constrs
 
 # Full objective function.
 def dyn_quad_obj(d_var, h_var, patient_rx):
@@ -21,54 +21,68 @@ def dyn_quad_obj(d_var, h_var, patient_rx):
         penalties.append(d_penalty + h_penalty)
     return sum(penalties)
 
+# Select constraint bound matrices by structure index.
+def get_constrs_by_struct(constrs, struct_idx, struct_dim = 1):
+    if struct_dim not in [0, 1]:
+        raise ValueError("struct_di must be either 0 or 1")
+
+    constrs_s = {}
+    for key in constrs.keys():
+        if np.isscalar(constrs[key]):
+            constrs_s[key] = constrs[key]
+        else:
+            arr = constrs[key].copy()
+            constrs_s[key] = arr[struct_idx] if struct_dim == 0 else arr[:,struct_idx]
+    return constrs_s
+
 # Extract constraints from patient prescription.
-def rx_to_quad_constrs(expr, rx_dict, is_target):
+def rx_to_quad_constrs(expr, rx_dict, is_target, struct_dim = 1):
+    if struct_dim not in [0, 1]:
+        raise ValueError("struct_dim must be either 0 or 1")
     constrs = []
 
     # Lower bound.
     if "lower" in rx_dict:
         # rx_lower = rx_dict["lower"]
-        if not np.all(np.isneginf(rx_dict["lower"][:,is_target])):
+        if struct_dim == 0:
+            rx_lower_ptv = rx_dict["lower"][is_target]
+            rx_lower_oar = rx_dict["lower"][~is_target]
+            expr_oar = expr[~is_target]
+        else:
+            rx_lower_ptv = rx_dict["lower"][:,is_target]
+            rx_lower_oar = rx_dict["lower"][:,~is_target]
+            expr_oar = expr[:,~is_target]
+
+        if not np.all(np.isneginf(rx_lower_ptv)):
             raise ValueError("Lower bound must be negative infinity for all targets")
 
-        rx_lower = rx_dict["lower"][:,~is_target]
-        expr_oar = expr[:,~is_target]
-        if np.any(rx_lower == np.inf):
-            raise ValueError("Lower bound cannot be infinity")
-
-        if np.isscalar(rx_lower):
-            if np.isfinite(rx_lower):
-                constrs.append(expr_oar >= rx_lower)
-        else:
-            if rx_lower.shape != expr_oar.shape:
-                raise ValueError("rx_lower must have dimensions {0}".format(expr_oar.shape))
-            is_finite = np.isfinite(rx_lower)
-            if np.any(is_finite):
-                constrs.append(expr_oar[is_finite] >= rx_lower[is_finite])
+        c_lower = rx_to_lower_constrs(expr_oar, rx_lower_oar, only_oar = True)
+        if c_lower is not None:
+            constrs.append(c_lower)
 
     # Upper bound.
     if "upper" in rx_dict:
         # rx_upper = rx_dict["upper"]
-        if not np.all(np.isinf(rx_dict["upper"][:,~is_target])):
+        if struct_dim == 0:
+            rx_upper_ptv = rx_dict["upper"][is_target]
+            rx_upper_oar = rx_dict["upper"][~is_target]
+            expr_ptv = expr[is_target]
+        else:
+            rx_upper_ptv = rx_dict["upper"][:,is_target]
+            rx_upper_oar = rx_dict["upper"][:,~is_target]
+            expr_ptv = expr[:,is_target]
+
+        if not np.all(np.isinf(rx_upper_oar)):
             raise ValueError("Upper bound must be infinity for all non-targets")
 
-        rx_upper = rx_dict["upper"][:,is_target]
-        expr_ptv = expr[:,is_target]
-        if np.any(rx_upper == -np.inf):
-            raise ValueError("Upper bound cannot be negative infinity")
-
-        if np.isscalar(rx_upper):
-            if np.isfinite(rx_upper):
-                constrs.append(expr_ptv <= rx_upper)
-        else:
-            if rx_upper.shape != expr_ptv.shape:
-                raise ValueError("rx_upper must have dimensions {0}".format(expr_ptv.shape))
-            is_finite = np.isfinite(rx_upper)
-            if np.any(is_finite):
-                constrs.append(expr_ptv[is_finite] <= rx_upper[is_finite])
+        c_upper = rx_to_upper_constrs(expr_ptv, rx_upper_ptv, only_ptv = True)
+        if c_upper is not None:
+            constrs.append(c_upper)
     return constrs
 
-def form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = 0, use_taylor = True, use_slack = False, slack_weight = 0):
+def form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_taylor = True, use_slack = False, slack_weight = 0):
+    T_treat, K = d.shape
+
     # Health dynamics for treatment stage.
     h_lin = h[:-1] - multiply(alpha, d) + gamma[:T_treat]
     h_quad = h_lin - multiply(beta, square(d))
@@ -77,7 +91,7 @@ def form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T
     h_approx = h_lin
     if use_taylor:
         d_parm = Parameter(d.shape, nonneg=True, name="dose parameter")  # Dose point around which to linearize dynamics.
-        h_approx -= multiply(multiply(beta, d_parm), 2*d - d_parm)   # First-order Taylor expansion of quadratic.
+        h_approx -= multiply(multiply(beta, d_parm), 2*d - d_parm)       # First-order Taylor expansion of quadratic.
 
     # Allow slack in PTV health dynamics constraints.
     if use_slack:
@@ -126,13 +140,13 @@ def form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T
     return constrs, d_parm, obj_slack, h_dyn_slack
 
 # PTV health dynamics is just linear portion: h_{t+1} = h_t - alpha_t*d_t + gamma_t
-def form_lin_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = 0, use_slack = False, slack_weight = 0):
-    return form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = T_recov, use_taylor = False, 
+def form_lin_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_slack = False, slack_weight = 0):
+    return form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov = T_recov, use_taylor = False, 
                             use_slack = use_slack, slack_weight = slack_weight)
 
 # PTV health dynamics is first-order Taylor expansion: h_{t+1} = h_t - alpha_t*d_t - beta*d_t^{parm}*(2*d_t - d_t^{parm}) + gamma_t
-def form_taylor_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = 0, use_slack = False, slack_weight = 0):
-    return form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov = T_recov, use_taylor = True, 
+def form_taylor_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_slack = False, slack_weight = 0):
+    return form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov = T_recov, use_taylor = True, 
                             use_slack = use_slack, slack_weight = slack_weight)
 
 # Construct optimal control problem.
@@ -151,7 +165,7 @@ def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
     obj_base = dyn_quad_obj(d, h, patient_rx)
 
     # Form constraints with slack.
-    constrs, d_parm, obj_slack, h_dyn_slack = form_taylor_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_treat, 
+    constrs, d_parm, obj_slack, h_dyn_slack = form_taylor_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, 
                                                         T_recov = T_recov, use_slack = use_slack, slack_weight = slack_weight)
 
     obj = obj_base + obj_slack
