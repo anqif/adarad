@@ -143,7 +143,8 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
         if k == 0:
             d_tld_prev = np.zeros((T_treat, K))
         else:
-            d_init = d_tld_prev = d_tld.value
+            d_tld_prev = d_tld.value
+            d_init = d_tld_prev
         try:
             result = ccp_solve(prox, d_tld, d_parm, d_init, max_iter = ccp_max_iter, ccp_eps = ccp_eps,
                                ccp_verbose = ccp_verbose, *args, **kwargs)

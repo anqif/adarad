@@ -103,7 +103,7 @@ def main(figpath = "", datapath = ""):
 	plot_health(res_dynamic["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
 				title = "Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True)
 	plot_treatment(res_dynamic["doses"], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper),
-				   title = "Treatment Dose vs. Time", one_idx = True)
+				   title = "Treatment Dose vs. Time", label = "Treated", color = colors[0], one_idx = True)
 
 if __name__ == '__main__':
 	main(figpath = "/home/anqi/Dropbox/Research/Fractionation/Figures/", \

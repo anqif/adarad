@@ -76,11 +76,11 @@ def main(figpath = "", datapath = ""):
 	# patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
 	# Dynamic treatment.
-	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-								 max_iter = 15, solver = "MOSEK", ccp_verbose = True, auto_init = True)
-	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
-	# 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 500, admm_verbose = True,
-	#								  auto_init = True)
+	# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+	#							 max_iter = 15, solver = "MOSEK", ccp_verbose = True, auto_init = True)
+	res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
+	 								  ccp_max_iter = 15, solver = "MOSEK", rho = 5, admm_max_iter = 500, admm_verbose = True,
+									  auto_init = True)
 	print("Dynamic Treatment")
 	print("Status:", res_dynamic["status"])
 	print("Objective:", res_dynamic["obj"])

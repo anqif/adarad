@@ -10,6 +10,7 @@ from cvxpy.settings import SOLUTION_PRESENT
 from fractionation.init_funcs import *
 from fractionation.utilities.plot_utils import *
 from fractionation.utilities.data_utils import line_integral_mat, health_prog_act
+
 from example_utils import simple_structures, simple_colormap
 
 def form_step_xy(x, y, buf = 0, shift = 0):
