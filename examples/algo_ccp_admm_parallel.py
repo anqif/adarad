@@ -9,9 +9,45 @@ from cvxpy import *
 from cvxpy.settings import SOLUTION_PRESENT
 from multiprocessing import Process, Pipe
 
+from fractionation.problem.dyn_prob import rx_slice, rx_to_constrs
 from fractionation.utilities.plot_utils import *
 from fractionation.utilities.data_utils import line_integral_mat, health_prog_act
+
 from example_utils import simple_structures, simple_colormap
+
+# Beam subproblems.
+def run_beam_proc(pipe, A, beam_upper, dose_upper, dose_lower, rho_init):
+	K, n = A.shape
+
+	# Define variables.
+	b = Variable((n,), nonneg=True)
+	d = A @ b
+
+	# Initialize parameters.
+	rho = Parameter(pos=True, value=rho_init)
+	u = Parameter((K,), value=np.zeros(K))
+	d_tld = Parameter((K,), nonneg=True, value=np.zeros(K))
+
+	# Form objective.
+	d_penalty = sum_squares(d[:-1]) + 0.25*square(d[-1])
+	c_penalty = (rho/2.0)*sum_squares(d - d_tld - u)
+	obj = d_penalty + c_penalty
+
+	constrs = [b <= beam_upper, d <= dose_upper, d >= dose_lower]
+	prob = Problem(Minimize(obj), constrs)
+
+	# ADMM loop.
+	finished = False
+	while not finished:
+		d_tld.value, u.value = pipe.recv()
+		prob.solve(solver = "MOSEK")
+		if prob.status not in SOLUTION_PRESENT:
+			raise RuntimeError("ADMM: Solver failed on beam subproblem with status {0}".format(prob.status))
+		pipe.send((d.value, prob.solver_stats.solve_time))
+		finished = pipe.recv()
+
+	# Send final beams and doses.
+	pipe.send((b.value, d.value))
 
 def main():
 	# Problem data.
@@ -98,8 +134,8 @@ def main():
 	print("CCP: Solving dynamic problem...")
 	obj_old = np.inf
 	d_parm.value = d_init_ccp
-	iters_ccp = 0
-	for k in range(max_iter_ccp):
+	k = 0
+	while k < max_iter_ccp:
 		# Solve linearized problem.
 		prob_ccp.solve(solver = "MOSEK")
 		if prob_ccp.status not in SOLUTION_PRESENT:
@@ -108,7 +144,7 @@ def main():
 		# Terminate if change in objective is small.
 		obj_diff = obj_old - prob_ccp.value
 		print("CCP Iteration {0}, Objective Difference: {1}".format(k, obj_diff))
-		iters_ccp = iters_ccp + 1
+		k = k + 1
 		if obj_diff <= eps_ccp:
 			break
 
@@ -123,6 +159,7 @@ def main():
 
 	obj_ccp = prob_ccp.value
 	solve_time_ccp = prob_ccp.solver_stats.solve_time
+	iters_ccp = k
 
 	print("CCP Results")
 	print("Objective:", obj_ccp)
@@ -142,22 +179,6 @@ def main():
 	# ADMM: Dynamic optimal control problem.
 	rho = Parameter(pos=True)
 	u = Parameter((T,K))
-
-	# Beam subproblems.
-	prob_b_list = []
-	for t in range(T):
-		b_t = Variable((n,), nonneg=True)
-		d_t = A_list[t] @ b_t
-		d_tld_cons_t_parm = Parameter((K,), nonneg=True)
-
-		d_penalty = sum_squares(d_t[:-1]) + 0.25*square(d_t[-1])
-		c_penalty = (rho/2.0)*sum_squares(d_t - d_tld_cons_t_parm - u[t])
-		obj = d_penalty + c_penalty
-		constrs = [b_t <= beam_upper[t], d_t <= dose_upper[t], d_t >= dose_lower[t]]
-
-		prob_b = Problem(Minimize(obj), constrs)
-		prob_b_dict = {"prob": prob_b, "b": b_t, "d": d_t, "d_tld_cons_parm": d_tld_cons_t_parm}
-		prob_b_list.append(prob_b_dict)
 
 	# Health subproblem.
 	h = Variable((T+1,K))
@@ -187,40 +208,45 @@ def main():
 	prob_h = Problem(Minimize(obj), constrs)
 	prob_h_dict = {"prob": prob_h, "h": h, "h_slack": h_slack, "d_tld": d_tld, "d_cons_parm": d_cons_parm, "d_tayl_parm": d_tayl_parm}
 
-	# Initialize parameter values.
-	rho.value = 5.0
-	u.value = np.zeros(u.shape)
+	# Initialize main loop.
+	rho_init = 5.0
+	u_init = np.zeros(u.shape)
 	d_init_admm = np.zeros(d_tld.shape)
 
-	# Solve using ADMM
+	# Set up beam subproblem processes.
+	pipes = []
+	procs = []
+	for t in range(T):
+		local, remote = Pipe()
+		pipes += [local]
+		procs += [Process(target=run_beam_proc, args=(remote, A_list[t], beam_upper[t], dose_upper[t], dose_lower[t], rho_init))]
+		procs[-1].start()
+
+	# Solve using ADMM.
 	admm_max_iter = 500
 	eps_abs = 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 
 	print("ADMM: Solving dynamic problem...")
-	solve_time_admm = 0
-	iters_admm = 0
+	rho.value = rho_init
+	u.value = u_init
 	d_tld_var_val = d_init_admm
 	d_tld_var_val_old = d_init_admm
 
-	for k in range(admm_max_iter):
+	k = 0
+	solve_time_admm = 0
+	finished = (k >= admm_max_iter)
+	while not finished:
 		if k % 10 == 0:
 			print("ADMM Iteration {0}".format(k))
 
-		# TODO: Solve beam subproblems in parallel.
-		d_var_t_val_list = []
-		solve_time_list = []
-
+		# Solve beam subproblems in parallel.
 		for t in range(T):
-			prob_b_list[t]["d_tld_cons_parm"].value = d_tld_var_val[t]
-			prob_b_list[t]["prob"].solve(solver = "MOSEK")
-			if prob_b_list[t]["prob"].status not in SOLUTION_PRESENT:
-				raise RuntimeError("ADMM: Solver failed on iteration {0} of session {1} with status {2}".format(k, t, prob_b_list[t]["prob"].status))
-			d_var_t_val_list.append(prob_b_list[t]["d"].value)
-			solve_time_list.append(prob_b_list[t]["prob"].solver_stats.solve_time)
-
-		d_var_val = np.row_stack(d_var_t_val_list)
-		solve_time_admm += np.max(solve_time_list)   # Take max of all solve times, since subproblems solved in parallel.
+			pipes[t].send((d_tld_var_val[t], u.value[t]))
+		dt_update = [pipe.recv() for pipe in pipes]
+		d_rows, d_times = map(list, zip(*dt_update))
+		d_var_val = np.row_stack(d_rows)
+		solve_time_admm = np.max(d_times)   # Take max of all solve times, since subproblems solved in parallel.
 
 		# Solve health subproblem using CCP.
 		obj_old = np.inf
@@ -231,7 +257,7 @@ def main():
 			# Solve linearized problem.
 			prob_h_dict["prob"].solve(solver = "MOSEK")
 			if prob_h_dict["prob"].status not in SOLUTION_PRESENT:
-				raise RuntimeError("CCP: Solver failed on ADMM iteration {0}, CCP iteration {1} with status {2}".format(k, l, prob_h_dict["prob"].status))
+				raise RuntimeError("ADMM CCP: Solver failed on ADMM iteration {0}, CCP iteration {1} with status {2}".format(k, l, prob_h_dict["prob"].status))
 			solve_time_admm += prob_h_dict["prob"].solver_stats.solve_time
 
 			# Terminate if change in objective is small.
@@ -247,7 +273,6 @@ def main():
 
 		# Update dual values.
 		u.value = u.value + d_tld_var_val - d_var_val
-		iters_admm = iters_admm + 1
 
 		# Calculate residuals.
 		r_prim = d_var_val - d_tld_var_val
@@ -258,12 +283,21 @@ def main():
 		r_dual_norm = LA.norm(r_dual)
 		eps_prim = eps_abs*np.sqrt(T*K) + eps_rel*np.max([LA.norm(d_var_val), LA.norm(d_tld_var_val)])
 		eps_dual = eps_abs*np.sqrt(T*K) + eps_rel*LA.norm(u.value)
-		if r_prim_norm <= eps_prim and r_dual_norm <= eps_dual:
-			break
+
+		k = k + 1
+		finished = (k >= admm_max_iter) or (r_prim_norm <= eps_prim and r_dual_norm <= eps_dual)
+		for t in range(T):
+			pipes[t].send(finished)
+
+	# Get final beams and doses from beam subproblem.
+	bd_update = [pipe.recv() for pipe in pipes]
+	b_rows, d_rows = map(list, zip(*bd_update))
+	[p.terminate() for p in procs]
 
 	# Save results.
-	b_t_val_list = [prob_b_list[t]["b"].value for t in range(T)]
-	b_admm = np.row_stack(b_t_val_list)
+	iters_admm = k
+	b_admm = np.row_stack(b_rows)
+	d_var_val = np.row_stack(d_rows)
 	d_admm = (d_var_val + d_tld_var_val)/2.0
 	h_admm = prob_h_dict["h"].value
 	h_slack_admm = prob_h_dict["h_slack"].value
