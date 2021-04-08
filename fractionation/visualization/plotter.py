@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 
-from fractionation.case import Case
-from fractionation.record import RunRecord
+from fractionation.medicine.case import Case
+from fractionation.history import RunRecord
 from fractionation.utilities.plot_utils import plot_single
 from fractionation.utilities.data_utils import line_segments
 
@@ -14,9 +14,9 @@ class CasePlotter(object):
             raise TypeError("'case' must be of type Case")
 
         # Case information.
-        self.__anatomy = case.anatomy
-        self.__beam_angles = case.physics.beam_angles
-        self.__beam_offsets = case.physics.beam_offsets
+        self.anatomy = case.anatomy
+        self.beam_angles = case.physics.beam_angles
+        self.beam_offsets = case.physics.beam_offsets
 
         # Plot setup.
         self.__figsize = figsize
@@ -24,30 +24,18 @@ class CasePlotter(object):
         self.__struct_kw = struct_kw
 
     @property
-    def anatomy(self):
-        return self.__anatomy
-
-    @property
-    def beam_angles(self):
-        return self.__beam_angles
-
-    @property
-    def beam_offsets(self):
-        return self.__beam_offsets
-
-    @property
     def figsize(self):
         return self.__figsize
-
-    @property
-    def struct_kw(self):
-        return self.__struct_kw
 
     @figsize.setter
     def figsize(self, data):
         if not (isinstance(data, tuple) and len(data) == 2):
             raise TypeError("'figsize' must be a tuple of positive integers")
         self.__figsize = data
+
+    @property
+    def struct_kw(self):
+        return self.__struct_kw
 
     @struct_kw.setter
     def struct_kw(self, data):
@@ -173,10 +161,10 @@ class CasePlotter(object):
         if filename is not None:
             fig.savefig(filename, bbox_inches="tight", dpi=300)
 
-    def plot_health(self, result, *args, **kwargs):
-        h = result.health if isinstance(result, RunRecord) else result
-        return plot_single(h, "h", one_shift=False, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)
-
     def plot_treatment(self, result, *args, **kwargs):
         d = result.doses if isinstance(result, RunRecord) else result
         return plot_single(d, "d", one_shift=True, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)
+
+    def plot_health(self, result, *args, **kwargs):
+        h = result.health if isinstance(result, RunRecord) else result
+        return plot_single(h, "h", one_shift=False, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)

@@ -2,13 +2,14 @@
 # from adarad import Case, CasePlotter
 
 import numpy
-from fractionation.case import Case
+from fractionation.medicine.physics import BeamSet
+from fractionation.medicine.case import Case
 from fractionation.visualization.plotter import CasePlotter
 
 def main(datapath = ""):
     # Construct the clinical case.
-    case = Case()
-    case.prescription = datapath + "rx_patient_01.yaml"
+    case = Case(datapath + "case_patient_01.yaml")
+    case.physics.beams = BeamSet(angles = 20, bundles = 50, offset = 5)
     case.physics.dose_matrix = numpy.load(datapath + "dmat_patient_01.npy")
 
     # Solve using ADMM algorithm.
@@ -23,7 +24,7 @@ def main(datapath = ""):
     caseviz.plot_health(result, stepsize = 10)
 
     # Constraint allows maximum of 50 Gy on the PTV in first 10 sessions.
-    case.anatomy["PTV"].dose_upper[:10] = 50
+    case.prescription["PTV"].dose_upper[:10] = 50
 
     # Re-plan the case with new dose constraint.
     status2, result2 = case.plan(slack_weight = 50, max_iter = 100, solver = "ECOS", use_admm = True)
