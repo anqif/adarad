@@ -20,18 +20,20 @@ class BeamSet(object):
         self.offsets = offset * d_vec
 
     @property
-    def nbeams(self):
+    def n_beams(self):
         return len(self.angles)*len(self.offsets)
 
 class Physics(object):
-    def __init__(self, dose_matrix=None, beams=None):
+    def __init__(self, dose_matrix=None, beams=None, beam_lower=0, beam_upper=np.inf):
         K, n = self.check_dose_matrix(dose_matrix)
         self.__dose_matrix = dose_matrix
 
         if isinstance(beams, BeamSet):
-            if beams.nbeams != n:
+            if beams.n_beams != n:
                 raise ValueError("number of beams must equal number of columns in dose_matrix")
         self.__beams = beams
+        self.beam_lower = beam_lower
+        self.beam_upper = beam_upper
 
     @staticmethod
     def check_dose_matrix(dose_matrix):
@@ -59,7 +61,7 @@ class Physics(object):
     @dose_matrix.setter
     def dose_matrix(self, data):
         K, n = self.check_dose_matrix(data)
-        if self.__beams.nbeams != n:
+        if self.__beams.n_beams != n:
             raise ValueError("data must be a matrix with {0} columns".format(n))
         self.__dose_matrix = data
 
@@ -80,6 +82,6 @@ class Physics(object):
             K, n = self.__dose_matrix[0].shape
         else:
             K, n = self.__dose_matrix.shape
-        if beams_new.nbeams != n:
+        if beams_new.n_beams != n:
             raise ValueError("data must define a set of {0} beams".format(n))
         self.__beams = beams_new

@@ -15,8 +15,8 @@ class CasePlotter(object):
 
         # Case information.
         self.anatomy = case.anatomy
-        self.beam_angles = case.physics.beam_angles
-        self.beam_offsets = case.physics.beam_offsets
+        self.beam_angles = case.physics.beams.angles
+        self.beam_offsets = case.physics.beams.offsets
 
         # Plot setup.
         self.__figsize = figsize
