@@ -47,6 +47,22 @@ class Anatomy(object):
     def structures(self):
         return self.__structures
 
+    @structures.setter
+    def structures(self, data):
+        # Check iterable.
+        try:
+            _ = (s for s in data)
+        except TypeError:
+            raise TypeError("structures must be iterable")
+
+        if isinstance(data, dict):
+            data = data.values()
+
+        for s in data:
+            if not isinstance(s, Structure):
+                raise ValueError("structures must contain only elements of type Structure")
+        self.__structures = data
+
     @property
     def n_structures(self):
         return len(self.structures)

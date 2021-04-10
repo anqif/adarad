@@ -5,7 +5,7 @@ from warnings import warn
 
 from fractionation.medicine.physics import Physics
 from fractionation.medicine.patient import Anatomy, Structure
-from fractionation.medicine.prescription import Prescription
+from fractionation.medicine.prescription import Prescription, StructureRx
 from fractionation.history import RunRecord
 
 from fractionation.quad_funcs import dyn_quad_treat
@@ -14,16 +14,21 @@ from fractionation.utilities.read_utils import *
 
 class Case(object):
     def __init__(self, path=None, anatomy=None, physics=None, prescription=None):
-        # TODO: How do we handle treatment_length in A_t, alpha_t, beta_t, gamma_t, etc?
-        # Import YAML file and construct objects properly, e.g., dose_matrix = T*[A] if input A is a matrix.
-        # NOTE: dose_matrix can either be a list (treatment_length = length of list) or an array with treatment_length defined separately.
         if isinstance(path, str):
-            structs, phys, rx = self.digest(path)
-            self.__anatomy = Anatomy(structures=structs)
-            self.__physics = Physics(**phys)
-            self.__prescription = Prescription(rx)
+            anatomy_args, phys_args, rx_args = self.digest(path)
+            self.__anatomy = Anatomy(**anatomy_args)
+            self.__physics = Physics(**phys_args)
+            self.__prescription = Prescription(**rx_args)
         else:
-            raise NotImplementedError("path must be a string")
+            if not isinstance(anatomy, Anatomy):
+                raise TypeError("anatomy must be of class Anatomy")
+            if not isinstance(physics, Physics):
+                raise TypeError("physics must be of class Physics")
+            if not isinstance(prescription, Prescription):
+                raise TypeError("prescription must be of class Prescription")
+            self.__anatomy = anatomy
+            self.__physics = physics
+            self.__prescription = prescription
 
     def digest(self, path):
         if ".yaml" not in path:
@@ -49,23 +54,48 @@ class Case(object):
         A_list = load_dose_matrix(data, T, K)
         n = A_list[0].shape[1]
 
-        # Patient anatomy.
         struct_list = []
+        struct_rx_list = []
         for i in range(K):
+            # Anatomical structures.
             s_dict = data["structures"][i]
             struct_obj = Structure(s_dict["name"], is_target=s_dict["is_target"], health_init=s_dict["health_init"],
                                    alpha=s_dict["alpha"], beta=s_dict["beta"], gamma=s_dict["gamma"])
             struct_list.append(struct_obj)
+
+            # Prescription for structure.
+            s_dose = s_dict["dose"]
+            s_health = s_dict["health"]
+            if s_dict["is_target"]:
+                h_w_under = s_health.get("under", 0)
+                h_w_over = s_health.get("over", 1)
+                h_lower = -np.inf
+                h_upper = s_health.get("upper_bound", np.inf)
+            else:
+                h_w_under = s_health.get("under", 1)
+                h_w_over = s_health.get("over", 0)
+                h_lower = s_health.get("lower_bound", -np.inf)
+                h_upper = np.inf
+            struct_rx = StructureRx(s_dict["name"], is_target=s_dict["is_target"],
+                                    dose_goal=s_dose.get("goal", 0), dose_weight=s_dose.get("weight", 1),
+                                    dose_lower=s_dose.get("lower_bound", 0), dose_upper=s_dose.get("upper_bound", np.inf),
+                                    health_goal=s_health.get("goal", 0), health_weights={"under": h_w_under, "over": h_w_over},
+                                    health_lower=h_lower, health_upper=h_upper)
+            struct_rx_list.append(struct_rx)
+
+        # Patient anatomy.
+        anatomy_args = {"structures": struct_list}
 
         # Dose physics.
         phys_args = dict()
         phys_args["dose_matrix"] = A_list
         phys_args["beams"], phys_args["beam_lower"], phys_args["beam_upper"] = load_beams(data, T, n)
 
-        # TODO: Treatment prescription
+        # Treatment prescription.
         rx_args = dict()
-
-        return struct_list, phys_args, rx_args
+        rx_args["T"] = data["treatment_length"]
+        rx_args["structure_rxs"] = struct_rx_list
+        return anatomy_args, phys_args, rx_args
 
     @property
     def anatomy(self):
@@ -92,9 +122,11 @@ class Case(object):
 
     @prescription.setter
     def prescription(self, data):
-        self.__prescription = Prescription(data)
+        if not isinstance(data, Prescription):
+            raise TypeError("prescription must be of type Prescription")
+        self.__prescription = data
         if self.anatomy.is_empty():
-            self.anatomy.structures = self.prescription.structures
+            self.anatomy.structures = [Structure(s.name, s.is_target) for s in self.prescription.structure_rxs]
 
     @property
     def structures(self):
@@ -126,17 +158,19 @@ class Case(object):
         return run_rec.status, run_rec
 
     def __gather_rx(self):
-        rx = dict()
-        rx["is_target"] = self.anatomy.is_target
-        rx["dose_goal"] = self.prescription.dose_goal
-        rx["dose_weights"] = self.prescription.dose_weights
-        rx["dose_constrs"] = {"lower": self.prescription.dose_lower, "upper": self.prescription.dose_upper}
+        rx_for_solve = dict()
+        rx_obj_mats = self.prescription.rx_to_mats()
 
-        rx["health_goal"] = self.prescription.health_goal
-        rx["health_weights"] = self.prescription.health_weights
-        rx["health_constrs"] = {"lower": self.prescription.health_lower, "upper": self.prescription.health_upper}
-        rx["beam_constrs"] = {"lower": self.physics.beam_lower, "upper": self.physics.beam_upper}
-        return rx
+        rx_for_solve["is_target"] = self.anatomy.is_target
+        rx_for_solve["dose_goal"] = rx_obj_mats["dose_goal"]
+        rx_for_solve["dose_weights"] = rx_obj_mats["dose_weights"]
+        rx_for_solve["dose_constrs"] = {"lower": rx_obj_mats["dose_lower"], "upper": rx_obj_mats["dose_upper"]}
+
+        rx_for_solve["health_goal"] = rx_obj_mats["health_goal"]
+        rx_for_solve["health_weights"] = [rx_obj_mats["health_weights_lower"], rx_obj_mats["health_weights_upper"]]
+        rx_for_solve["health_constrs"] = {"lower": rx_obj_mats["health_lower"], "upper": rx_obj_mats["health_upper"]}
+        rx_for_solve["beam_constrs"] = {"lower": self.physics.beam_lower, "upper": self.physics.beam_upper}
+        return rx_for_solve
 
     @staticmethod
     def __gather_optimal_vars(result, output):
