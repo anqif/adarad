@@ -13,7 +13,7 @@ def main(datapath = ""):
     case.physics.dose_matrix = numpy.load(datapath + "patient_01-dose_mat.npy")
 
     # Solve using ADMM algorithm.
-    status, result = case.plan(use_slack = True, slack_weight = 1e4, max_iter = 1, solver = "MOSEK", ccp_verbose = True)
+    status, result = case.plan(use_slack = True, slack_weight = 1e4, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
     # status, result = case.plan(use_slack = True, slack_weight = 1e4, ccp_max_iter = 15, solver = "MOSEK", rho = 5,
     #                           admm_max_iter = 500, use_admm = True)
     print("Solve status: {}".format(status))
@@ -24,9 +24,10 @@ def main(datapath = ""):
     caseviz = CasePlotter(case)
     caseviz.plot_treatment(result, stepsize = 10)
     caseviz.plot_health(result, stepsize = 10)
+    # TODO: Save dose and health with specific labels.
 
-    # Constraint allows maximum of 50 Gy on the PTV in first 10 sessions.
-    case.prescription["PTV"].dose_upper[:10] = 50
+    # Constraint allows maximum of 10 Gy on the PTV.
+    case.prescription["PTV"].dose_upper = 10
 
     # Re-plan the case with new dose constraint.
     status2, result2 = case.plan(use_slack = True, slack_weight = 1e4, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
@@ -35,6 +36,7 @@ def main(datapath = ""):
     print("Solve status: {}".format(status2))
 
     # Compare old and new treatment plans.
+    # TODO: Pass in curves of old plots.
     caseviz.plot_treatment(result, stepsize = 10, label = "Old", show = False)
     caseviz.plot_treatment(result2, stepsize = 10, label = "New")
     caseviz.plot_health(result, stepsize = 10, label = "Old", show = False)

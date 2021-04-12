@@ -150,10 +150,10 @@ class StructureRx(object):
         self.__health_upper = data
 
 class Prescription(object):
-    def __init__(self, T, structure_rxs=None):
-        if T <= 0:
-            raise ValueError("treatment length T must be a positive integer")
-        self.T = int(T)
+    def __init__(self, T_treat, structure_rxs=None):
+        if T_treat <= 0:
+            raise ValueError("T_treat must be a positive integer")
+        self.__T_treat = int(T_treat)
         self.__structure_rxs = []
         if structure_rxs is not None:
             self.__structure_rxs = structure_rxs
@@ -172,6 +172,16 @@ class Prescription(object):
 
     def __iter__(self):
         return self.__structure_rxs.__iter__()
+
+    @property
+    def T_treat(self):
+        return self.__T_treat
+
+    @T_treat.setter
+    def T_treat(self, data):
+        if not (np.isscalar(data) and data > 0):
+            raise ValueError("T_treat must be a positive integer")
+        self.__T_treat = int(data)
 
     @property
     def structure_rxs(self):
@@ -203,8 +213,33 @@ class Prescription(object):
             w_over[i] = s.health_weight_over
         return [w_under, w_over]
 
+    def dose_bounds_to_mats(self):
+        T = self.T_treat
+        K = self.n_structure_rxs
+
+        lo_mat = np.zeros((T,K))
+        hi_mat = np.full((T,K), np.inf)
+        for i in range(K):
+            s = self.structure_rxs[i]
+            lo_mat[:,i] = s.dose_lower
+            hi_mat[:,i] = s.dose_upper
+        return lo_mat, hi_mat
+
+    def health_bounds_to_mats(self):
+        T = self.T_treat
+        K = self.n_structure_rxs
+
+        lo_mat = np.full((T,K), -np.inf)
+        hi_mat = np.full((T, K), np.inf)
+
+        for i in range(K):
+            s = self.structure_rxs[i]
+            lo_mat[:,i] = s.health_lower
+            hi_mat[:,i] = s.health_upper
+        return lo_mat, hi_mat
+
     def rx_to_mats(self):
-        T = self.T
+        T = self.T_treat
         K = self.n_structure_rxs
 
         mat_dict = dict()

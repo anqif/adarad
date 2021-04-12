@@ -2,8 +2,9 @@ import numpy as np
 import cvxpy.settings as cvxpy_s
 
 class RunProfile(object):
-    def __init__(self, use_admm=False, slack_weight="default"):
+    def __init__(self, use_admm=False, use_slack=False, slack_weight="default"):
         self.use_admm = use_admm
+        self.use_slack = use_slack
         self.slack_weight = slack_weight
 
 class RunOutput(object):
@@ -37,8 +38,8 @@ class SolverStats(object):
         # self.extra_stats = None
 
 class RunRecord(object):
-    def __init__(self, use_admm=False, slack_weight='default'):
-        self.profile = RunProfile(use_admm=use_admm, slack_weight=slack_weight)
+    def __init__(self, use_admm=False, use_slack=False, slack_weight='default'):
+        self.profile = RunProfile(use_admm=use_admm, use_slack=use_slack, slack_weight=slack_weight)
         self.output = RunOutput()
         self.solver_stats = SolverStats()
 

@@ -10,6 +10,7 @@ from fractionation.history import RunRecord
 
 from fractionation.quad_funcs import dyn_quad_treat
 from fractionation.quad_admm_funcs import dyn_quad_treat_admm
+from fractionation.utilities.data_utils import check_slack_parms
 from fractionation.utilities.read_utils import *
 
 class Case(object):
@@ -94,7 +95,7 @@ class Case(object):
 
         # Treatment prescription.
         rx_args = dict()
-        rx_args["T"] = data["treatment_length"]
+        rx_args["T_treat"] = data["treatment_length"]
         rx_args["structure_rxs"] = struct_rx_list
         return anatomy_args, phys_args, rx_args
 
@@ -133,26 +134,28 @@ class Case(object):
     def structures(self):
         return self.anatomy.structures
 
-    def plan(self, use_admm=False, *args, **kwargs):
+    def plan(self, use_admm=False, use_slack=None, slack_weight=None, *args, **kwargs):
         if self.physics.dose_matrix is None:
             raise RuntimeError("case.physics.dose_matrix is undefined")
         elif isinstance(self.physics.dose_matrix, list):
-            if len(self.physics.dose_matrix) != self.prescription.T:
-                raise ValueError("dose_matrix must have length T = {0}".format(self.prescription.T))
+            if len(self.physics.dose_matrix) != self.prescription.T_treat:
+                raise ValueError("dose_matrix must have length T_treat = {0}".format(self.prescription.T_treat))
             dose_matrices = self.physics.dose_matrix
         else:
-            dose_matrices = self.prescription.T*[self.physics.dose_matrix]
+            dose_matrices = self.prescription.T_treat*[self.physics.dose_matrix]
 
-        model_parms = self.anatomy.model_parms_to_mat(T=self.prescription.T)
-        slack_weight = kwargs.pop("slack_weight", 0)
-        run_rec = RunRecord(use_admm=use_admm, slack_weight=slack_weight)
+        model_parms = self.anatomy.model_parms_to_mat(T=self.prescription.T_treat)
+        use_slack, slack_weight = check_slack_parms(use_slack, slack_weight, default_slack=1)
+        run_rec = RunRecord(use_admm=use_admm, use_slack=use_slack, slack_weight=slack_weight)
 
         if use_admm:
             result = dyn_quad_treat_admm(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
-                                    self.anatomy.health_init, self.__gather_rx(), slack_weight=slack_weight, *args, **kwargs)
+                                         self.anatomy.health_init, self.__gather_rx(), use_slack=use_slack,
+                                         slack_weight=slack_weight, *args, **kwargs)
         else:
             result = dyn_quad_treat(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
-                                    self.anatomy.health_init, self.__gather_rx(), slack_weight=slack_weight, *args, **kwargs)
+                                    self.anatomy.health_init, self.__gather_rx(), use_slack=use_slack,
+                                    slack_weight=slack_weight, *args, **kwargs)
 
         self.__gather_optimal_vars(result, run_rec.output)
         self.__gather_solver_stats(result, run_rec.solver_stats)

@@ -227,7 +227,7 @@ def plot_single(h, varname, curves = [], stepsize = 10, maxcols = 5, T_treat = N
 	if ylim is not None:
 		plt.setp(axs, ylim = ylim)
 
-	plot_internal(h, axs, varname, curves, stepsize, maxcols, T_treat, bounds, subtitles, label, one_idx, one_shift, *args, **kwargs)
+	plot_internal(h, axs, varname, curves, stepsize, rows, maxcols, T_treat, bounds, subtitles, label, one_idx, one_shift, *args, **kwargs)
 
 	if title is not None:
 		plt.suptitle(title)
@@ -236,12 +236,14 @@ def plot_single(h, varname, curves = [], stepsize = 10, maxcols = 5, T_treat = N
 	if filename is not None:
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
-def plot_internal(h, axs, varname, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, subtitles = None, label = "Treated", 
+def plot_internal(h, axs, varname, curves = [], stepsize = 10, rows = 1, maxcols = 5, T_treat = None, bounds = None, subtitles = None, label = "Treated",
 				  one_idx = False, one_shift = False, *args, **kwargs):
 	# if len(h.shape) == 1:
 	#	h = h[:,np.newaxis]
 	T = h.shape[0]
 	m = h.shape[1]
+	if m == 0 or T == 0:
+		raise ValueError("Nothing to plot since variable shape is ({0},{1})".format(T,m))
 	T_start = int(one_shift)
 	T_end = T + int(one_shift)
 
@@ -289,7 +291,7 @@ def plot_internal(h, axs, varname, curves = [], stepsize = 10, maxcols = 5, T_tr
 		# Label transition from treatment to recovery period.
 		xt = np.arange(T_start, T_end - 1, stepsize)
 		xt = np.append(xt, T_end - 1)
-		if T_treat is not None:
+		if T_treat is not None and T_treat < T:
 			ax.axvline(x = T_treat, lw = 1, ls = ':', color = "grey")
 			xt = np.append(xt, T_treat)
 		ax.set_xticks(xt)

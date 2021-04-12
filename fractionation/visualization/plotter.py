@@ -60,6 +60,10 @@ class CasePlotter(object):
             raise TypeError("case must be of type Case")
 
     @property
+    def T_treat(self):
+        return self.case.prescription.T_treat
+
+    @property
     def beam_angles(self):
         return self.case.physics.beams.angles
 
@@ -225,10 +229,14 @@ class CasePlotter(object):
         if filename is not None:
             fig.savefig(filename, bbox_inches="tight", dpi=300)
 
-    def plot_treatment(self, result, *args, **kwargs):
+    def plot_treatment(self, result, plot_rec_div=False, *args, **kwargs):
         d = result.doses if isinstance(result, RunRecord) else result
-        return plot_single(d, "d", one_shift=True, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)
+        T_treat = self.T_treat if plot_rec_div else None   # Vertical line dividing treatment/recovery phases.
+        bounds = self.case.prescription.dose_bounds_to_mats()
+        return plot_single(d, "d", T_treat=T_treat, bounds=bounds, one_shift=True, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)
 
-    def plot_health(self, result, *args, **kwargs):
+    def plot_health(self, result, plot_rec_div=False, *args, **kwargs):
         h = result.health if isinstance(result, RunRecord) else result
-        return plot_single(h, "h", one_shift=False, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)
+        T_treat = self.T_treat if plot_rec_div else None
+        bounds = self.case.prescription.health_bounds_to_mats()
+        return plot_single(h, "h", T_treat=T_treat, bounds=bounds, one_shift=False, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)

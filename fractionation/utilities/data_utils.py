@@ -1,4 +1,5 @@
 import numpy as np
+from warnings import warn
 
 # Center and rotate counterclockwise by an angle from the x-axis.
 def coord_transf(x, y, center = (0,0), angle = 0):
@@ -295,6 +296,32 @@ def check_prog_parms(alpha, beta, gamma, doses, K, T, is_range = False):
 
 	alpha, beta, gamma = check_quad_vectors(alpha, beta, gamma, K, T, T_recov=0, is_range=is_range)
 	return alpha, beta, gamma, doses
+
+def check_slack_parms(use_slack, slack_weight, default_slack=1):
+	if use_slack is None and slack_weight is None:
+		use_slack = False
+		slack_weight = 0
+	elif use_slack is not None and slack_weight is None:
+		if not np.isscalar(use_slack):
+			raise TypeError("use_slack must be a boolean")
+		use_slack = bool(use_slack)
+		slack_weight = default_slack if use_slack else 0
+	elif use_slack is None and slack_weight is not None:
+		if not (np.isscalar(slack_weight) and slack_weight >= 0):
+			raise TypeError("slack_weight must be a non-negative scalar")
+		use_slack = (slack_weight > 0)
+	else:
+		if not np.isscalar(use_slack):
+			raise TypeError("use_slack must be a boolean")
+		if not (np.isscalar(slack_weight) and slack_weight >= 0):
+			raise TypeError("slack_weight must be a non-negative scalar")
+
+		use_slack = bool(use_slack)
+		if use_slack and slack_weight == 0:
+			warn("use_slack is True, but slack_weight is 0")
+		elif not use_slack and slack_weight > 0:
+			warn("use_slack is False, but slack_weight is non-zero")
+	return use_slack, slack_weight
 
 # Health prognosis with a given treatment.
 def health_prognosis(h_init, T, F_list, G_list = None, q_list = None, r_list = None, doses = None, health_map = lambda h,d,t: h):
