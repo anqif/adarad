@@ -4,7 +4,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 
 from fractionation.medicine.case import Case
-from fractionation.history import RunRecord
+from fractionation.visualization.history import RunRecord
 from fractionation.utilities.plot_utils import plot_single
 from fractionation.utilities.data_utils import line_segments
 
@@ -131,7 +131,9 @@ class CasePlotter(object):
             fig.savefig(filename, bbox_inches="tight", dpi=300)
 
     def plot_beams(self, result, stepsize=10, maxcols=5, standardize=False, title=None, show=True, filename=None,
-                         n_grid=None, plot_anatomy=True, *args, **kwargs):
+                         n_grid=None, plot_anatomy=True, plot_saved=False, *args, **kwargs):
+        if plot_saved:
+            raise NotImplementedError
         if plot_anatomy and self.struct_map is None:
             raise ValueError("struct_map must be defined in order to plot anatomical structures")
         if self.struct_map is not None and n_grid is None:
@@ -229,14 +231,22 @@ class CasePlotter(object):
         if filename is not None:
             fig.savefig(filename, bbox_inches="tight", dpi=300)
 
-    def plot_treatment(self, result, plot_rec_div=False, *args, **kwargs):
+    def plot_treatment(self, result, plot_rec_div=False, plot_saved=False, *args, **kwargs):
         d = result.doses if isinstance(result, RunRecord) else result
-        T_treat = self.T_treat if plot_rec_div else None   # Vertical line dividing treatment/recovery phases.
+        T_treat_lab = self.T_treat if plot_rec_div else None   # Vertical line dividing treatment/recovery phases.
         bounds = self.case.prescription.dose_bounds_to_mats()
-        return plot_single(d, "d", T_treat=T_treat, bounds=bounds, one_shift=True, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)
+        curves = [{"d": plan.doses, "label": name} for name, plan in self.case.saved_plans.items()] if plot_saved else []
+        return plot_single(d, "d", curves=curves, T_treat=T_treat_lab, bounds=bounds, one_shift=True, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)
 
-    def plot_health(self, result, plot_rec_div=False, *args, **kwargs):
+    def plot_health(self, result, plot_rec_div=False, plot_untreated=True, plot_saved=False, *args, **kwargs):
         h = result.health if isinstance(result, RunRecord) else result
-        T_treat = self.T_treat if plot_rec_div else None
+        T_treat_lab = self.T_treat if plot_rec_div else None   # Vertical line dividing treatment/recovery phases.
         bounds = self.case.prescription.health_bounds_to_mats()
-        return plot_single(h, "h", T_treat=T_treat, bounds=bounds, one_shift=False, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)
+
+        curves = []
+        if plot_saved:
+            curves += [{"h": plan.health, "label": name} for name, plan in self.case.saved_plans.items()]
+        if plot_untreated:
+            h_prog = self.case.health_prognosis(self.T_treat)
+            curves += [{"h": h_prog, "label": "Untreated"}]
+        return plot_single(h, "h", curves=curves, T_treat=T_treat_lab, bounds=bounds, one_shift=False, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)

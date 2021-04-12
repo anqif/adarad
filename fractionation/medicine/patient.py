@@ -1,4 +1,5 @@
 import numpy as np
+from fractionation.utilities.data_utils import health_prog_act
 
 class Structure(object):
     def __init__(self, name, is_target=False, health_init=0, alpha=0, beta=0, gamma=0):
@@ -77,6 +78,17 @@ class Anatomy(object):
     @property
     def health_init(self):
         return np.array([s.health_init for s in self.structures])
+
+    def health_prognosis(self, T=1):
+        K = self.n_structures
+        gamma_mat = np.zeros((T,K))
+        for i in range(K):
+            s = self.structures[i]
+            s_gamma = s.model_parms["gamma"]
+            if not (np.isscalar(s_gamma) or (isinstance(s_gamma, np.ndarray) and s_gamma.ndim == 1 and s_gamma.shape[0] == T)):
+                raise ValueError("gamma parameter of structure {0} must be a scalar or vector of length {1}".format(s,T))
+            gamma_mat[:,i] = s_gamma
+        return health_prog_act(self.health_init, T, gamma=gamma_mat)
 
     def model_parms_to_mat(self, T=1):
         K = self.n_structures

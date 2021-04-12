@@ -24,7 +24,10 @@ def main(datapath = ""):
     caseviz = CasePlotter(case)
     caseviz.plot_treatment(result, stepsize = 10)
     caseviz.plot_health(result, stepsize = 10)
-    # TODO: Save dose and health with specific labels.
+    # caseviz.plot_health(result, stepsize = 10, plot_untreated = True)
+
+    # Save plan for later comparison.
+    case.save_plan("Old Plan")
 
     # Constraint allows maximum of 10 Gy on the PTV.
     case.prescription["PTV"].dose_upper = 10
@@ -36,11 +39,10 @@ def main(datapath = ""):
     print("Solve status: {}".format(status2))
 
     # Compare old and new treatment plans.
-    # TODO: Pass in curves of old plots.
-    caseviz.plot_treatment(result, stepsize = 10, label = "Old", show = False)
-    caseviz.plot_treatment(result2, stepsize = 10, label = "New")
-    caseviz.plot_health(result, stepsize = 10, label = "Old", show = False)
-    caseviz.plot_health(result2, stepsize = 10, label = "New")
+    # TODO: Optional plotting kwargs for saved plans/untreated prognosis.
+    caseviz.plot_treatment(result2, stepsize = 10, label = "New Plan", plot_saved = True)
+    caseviz.plot_health(result2, stepsize=10, label="New Plan", plot_saved = True)
+    # caseviz.plot_health(result2, stepsize = 10, label = "New Plan", plot_saved = True, plot_untreated = True)
 
 if __name__ == '__main__':
     main(datapath = "/home/anqi/Documents/software/fractionation/examples/data/")

@@ -1,12 +1,10 @@
 import yaml
 import os.path
-import numpy as np
-from warnings import warn
 
 from fractionation.medicine.physics import Physics
 from fractionation.medicine.patient import Anatomy, Structure
 from fractionation.medicine.prescription import Prescription, StructureRx
-from fractionation.history import RunRecord
+from fractionation.visualization.history import RunRecord
 
 from fractionation.quad_funcs import dyn_quad_treat
 from fractionation.quad_admm_funcs import dyn_quad_treat_admm
@@ -30,6 +28,9 @@ class Case(object):
             self.__anatomy = anatomy
             self.__physics = physics
             self.__prescription = prescription
+
+        self.__current_plan = None
+        self.__saved_plans = dict()
 
     def digest(self, path):
         if not (".yml" in path or ".yaml" in path):
@@ -134,6 +135,36 @@ class Case(object):
     def structures(self):
         return self.anatomy.structures
 
+    def health_prognosis(self, T=1):
+        return self.anatomy.health_prognosis(T)
+
+    @property
+    def current_plan(self):
+        return self.__current_plan
+
+    @property
+    def saved_plans(self):
+        return self.__saved_plans
+
+    def save_plan(self, name):
+        if not isinstance(name, str):
+            raise TypeError("name must be a string")
+        self.__saved_plans[name] = self.__current_plan
+
+    def get_plan(self, name):
+        if not isinstance(name, str):
+            raise TypeError("name must be a string")
+        if name not in self.saved_plans:
+            raise RuntimeError("{0} is not the name of a saved plan".format(name))
+        return self.saved_plans[name]
+
+    def delete_plan(self, name):
+        if not isinstance(name, str):
+            raise TypeError("name must be a string")
+        if name not in self.saved_plans:
+            raise RuntimeError("{0} is not the name of a saved plan".format(name))
+        del self.__saved_plans[name]
+
     def plan(self, use_admm=False, use_slack=None, slack_weight=None, *args, **kwargs):
         if self.physics.dose_matrix is None:
             raise RuntimeError("case.physics.dose_matrix is undefined")
@@ -159,6 +190,7 @@ class Case(object):
 
         self.__gather_optimal_vars(result, run_rec.output)
         self.__gather_solver_stats(result, run_rec.solver_stats)
+        self.__current_plan = run_rec
         return run_rec.status, run_rec
 
     def __gather_rx(self):
