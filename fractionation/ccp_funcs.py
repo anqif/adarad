@@ -64,7 +64,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 	status, status_count = Counter(status_list).most_common(1)[0]
 	doses = dose_list if full_hist else d.value
 	return {"obj": obj_cur, "status": status, "num_iters": k, "total_time": start - end, "solve_time": solve_time,
-			"doses": doses, "health_slack": np.array(h_slack_sum[:k])}
+			"doses": doses, "health_slacks": np.array(h_slack_sum[:k])}
 
 def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]

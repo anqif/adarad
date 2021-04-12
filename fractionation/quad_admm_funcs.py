@@ -117,6 +117,7 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
     r_prim = np.zeros(admm_max_iter)
     r_dual = np.zeros(admm_max_iter)
     status_list = []
+    h_slack_sum = np.zeros(admm_max_iter)
 
     start = time()
     has_failed = False
@@ -157,6 +158,7 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
             status = result["status"]
             has_failed = True
             break
+        h_slack_sum[k] = np.sum(h_dyn_slack.value)
         solve_time += result["solve_time"]
         status_list.append(result["status"])
         for t in range(T_treat):
@@ -224,7 +226,7 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
         obj += slack_weight*np.sum(h_dyn_slack.value)
     return {"obj": obj, "status": status, "total_time": end - start, "solve_time": solve_time, "num_iters": k,
             "primal": np.array(r_prim[:k]), "dual": np.array(r_dual[:k]), "beams": beams_all, "doses": doses_all,
-            "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est}
+            "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est, "health_slacks": h_slack_sum[:k]}
 
 def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
 					    use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = False, mpc_slack_weights = None,

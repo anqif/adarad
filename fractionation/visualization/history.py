@@ -11,7 +11,8 @@ class RunOutput(object):
     def __init__(self):
         self.status = None
         self.objective = np.nan
-        self.optimal_variables = {'beams': None, 'doses': None, 'health': None}
+        self.optimal_variables = {'beams': None, 'doses': None, 'health': None, 'slacks': None}
+        self.residuals = {'primal': None, 'dual': None}
 
     @property
     def feasible(self):
@@ -28,6 +29,18 @@ class RunOutput(object):
     @property
     def health(self):
         return self.optimal_variables["health"]
+
+    @property
+    def slacks(self):
+        return self.optimal_variables["slacks"]
+
+    @property
+    def primal_residuals(self):
+        return self.residuals["primal"]
+
+    @property
+    def dual_residuals(self):
+        return self.residuals["dual"]
 
 class SolverStats(object):
     def __init__(self):
@@ -63,3 +76,7 @@ class RunRecord(object):
     @property
     def health(self):
         return self.output.health
+
+    @property
+    def slacks(self):
+        return self.output.slacks

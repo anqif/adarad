@@ -70,8 +70,8 @@ def main(figpath = "", datapath = ""):
 
 		# Plot total slack in health dynamics per iteration.
 		rhoprefix = "rho_{0}-".format(rho)
-		if "health_slack" in res_dynamic:
-			plot_slacks(res_dynamic["health_slack"], show = False, filename = figpath + figprefix + rhoprefix + "slacks.png")
+		if "health_slacks" in res_dynamic:
+			plot_slacks(res_dynamic["health_slacks"], show = False, filename = figpath + figprefix + rhoprefix + "slacks.png")
 
 		# Plot dynamic health and treatment curves.
 		plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, show = False, filename = figpath + figprefix + rhoprefix + "residuals.png")

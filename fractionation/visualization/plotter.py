@@ -5,7 +5,7 @@ from matplotlib.colors import Normalize
 
 from fractionation.medicine.case import Case
 from fractionation.visualization.history import RunRecord
-from fractionation.utilities.plot_utils import plot_single
+from fractionation.utilities.plot_utils import plot_single, plot_slacks, plot_residuals
 from fractionation.utilities.data_utils import line_segments
 
 class StructMap(object):
@@ -257,3 +257,16 @@ class CasePlotter(object):
             h_prog = self.case.health_prognosis(self.T_treat)
             curves += [{"h": h_prog, "label": "Untreated", "kwargs": untreated_kw}]
         return plot_single(h, "h", curves=curves, T_treat=T_treat_lab, bounds=bounds, one_shift=False, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)
+
+    @staticmethod
+    def plot_slacks(result, *args, **kwargs):
+        slacks = result.slacks if isinstance(result, RunRecord) else result
+        plot_slacks(slacks, *args, **kwargs)
+
+    @staticmethod
+    def plot_residuals(result, *args, **kwargs):
+        if not isinstance(result, RunRecord):
+            raise TypeError("result must be of type RunRecord")
+        if not result.profile.use_admm:
+            raise RuntimeError("Residuals only available for ADMM")
+        plot_residuals(result.output.primal_residuals, result.output.dual_residuals, *args, **kwargs)

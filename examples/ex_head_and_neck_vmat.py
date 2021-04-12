@@ -50,7 +50,7 @@ def main(figpath = "", datapath = ""):
 	print("Beam Sum:", np.sum(res_dynamic["beams"]))
 
 	# Plot total slack in health dynamics per iteration.
-	plot_slacks(res_dynamic["health_slack"], show = False, filename = figpath + "ex_head_and_neck_VMAT_TROT-slacks.png")
+	plot_slacks(res_dynamic["health_slacks"], show = False, filename = figpath + "ex_head_and_neck_VMAT_TROT-slacks.png")
 
 	# Plot dynamic health and treatment curves.
 	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, filename = figpath + "ex_head_and_neck_VMAT_TROT-residuals.png")

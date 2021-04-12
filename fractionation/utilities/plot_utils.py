@@ -313,6 +313,11 @@ def plot_internal(h, axs, varname, curves = [], stepsize = 10, rows = 1, maxcols
 
 # Plot primal and dual residuals.
 def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy = False, show = True, filename = None, figsize = (12,8), *args, **kwargs):
+	if r_primal is None and r_dual is None:
+		raise ValueError("Both primal and dual residuals are None")
+	if (r_primal is not None and r_dual is not None) and len(r_primal) != len(r_dual):
+		raise ValueError("Primal and dual residual vectors must have same length")
+
 	if normalize:
 		r_primal = r_primal/r_primal[0] if r_primal[0] != 0 else r_primal
 		r_dual = r_dual/r_dual[0] if r_dual[0] != 0 else r_dual
@@ -320,11 +325,15 @@ def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy =
 	fig = plt.figure()
 	fig.set_size_inches(*figsize)
 	if semilogy:
-		plt.semilogy(range(len(r_primal)), r_primal, label = "Primal", *args, **kwargs)
-		plt.semilogy(range(len(r_dual)), r_dual, label = "Dual", *args, **kwargs)
+		if r_primal is not None:
+			plt.semilogy(range(len(r_primal)), r_primal, label = "Primal", *args, **kwargs)
+		if r_dual is not None:
+			plt.semilogy(range(len(r_dual)), r_dual, label = "Dual", *args, **kwargs)
 	else:
-		plt.plot(range(len(r_primal)), r_primal, label = "Primal", *args, **kwargs)
-		plt.plot(range(len(r_dual)), r_dual, label = "Dual", *args, **kwargs)
+		if r_primal is not None:
+			plt.plot(range(len(r_primal)), r_primal, label = "Primal", *args, **kwargs)
+		if r_dual is not None:
+			plt.plot(range(len(r_dual)), r_dual, label = "Dual", *args, **kwargs)
 
 	plt.legend()
 	plt.xlabel("Iteration")

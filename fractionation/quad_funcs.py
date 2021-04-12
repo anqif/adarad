@@ -103,7 +103,7 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	run_parms = {"use_slack": use_slack, "slack_weight": slack_weight}
 	return {"obj": obj, "status": result["status"], "total_time": total_time, "solve_time": solve_time, "num_iters": result["num_iters"],
 			"beams": beams_all, "doses": doses_all, "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est,
-			"health_slack": result["health_slack"], "doses_hist": doses_hist, "health_hist": health_hist, "parms": run_parms}
+			"health_slacks": result["health_slacks"], "doses_hist": doses_hist, "health_hist": health_hist, "parms": run_parms}
 
 def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
 				   auto_init = False, use_ccp_slack = False, ccp_slack_weight = 0, use_mpc_slack = False, mpc_slack_weights = 1,

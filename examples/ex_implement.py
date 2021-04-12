@@ -27,6 +27,8 @@ def main(datapath = ""):
     caseviz.plot_treatment(result, stepsize=10)
     caseviz.plot_health(result, stepsize=10)
     # caseviz.plot_health(result, stepsize=10, plot_untreated=True)
+    # caseviz.plot_slacks(result)
+    # caseviz.plot_residuals(result)
 
     # Save plan for later comparison.
     case.save_plan("Old Plan")

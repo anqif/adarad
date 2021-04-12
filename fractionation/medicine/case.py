@@ -183,6 +183,10 @@ class Case(object):
             result = dyn_quad_treat_admm(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
                                          self.anatomy.health_init, self.__gather_rx(), use_slack=use_slack,
                                          slack_weight=slack_weight, *args, **kwargs)
+
+            # Save ADMM residuals.
+            run_rec.output.residuals["primal"] = result["primal"]
+            run_rec.output.residuals["dual"] = result["dual"]
         else:
             result = dyn_quad_treat(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
                                     self.anatomy.health_init, self.__gather_rx(), use_slack=use_slack,
@@ -215,6 +219,7 @@ class Case(object):
         output.optimal_variables["beams"] = result["beams"]
         output.optimal_variables["doses"] = result["doses"]
         output.optimal_variables["health"] = result["health"]
+        output.optimal_variables["slacks"] = result["health_slacks"]
 
     @staticmethod
     def __gather_solver_stats(result, solver_stats):

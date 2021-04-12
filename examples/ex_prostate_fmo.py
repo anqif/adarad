@@ -51,8 +51,8 @@ def main(figpath = "", datapath = ""):
 	print("Beam Sum:", np.sum(res_dynamic["beams"]))
 
 	# Plot total slack in health dynamics per iteration.
-	if "health_slack" in res_dynamic:
-		plot_slacks(res_dynamic["health_slack"], show = False, filename = figpath + figprefix + "slacks.png")
+	if "health_slacks" in res_dynamic:
+		plot_slacks(res_dynamic["health_slacks"], show = False, filename = figpath + figprefix + "slacks.png")
 
 	# Plot dynamic health and treatment curves.
 	if "primal" in res_dynamic and "dual" in res_dynamic:
