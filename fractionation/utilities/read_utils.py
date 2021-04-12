@@ -27,9 +27,9 @@ def load_dose_matrix(data, T, K):
     return A_list
 
 def load_beams(data, T, n):
-    beam_args = dict()
     if "beams" in data:
         # Beam positions.
+        beam_args = dict()
         if "angles" in data["beams"]:
             if isinstance(data["beams"]["angles"], str):
                 beam_args["angles"] = np.load(data["beams"]["angles"])
@@ -39,6 +39,7 @@ def load_beams(data, T, n):
             beam_args["bundles"] = data["beams"]["bundles"]
         if "offset" in data["beams"]:
             beam_args["offset"] = data["beams"]["offset"]
+        beams = BeamSet(**beam_args) if beam_args else None
 
         # Beam intensity lower bound.
         lower = data["beams"].get("lower_bound", 0)
@@ -70,7 +71,8 @@ def load_beams(data, T, n):
             if upper_bnd.shape != (T, n):
                 raise ValueError("Beam upper bound matrix must have dimensions ({0},{1})".format(T, n))
     else:
+        beams = None
         lower_bnd = 0
         upper_bnd = np.inf
 
-    return BeamSet(**beam_args), lower_bnd, upper_bnd
+    return beams, lower_bnd, upper_bnd

@@ -1,5 +1,15 @@
 import numpy as np
 
+def read_scal_vec_path(input, name="data"):
+    data = input
+    if isinstance(input, str):
+        data = np.load(input)
+    if isinstance(data, list):
+        data = np.array(data)
+    if not(np.isscalar(data) or isinstance(data, np.ndarray) and data.ndim == 1):
+        raise TypeError({"{0} must be a scalar, vector, numeric list, or path string pointing to such".format(name)})
+    return data
+
 def check_scal_vec(data, name="data"):
     if not (np.isscalar(data) or isinstance(data, np.ndarray) and data.ndim == 1):
         raise TypeError("{0} must be a scalar or a vector".format(name))
@@ -40,10 +50,8 @@ class StructureRx(object):
             elif not (np.isscalar(health_weights["under"]) and np.isscalar(health_weights["over"])):
                 raise ValueError("health_weights must contain scalar values")
             self.__health_weights = health_weights
-        if check_scal_vec(health_lower, "health_lower"):
-            self.__health_lower = health_lower
-        if check_scal_vec(health_upper, "health_upper"):
-            self.__health_upper = health_upper
+        self.__health_lower = read_scal_vec_path(health_lower, "health_lower")
+        self.__health_upper = read_scal_vec_path(health_upper, "health_upper")
 
     @property
     def dose_goal(self):
@@ -163,7 +171,7 @@ class Prescription(object):
         raise KeyError("key {0} does not correspond to a structure name".format(key))
 
     def __iter__(self):
-        return self.__structure_rxs.values().__iter__()
+        return self.__structure_rxs.__iter__()
 
     @property
     def structure_rxs(self):
@@ -216,7 +224,7 @@ class Prescription(object):
             mat_dict["dose_goal"][:,i] = s.dose_goal
             mat_dict["dose_weights"][i] = s.dose_weight
             mat_dict["dose_lower"][:,i] = s.dose_lower
-            mat_dict["dose_upper"][:,i] = s.dowe_upper
+            mat_dict["dose_upper"][:,i] = s.dose_upper
 
             mat_dict["health_goal"][:,i] = s.health_goal
             mat_dict["health_weights_under"][i] = s.health_weight_under

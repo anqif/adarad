@@ -8,12 +8,14 @@ from fractionation.visualization.plotter import CasePlotter
 
 def main(datapath = ""):
     # Construct the clinical case.
-    case = Case(datapath + "case_patient_01.yaml")
+    case = Case(datapath + "patient_01-case.yml")
     case.physics.beams = BeamSet(angles = 20, bundles = 50, offset = 5)
-    case.physics.dose_matrix = numpy.load(datapath + "dmat_patient_01.npy")
+    case.physics.dose_matrix = numpy.load(datapath + "patient_01-dose_mat.npy")
 
     # Solve using ADMM algorithm.
-    status, result = case.plan(slack_weight = 50, max_iter = 100, solver = "ECOS", use_admm = True)
+    status, result = case.plan(use_slack = True, slack_weight = 1e4, max_iter = 1, solver = "MOSEK", ccp_verbose = True)
+    # status, result = case.plan(use_slack = True, slack_weight = 1e4, ccp_max_iter = 15, solver = "MOSEK", rho = 5,
+    #                           admm_max_iter = 500, use_admm = True)
     print("Solve status: {}".format(status))
     print("Solve time: {}".format(result.solver_stats.solve_time))
     print("Iterations: {}".format(result.solver_stats.num_iters))
@@ -27,7 +29,9 @@ def main(datapath = ""):
     case.prescription["PTV"].dose_upper[:10] = 50
 
     # Re-plan the case with new dose constraint.
-    status2, result2 = case.plan(slack_weight = 50, max_iter = 100, solver = "ECOS", use_admm = True)
+    status2, result2 = case.plan(use_slack = True, slack_weight = 1e4, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
+    # status2, result2 = case.plan(use_slack = True, slack_weight = 1e4, ccp_max_iter = 15, solver = "ECOS", rho = 5,
+    #                             admm_max_iter = 500, use_admm = True)
     print("Solve status: {}".format(status2))
 
     # Compare old and new treatment plans.
@@ -37,4 +41,4 @@ def main(datapath = ""):
     caseviz.plot_health(result2, stepsize = 10, label = "New")
 
 if __name__ == '__main__':
-    main(datapath = "/home/anqi/Documents/software/fractionation/examples/output/")
+    main(datapath = "/home/anqi/Documents/software/fractionation/examples/data/")

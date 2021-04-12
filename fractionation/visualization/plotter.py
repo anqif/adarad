@@ -8,20 +8,64 @@ from fractionation.history import RunRecord
 from fractionation.utilities.plot_utils import plot_single
 from fractionation.utilities.data_utils import line_segments
 
+class StructMap(object):
+    def __init__(self, x, y, regions):
+        if not (isinstance(x, np.ndarray) and x.ndim == 2):
+            raise TypeError("x must be a 2-D matrix")
+        if not (isinstance(y, np.ndarray) and y.ndim == 2):
+            raise TypeError("y must be a 2-D matrix")
+        if not (isinstance(regions, np.ndarray) and regions.ndim == 2):
+            raise TypeError("regions must be a 2-D matrix")
+        if x.shape != regions.shape or y.shape != regions.shape:
+            raise TypeError("x, y, and regions must have same dimensions")
+        self.x = x
+        self.y = y
+        self.regions = regions
+
+    @property
+    def shape(self):
+        return self.regions.shape
+
 class CasePlotter(object):
-    def __init__(self, case, figsize=(16,8), one_idx=False, struct_kw=dict()):
+    def __init__(self, case, figsize=(16,8), one_idx=False, struct_map=None, struct_kw=None):
+        # Case information.
         if not isinstance(case, Case):
             raise TypeError("'case' must be of type Case")
-
-        # Case information.
-        self.anatomy = case.anatomy
-        self.beam_angles = case.physics.beams.angles
-        self.beam_offsets = case.physics.beams.offsets
+        self.__case = case
 
         # Plot setup.
+        if not (isinstance(figsize, tuple) and len(figsize) == 2):
+            raise TypeError("figsize must be a tuple of length 2")
         self.__figsize = figsize
-        self.__one_idx = one_idx
+        self.__one_idx = bool(one_idx)
+
+        # Visual map of anatomy.
+        if not (struct_map is None or isinstance(struct_map, StructMap)):
+            raise TypeError("struct_map must be of type StructMap")
+        self.__struct_map = struct_map
+
+        if struct_kw is None:
+            struct_kw = dict()
+        if not isinstance(struct_kw, dict):
+            raise TypeError("struct_kw must be a dictionary")
         self.__struct_kw = struct_kw
+
+    @property
+    def case(self):
+        return self.__case
+
+    @case.setter
+    def case(self, data):
+        if not isinstance(data, Case):
+            raise TypeError("case must be of type Case")
+
+    @property
+    def beam_angles(self):
+        return self.case.physics.beams.angles
+
+    @property
+    def beam_offsets(self):
+        return self.__case.physics.beams.offsets
 
     @property
     def figsize(self):
@@ -30,8 +74,18 @@ class CasePlotter(object):
     @figsize.setter
     def figsize(self, data):
         if not (isinstance(data, tuple) and len(data) == 2):
-            raise TypeError("'figsize' must be a tuple of positive integers")
+            raise TypeError("figsize must be a tuple of positive integers")
         self.__figsize = data
+
+    @property
+    def struct_map(self):
+        return self.__struct_map
+
+    @struct_map.setter
+    def struct_map(self, data):
+        if not isinstance(data, StructMap):
+            raise TypeError("struct_map must be a StructMap")
+        self.__struct_map = data
 
     @property
     def struct_kw(self):
@@ -40,22 +94,22 @@ class CasePlotter(object):
     @struct_kw.setter
     def struct_kw(self, data):
         if not isinstance(data, dict):
-            raise TypeError("'struct_kw' must be a dictionary")
+            raise TypeError("struct_kw must be a dictionary")
         self.__struct_kw = data
 
     def plot_structures(self, title=None, show=True, filename=None, *args, **kwargs):
-        if self.anatomy is None:
-            raise ValueError("'anatomy' of case is undefined.")
+        if self.struct_map is None:
+            raise ValueError("struct_map must be defined")
 
         fig = plt.figure()
-        fig.set_size_inches(**self.figsize)
+        fig.set_size_inches(self.figsize)
 
-        labels = np.unique(self.anatomy.regions + int(self.__one_idx))
+        labels = np.unique(self.struct_map.regions + int(self.__one_idx))
         lmin = np.min(labels)
         lmax = np.max(labels)
         levels = np.arange(lmin, lmax + 2) - 0.5
 
-        ctf = plt.contourf(self.anatomy.x, self.anatomy.y, self.anatomy.regions + int(self.__one_idx), levels=levels,
+        ctf = plt.contourf(self.struct_map.x, self.struct_map.y, self.struct_map.regions + int(self.__one_idx), levels=levels,
                            *args, **kwargs)
 
         plt.axhline(0, lw=1, ls=':', color="grey")
@@ -73,10 +127,19 @@ class CasePlotter(object):
             fig.savefig(filename, bbox_inches="tight", dpi=300)
 
     def plot_beams(self, result, stepsize=10, maxcols=5, standardize=False, title=None, show=True, filename=None,
-                   plot_anatomy=True, *args, **kwargs):
-        m_grid, n_grid = self.anatomy.dims
-        if m_grid != n_grid:
-            raise NotImplementedError("plot_beams can only handle symmetric 2-D anatomical grids")
+                         n_grid=None, plot_anatomy=True, *args, **kwargs):
+        if plot_anatomy and self.struct_map is None:
+            raise ValueError("struct_map must be defined in order to plot anatomical structures")
+        if self.struct_map is not None and n_grid is None:
+            m_grid, n_grid = self.struct_map.shape
+            if m_grid != n_grid:
+                raise NotImplementedError("plot_beams can only handle symmetric 2-D anatomical grids")
+        elif self.struct_map is None and n_grid is not None:
+            if n_grid <= 0:
+                raise TypeError("n_grid must be a positive integer")
+            n_grid = int(n_grid)
+        else:
+            raise ValueError("Exactly one of struct_map and n_grid must be defined")
         b = result.beams if isinstance(result, RunRecord) else result
 
         T = b.shape[0]
@@ -96,10 +159,11 @@ class CasePlotter(object):
             b = (b - b_mean) / b_std
 
         # Set levels for structure colorbar.
-        labels = np.unique(self.anatomy.regions + int(self.__one_idx))
-        lmin = np.min(labels)
-        lmax = np.max(labels)
-        struct_levels = np.arange(lmin, lmax + 2) - 0.5
+        if plot_anatomy:
+            labels = np.unique(self.struct_map.regions + int(self.__one_idx))
+            lmin = np.min(labels)
+            lmax = np.max(labels)
+            struct_levels = np.arange(lmin, lmax + 2) - 0.5
 
         T_grid = np.arange(0, T, stepsize)
         if T_grid[-1] != T - 1:
@@ -109,7 +173,7 @@ class CasePlotter(object):
         cols = min(T_steps, maxcols)
 
         fig, axs = plt.subplots(rows, cols)
-        fig.set_size_inches(**self.figsize)
+        fig.set_size_inches(self.figsize)
 
         t = 0
         segments = line_segments(self.beam_angles, self.beam_offsets, n_grid, xlim, ylim)  # Create collection of beams.
@@ -121,7 +185,7 @@ class CasePlotter(object):
 
             # Plot anatomical structures.
             if plot_anatomy:
-                ctf = ax.contourf(self.anatomy.x, self.anatomy.y, self.anatomy.regions + int(self.__one_idx),
+                ctf = ax.contourf(self.struct_map.x, self.struct_map.y, self.struct_map.regions + int(self.__one_idx),
                                   levels=struct_levels, **self.struct_kw)
 
             # Set colors based on beam intensity.

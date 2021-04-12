@@ -86,7 +86,7 @@ class Anatomy(object):
         for s in self.structures:
             for key in parm_dict.keys():
                 s_parm = s.model_parms[key]
-                if not np.isscalar(s_parm) or len(s_parm) != T:
+                if not (np.isscalar(s_parm) or (isinstance(s_parm, np.ndarray) and s_parm.ndim == 1 and s_parm.shape[0] == T)):
                     raise ValueError("model parameter {0} of structure {1} must be a scalar or vector of length {2}".format(key,s,T))
                 parm_dict[key][:,i] = s_parm
             i = i + 1

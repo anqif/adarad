@@ -31,7 +31,7 @@ class Case(object):
             self.__prescription = prescription
 
     def digest(self, path):
-        if ".yaml" not in path:
+        if not (".yml" in path or ".yaml" in path):
             raise ValueError("path must point to a yaml file")
         if not os.path.exists(path):
             raise RuntimeError("{0} does not exist".format(path))
@@ -57,15 +57,16 @@ class Case(object):
         struct_list = []
         struct_rx_list = []
         for i in range(K):
-            # Anatomical structures.
             s_dict = data["structures"][i]
-            struct_obj = Structure(s_dict["name"], is_target=s_dict["is_target"], health_init=s_dict["health_init"],
+            s_dose = s_dict["dose"]
+            s_health = s_dict["health"]
+
+            # Anatomical structures.
+            struct_obj = Structure(s_dict["name"], is_target=s_dict["is_target"], health_init=s_health["initial"],
                                    alpha=s_dict["alpha"], beta=s_dict["beta"], gamma=s_dict["gamma"])
             struct_list.append(struct_obj)
 
             # Prescription for structure.
-            s_dose = s_dict["dose"]
-            s_health = s_dict["health"]
             if s_dict["is_target"]:
                 h_w_under = s_health.get("under", 0)
                 h_w_over = s_health.get("over", 1)
@@ -147,11 +148,11 @@ class Case(object):
         run_rec = RunRecord(use_admm=use_admm, slack_weight=slack_weight)
 
         if use_admm:
-            result = dyn_quad_treat(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
+            result = dyn_quad_treat_admm(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
                                     self.anatomy.health_init, self.__gather_rx(), slack_weight=slack_weight, *args, **kwargs)
         else:
-            result = dyn_quad_treat_admm(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
-                                         self.anatomy.health_init, self.__gather_rx(), slack_weight=slack_weight, *args, **kwargs)
+            result = dyn_quad_treat(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
+                                    self.anatomy.health_init, self.__gather_rx(), slack_weight=slack_weight, *args, **kwargs)
 
         self.__gather_optimal_vars(result, run_rec.output)
         self.__gather_solver_stats(result, run_rec.solver_stats)
@@ -167,7 +168,7 @@ class Case(object):
         rx_for_solve["dose_constrs"] = {"lower": rx_obj_mats["dose_lower"], "upper": rx_obj_mats["dose_upper"]}
 
         rx_for_solve["health_goal"] = rx_obj_mats["health_goal"]
-        rx_for_solve["health_weights"] = [rx_obj_mats["health_weights_lower"], rx_obj_mats["health_weights_upper"]]
+        rx_for_solve["health_weights"] = [rx_obj_mats["health_weights_under"], rx_obj_mats["health_weights_over"]]
         rx_for_solve["health_constrs"] = {"lower": rx_obj_mats["health_lower"], "upper": rx_obj_mats["health_upper"]}
         rx_for_solve["beam_constrs"] = {"lower": self.physics.beam_lower, "upper": self.physics.beam_upper}
         return rx_for_solve
