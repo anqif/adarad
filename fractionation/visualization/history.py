@@ -32,6 +32,7 @@ class RunOutput(object):
 class SolverStats(object):
     def __init__(self):
         # self.solver_name = None
+        self.total_time = None
         self.solve_time = None
         # self.setup_time = None
         self.num_iters = None

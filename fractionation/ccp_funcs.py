@@ -1,6 +1,8 @@
 import numpy as np
-import cvxpy.settings as cvxpy_s
 from collections import Counter
+from time import time
+
+import cvxpy.settings as cvxpy_s
 from cvxpy import Constant
 
 from fractionation.utilities.data_utils import pad_matrix
@@ -30,6 +32,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 	status_list = []
 	h_slack_sum = np.zeros(max_iter)
 
+	start = time()
 	while not finished:
 		if ccp_verbose and k % iter_print == 0:
 			print("Iteration:", k)
@@ -55,12 +58,13 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 		obj_cur = prob.value
 		h_slack_sum[k] = np.sum(h_slack.value)
 		k = k + 1
+	end = time()
 
 	# Take majority as final status.
 	status, status_count = Counter(status_list).most_common(1)[0]
 	doses = dose_list if full_hist else d.value
-	return {"obj": obj_cur, "status": status, "num_iters": k, "solve_time": solve_time, "doses": doses,
-			"health_slack": np.array(h_slack_sum[:k])}
+	return {"obj": obj_cur, "status": status, "num_iters": k, "total_time": start - end, "solve_time": solve_time,
+			"doses": doses, "health_slack": np.array(h_slack_sum[:k])}
 
 def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]

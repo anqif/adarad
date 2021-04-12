@@ -68,9 +68,14 @@ def rx_slice(patient_rx, t_start, t_end, t_step=1, squeeze=True):
             rx_cur[constr_key] = {}
             for lu_key in {"lower", "upper"}:
                 if lu_key in patient_rx[constr_key]:
-                    rx_old_slice = patient_rx[constr_key][lu_key][t_slice]
-                    if squeeze:
-                        rx_old_slice = np.squeeze(rx_old_slice)
+                    # rx_old_slice = patient_rx[constr_key][lu_key][t_slice]
+                    constr_val = patient_rx[constr_key][lu_key]
+                    if np.isscalar(constr_val):
+                        rx_old_slice = constr_val
+                    else:
+                        rx_old_slice = constr_val[t_slice]
+                        if squeeze:
+                            rx_old_slice = np.squeeze(rx_old_slice)
                     rx_cur[constr_key][lu_key] = rx_old_slice
     return rx_cur
 

@@ -231,22 +231,29 @@ class CasePlotter(object):
         if filename is not None:
             fig.savefig(filename, bbox_inches="tight", dpi=300)
 
-    def plot_treatment(self, result, plot_rec_div=False, plot_saved=False, *args, **kwargs):
+    def plot_treatment(self, result, plot_rec_div=False, plot_saved=False, saved_plans_kw=dict(), *args, **kwargs):
         d = result.doses if isinstance(result, RunRecord) else result
         T_treat_lab = self.T_treat if plot_rec_div else None   # Vertical line dividing treatment/recovery phases.
         bounds = self.case.prescription.dose_bounds_to_mats()
-        curves = [{"d": plan.doses, "label": name} for name, plan in self.case.saved_plans.items()] if plot_saved else []
+
+        curves = []
+        if plot_saved:
+            for name, plan in self.case.saved_plans.items():
+                curve_kw = saved_plans_kw.get(name, {})
+                curves += [{"d": plan.doses, "label": name, "kwargs": curve_kw}]
         return plot_single(d, "d", curves=curves, T_treat=T_treat_lab, bounds=bounds, one_shift=True, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)
 
-    def plot_health(self, result, plot_rec_div=False, plot_untreated=True, plot_saved=False, *args, **kwargs):
+    def plot_health(self, result, plot_rec_div=False, plot_untreated=True, plot_saved=False, untreated_kw=dict(), saved_plans_kw=dict(), *args, **kwargs):
         h = result.health if isinstance(result, RunRecord) else result
         T_treat_lab = self.T_treat if plot_rec_div else None   # Vertical line dividing treatment/recovery phases.
         bounds = self.case.prescription.health_bounds_to_mats()
 
         curves = []
         if plot_saved:
-            curves += [{"h": plan.health, "label": name} for name, plan in self.case.saved_plans.items()]
+            for name, plan in self.case.saved_plans.items():
+                curve_kw = saved_plans_kw.get(name, {})
+                curves += [{"h": plan.health, "label": name, "kwargs": curve_kw}]
         if plot_untreated:
             h_prog = self.case.health_prognosis(self.T_treat)
-            curves += [{"h": h_prog, "label": "Untreated"}]
+            curves += [{"h": h_prog, "label": "Untreated", "kwargs": untreated_kw}]
         return plot_single(h, "h", curves=curves, T_treat=T_treat_lab, bounds=bounds, one_shift=False, one_idx=self.__one_idx, figsize=self.figsize, *args, **kwargs)

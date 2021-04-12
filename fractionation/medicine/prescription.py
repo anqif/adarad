@@ -230,7 +230,7 @@ class Prescription(object):
         K = self.n_structure_rxs
 
         lo_mat = np.full((T,K), -np.inf)
-        hi_mat = np.full((T, K), np.inf)
+        hi_mat = np.full((T,K), np.inf)
 
         for i in range(K):
             s = self.structure_rxs[i]

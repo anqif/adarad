@@ -219,5 +219,6 @@ class Case(object):
     @staticmethod
     def __gather_solver_stats(result, solver_stats):
         # solver_stats.solver_name = result["solver_name"]
+        solver_stats.total_time = result["total_time"]
         solver_stats.solve_time = result["solve_time"]
         solver_stats.num_iters = result["num_iters"]

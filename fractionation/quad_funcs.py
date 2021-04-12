@@ -43,6 +43,7 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	ccp_verbose = kwargs.pop("ccp_verbose", False)
 
 	# Initialize dose.
+	total_time = 0
 	solve_time = 0
 	if d_init is None:
 		if auto_init:
@@ -50,6 +51,7 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 				print("Calculating initial dose...")
 			result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_slack, slack_weight, *args, **kwargs)
 			d_init = result_init["doses"]
+			total_time += result_init["total_time"]
 			solve_time += result_init["solve_time"]
 		else:
 			d_init = np.zeros((T_treat, K))
@@ -63,6 +65,7 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 					   *args, **kwargs)
 	if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
 		raise RuntimeError("CCP solve failed with status {0}".format(result["status"]))
+	total_time += result["total_time"]
 	solve_time += result["solve_time"]
 
 	# Construct full results.
@@ -98,7 +101,7 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	if use_slack:
 		obj += slack_weight*np.sum(h_dyn_slack.value)
 	run_parms = {"use_slack": use_slack, "slack_weight": slack_weight}
-	return {"obj": obj, "status": result["status"], "solve_time": solve_time, "num_iters": result["num_iters"],
+	return {"obj": obj, "status": result["status"], "total_time": total_time, "solve_time": solve_time, "num_iters": result["num_iters"],
 			"beams": beams_all, "doses": doses_all, "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est,
 			"health_slack": result["health_slack"], "doses_hist": doses_hist, "health_hist": health_hist, "parms": run_parms}
 

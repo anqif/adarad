@@ -44,6 +44,7 @@ def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, u
     ccp_eps = kwargs.pop("ccp_eps", 1e-3)   # Stopping tolerance.
     ccp_verbose = kwargs.pop("ccp_verbose", False)
     init_verbose = kwargs.pop("init_verbose", False)
+    setup_time = 0
     solve_time = 0
     t_static = 0
 
@@ -56,6 +57,7 @@ def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, u
     prob_1.solve(*args, **kwargs)
     if prob_1.status not in cvxpy_s.SOLUTION_PRESENT:
         raise RuntimeError("Stage 1: Solver failed with status {0}".format(prob_1.status))
+    setup_time += prob_1.solver_stats.setup_time
     solve_time += prob_1.solver_stats.solve_time
     b_static = b.value/T_treat   # Save optimal static beams.
 
@@ -67,6 +69,7 @@ def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, u
     prob_2a.solve(*args, **kwargs)
     if prob_2a.status not in cvxpy_s.SOLUTION_PRESENT:
         raise RuntimeError("Stage 2a: Initial solve failed with status {0}".format(prob_2a.status))
+    setup_time += prob_2a.solver_stats.setup_time
     solve_time += prob_2a.solver_stats.solve_time
     d_init = d.value
     if init_verbose:
@@ -83,8 +86,9 @@ def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, u
     result = ccp_solve(prob_2b, d, d_parm, d_init, h_dyn_slack, ccp_verbose, full_hist = False, max_iter = max_iter, ccp_eps = ccp_eps, *args, **kwargs)
     if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
         raise RuntimeError("Stage 2b: CCP solve failed with status {0}".format(result["status"]))
+    total_time = result["total_time"] + setup_time + solve_time
     solve_time += result["solve_time"]
-    return {"beams": b.value, "doses": d.value, "solve_time": solve_time}
+    return {"beams": b.value, "doses": d.value, "total_time": total_time, "solve_time": solve_time}
 
 # Objective function for static problem.
 def dyn_stat_obj(d_var, h_var, patient_rx):
