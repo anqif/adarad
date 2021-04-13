@@ -61,7 +61,7 @@ class Physics(object):
     @dose_matrix.setter
     def dose_matrix(self, data):
         K, n = self.check_dose_matrix(data)
-        if self.__beams.n_beams != n:
+        if self.beams is not None and self.beams.n_beams != n:
             raise ValueError("data must be a matrix with {0} columns".format(n))
         self.__dose_matrix = data
 

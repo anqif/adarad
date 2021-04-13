@@ -19,11 +19,11 @@ class Case(object):
             self.__physics = Physics(**phys_args)
             self.__prescription = Prescription(**rx_args)
         else:
-            if not isinstance(anatomy, Anatomy):
+            if not (anatomy is None or isinstance(anatomy, Anatomy)):
                 raise TypeError("anatomy must be of class Anatomy")
-            if not isinstance(physics, Physics):
+            if not (physics is None or isinstance(physics, Physics)):
                 raise TypeError("physics must be of class Physics")
-            if not isinstance(prescription, Prescription):
+            if not (prescription is None or isinstance(prescription, Prescription)):
                 raise TypeError("prescription must be of class Prescription")
             self.__anatomy = anatomy
             self.__physics = physics
@@ -32,9 +32,17 @@ class Case(object):
         self.__current_plan = None
         self.__saved_plans = dict()
 
+    def import_file(self, path):
+        if not isinstance(path, str):
+            raise TypeError("path must be a string")
+        anatomy_args, phys_args, rx_args = self.digest(path)
+        self.__anatomy = Anatomy(**anatomy_args)
+        self.__physics = Physics(**phys_args)
+        self.__prescription = Prescription(**rx_args)
+
     def digest(self, path):
         if not (".yml" in path or ".yaml" in path):
-            raise ValueError("path must point to a yaml file")
+            raise ValueError("path must point to a YAML file")
         if not os.path.exists(path):
             raise RuntimeError("{0} does not exist".format(path))
 
@@ -64,7 +72,7 @@ class Case(object):
             s_health = s_dict["health"]
 
             # Anatomical structures.
-            struct_obj = Structure(s_dict["name"], is_target=s_dict["is_target"], health_init=s_health["initial"],
+            struct_obj = Structure(s_dict["name"], is_target=s_dict["is_target"], health_init=s_health.get("initial", 0),
                                    alpha=s_dict["alpha"], beta=s_dict["beta"], gamma=s_dict["gamma"])
             struct_list.append(struct_obj)
 
