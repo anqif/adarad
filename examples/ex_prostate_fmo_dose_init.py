@@ -12,8 +12,10 @@ from adarad.utilities.plot_utils import *
 from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
 
-input_path = "C:/Users/Anqi/Documents/Software/adarad/examples/data/"
-output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
+# input_path = "C:/Users/Anqi/Documents/Software/adarad/examples/data/"
+# output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
+input_path = "/home/anqi/Documents/software/adarad/examples/data/"
+output_path = "/home/anqi/Documents/software/adarad/examples/output/"
 fig_path = output_path + "figures/"
 
 output_prefix = output_path + "ex3_prostate_fmo_"
@@ -100,7 +102,8 @@ def main():
 	# Additional constraints.
 	# constrs = [b <= beam_upper[t_s,:], d <= dose_upper[t_s,:], d >= dose_lower[t_s,:], h_ptv <= health_upper[t_s,is_target], h_oar >= health_lower[t_s,~is_target]]
 	# constrs = [h_ptv <= health_upper[-1,is_target] + h_hi_slack, h_oar >= health_lower[-1,~is_target] - h_lo_slack]
-	constrs = [h_ptv <= health_upper[-1,is_target], h_oar >= health_lower[-1,~is_target] - h_lo_slack]
+	# constrs = [h_ptv <= health_upper[-1,is_target], h_oar >= health_lower[-1,~is_target] - h_lo_slack]
+	constrs = [b <= np.sum(beam_upper, axis=0), h_ptv <= health_upper[-1,is_target], h_oar >= health_lower[-1,~is_target] - h_lo_slack]
 
 	# Solve problem.
 	print("Stage 1: Solving problem...")
@@ -119,6 +122,7 @@ def main():
 	print("Stage 1 Results")
 	print("Objective:", prob_1.value)
 	print("Optimal Dose:", d_stage_1)
+	print("Optimal Beam (Max):", np.max(b_static))
 	print("Optimal Health:", h_stage_1)
 	print("Solve Time:", prob_1.solver_stats.solve_time)
 
@@ -140,6 +144,8 @@ def main():
 	plt.xlim(-xlim_eps, K-1+xlim_eps)
 	plt.show()
 
+	# raise RuntimeError("Stop 0")
+
 	# Stage 2a: Dynamic scaling problem with constant factor.
 	u = Variable(nonneg=True)
 	b = u*b_static
@@ -147,26 +153,37 @@ def main():
 	h = Variable((T+1,K))
 
 	# Used in Taylor expansion of PTV health dynamics.
-	h_slack_weight = 1e4
-	h_slack = Variable((T,K), nonneg=True)      # Slack in approximation.
+	h_tayl_slack_weight = 1e4
+	h_tayl_slack = Variable((T,K), nonneg=True)      # Slack in approximation.
 
 	# Form objective.
 	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])   # Lower penalty on generic body voxels.
 	h_penalty = sum(pos(h[1:,is_target])) + 0.25*sum(neg(h[1:,~is_target]))
-	s_penalty = h_slack_weight*sum(h_slack[:,is_target])
+	s_tayl_penalty = h_tayl_slack_weight*sum(h_tayl_slack[:,is_target])
+
+	# Add slack to lower health bounds.
+	# TODO: Should we continue to add slack to lower health bound on OARs?
+	h_lo_slack_weight = 0.25
+	h_lo_slack = Variable((T, num_oar), nonneg=True)
+	s_lo_penalty = h_lo_slack_weight * sum(h_lo_slack)
+
+	# s_penalty = s_tayl_penalty
+	s_penalty = s_tayl_penalty + s_lo_penalty
 	obj = d_penalty + h_penalty + s_penalty
 
 	# Health dynamics.
 	constrs = [h[0] == h_init]
 	for t in range(T):
 		# For PTV, use simple linear model (beta_t = 0).
-		constrs += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) + gamma[t,is_target] - h_slack[t,is_target]]
+		constrs += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
 
 		# For OAR, use linear-quadratic model with lossless relaxation.
 		constrs += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d[t,~is_target]) - multiply(beta[t,~is_target], square(d[t,~is_target])) + gamma[t,~is_target]]
 
 	# Additional constraints.
-	constrs += [b <= np.min(beam_upper, axis=0), d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	# constrs += [b <= np.min(beam_upper, axis=0), d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	constrs += [b <= np.min(beam_upper, axis=0), d <= dose_upper, d >= dose_lower,
+				h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target] - h_lo_slack]
 
 	# Warm start.
 	u.value = 1
@@ -184,7 +201,7 @@ def main():
 	d_stage_2_init = d.value   # Save optimal doses derived from constant factor for stage 2b.
 	# h_stage_2_init = h.value
 	h_stage_2_init = health_prog_act(h_init, T, alpha, beta, gamma, d_stage_2_init, is_target)
-	s_stage_2_init = h_slack.value
+	s_stage_2_init = h_tayl_slack.value
 
 	print("Stage 2 Initialization")
 	print("Objective:", prob_2a.value)
@@ -194,6 +211,14 @@ def main():
 	# print("Optimal Health Slack:", s_stage_2_init)
 	print("Solve Time:", prob_2a.solver_stats.solve_time)
 
+	# Plot optimal dose and health over time.
+	plot_treatment(d_stage_2_init, stepsize = 10, bounds = (dose_lower, dose_upper), title="Treatment Dose vs. Time",
+				   color = colors[0], one_idx = True)
+	plot_health(h_stage_2_init, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
+				title = "Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True)
+
+	# raise RuntimeError("Stop 1")
+
 	# Stage 2b: Dynamic scaling problem with time-varying factors.
 	# Define variables.
 	u = Variable((T,), nonneg=True)
@@ -202,14 +227,23 @@ def main():
 	h = Variable((T+1,K))
 
 	# Used in Taylor expansion of PTV health dynamics.
-	h_slack_weight = 1e4
-	h_slack = Variable((T,K), nonneg=True)      # Slack in approximation.
+	h_tayl_slack_weight = 1e4
+	h_tayl_slack = Variable((T,K), nonneg=True)      # Slack in approximation.
 	d_parm = Parameter(d.shape, nonneg=True)   # Dose point around which to linearize.
 
 	# Form objective.
 	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])   # Lower penalty on generic body voxels.
 	h_penalty = sum(pos(h[1:,is_target])) + 0.25*sum(neg(h[1:,~is_target]))
-	s_penalty = h_slack_weight*sum(h_slack[:,is_target])
+	s_tayl_penalty = h_tayl_slack_weight*sum(h_tayl_slack[:,is_target])
+
+	# Add slack to lower health bounds.
+	# TODO: Should we continue to add slack to lower health bound on OARs?
+	h_lo_slack_weight = 0.25
+	h_lo_slack = Variable((T, num_oar), nonneg=True)
+	s_lo_penalty = h_lo_slack_weight * sum(h_lo_slack)
+
+	# s_penalty = s_tayl_penalty
+	s_penalty = s_tayl_penalty + s_lo_penalty
 	obj = d_penalty + h_penalty + s_penalty
 
 	# Health dynamics.
@@ -217,13 +251,14 @@ def main():
 	for t in range(T):
 		# For PTV, use first-order Taylor expansion of dose around d_parm.
 		constrs += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_parm[t,is_target], multiply(beta[t,is_target], d_parm[t,is_target])) \
-													   + gamma[t,is_target] - h_slack[t,is_target]]
+													   + gamma[t,is_target] - h_tayl_slack[t,is_target]]
 
 		# For OAR, use linear-quadratic model with lossless relaxation.
 		constrs += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d[t,~is_target]) - multiply(beta[t,~is_target], square(d[t,~is_target])) + gamma[t,~is_target]]
 
 	# Additional constraints.
-	constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	# constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:, is_target] <= health_upper[:, is_target], h[1:, ~is_target] >= health_lower[:, ~is_target] - h_lo_slack]
 	prob_2b = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.
@@ -234,7 +269,7 @@ def main():
 	# Warm start.
 	u.value = np.array(T*[u_stage_2_init])
 	h.value = h_stage_2_init
-	h_slack.value = s_stage_2_init
+	h_tayl_slack.value = s_stage_2_init
 
 	obj_old = np.inf
 	d_parm.value = d_stage_2_init
@@ -260,7 +295,7 @@ def main():
 	d_stage_2 = d.value
 	# h_stage_2 = h.value
 	h_stage_2 = health_prog_act(h_init, T, alpha, beta, gamma, d_stage_2, is_target)
-	s_stage_2 = h_slack.value
+	s_stage_2 = h_tayl_slack.value
 
 	print("Stage 2 Results")
 	print("Objective:", prob_2b.value)
@@ -282,6 +317,8 @@ def main():
 	plot_health(h_stage_2, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", label = "Treated", 
 				color = colors[0], one_idx = True, filename = init_prefix + "health.png")
 
+	raise RuntimeError("Stop 2")
+
 	# Main Stage: Dynamic optimal control problem.
 	# Define variables.
 	b = Variable((T,n), nonneg=True)
@@ -289,14 +326,14 @@ def main():
 	h = Variable((T+1,K))
 
 	# Used in Taylor expansion of PTV health dynamics.
-	h_slack_weight = 1e4
-	h_slack = Variable((T,K), nonneg=True)      # Slack in approximation.
+	h_tayl_slack_weight = 1e4
+	h_tayl_slack = Variable((T,K), nonneg=True)      # Slack in approximation.
 	d_parm = Parameter(d.shape, nonneg=True)   # Dose point around which to linearize.
 
 	# Form objective.
 	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
 	h_penalty = sum(pos(h[1:,is_target])) + 0.25*sum(neg(h[1:,~is_target]))
-	s_penalty = h_slack_weight*sum(h_slack[:,is_target])
+	s_penalty = h_tayl_slack_weight*sum(h_tayl_slack[:,is_target])
 	obj = d_penalty + h_penalty + s_penalty
 
 	# Health dynamics.
@@ -304,7 +341,7 @@ def main():
 	for t in range(T):
 		# For PTV, use first-order Taylor expansion of dose around d_parm.
 		constrs += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_parm[t,is_target], multiply(beta[t,is_target], d_parm[t,is_target])) \
-													   + gamma[t,is_target] - h_slack[t,is_target]]
+													   + gamma[t,is_target] - h_tayl_slack[t,is_target]]
 
 		# For OAR, use linear-quadratic model with lossless relaxation.
 		constrs += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d[t,~is_target]) - multiply(beta[t,~is_target], square(d[t,~is_target])) + gamma[t,~is_target]]
@@ -321,7 +358,7 @@ def main():
 	# Warm start.
 	b.value = b_stage_2
 	h.value = h_stage_2
-	h_slack.value = s_stage_2
+	h_tayl_slack.value = s_stage_2
 
 	obj_old = np.inf
 	d_parm.value = d_stage_2   # Initialize using optimal dose from stage 2.
@@ -346,7 +383,7 @@ def main():
 	d_main = d.value
 	# h_main = h.value
 	h_main = health_prog_act(h_init, T, alpha, beta, gamma, d_main, is_target)
-	s_main = h_slack.value
+	s_main = h_tayl_slack.value
 
 	print("Main Stage Results")
 	print("Objective:", prob_main.value)
@@ -369,4 +406,4 @@ def main():
 			  label = "Treated", color = colors[0], one_idx = True, filename = final_prefix + "health.png")
 
 if __name__ == "__main__":
-    main()
+	main()

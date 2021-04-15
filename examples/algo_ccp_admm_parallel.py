@@ -15,6 +15,11 @@ from adarad.utilities.data_utils import line_integral_mat, health_prog_act
 
 from example_utils import simple_structures, simple_colormap
 
+INIT_FROM_FILE = True
+output_path = "/home/anqi/Documents/software/adarad/examples/output/"
+output_prefix = output_path + "ex1_simple_"
+init_file = output_prefix + "init_doses.npy"
+
 # Beam subproblems.
 def run_beam_proc(pipe, A, beam_upper, dose_upper, dose_lower, rho_init):
 	K, n = A.shape
@@ -106,7 +111,8 @@ def main():
 	h_slack_weight = 1e4
 	h_slack = Variable((T,), nonneg=True)   # Slack in approximation.
 	d_parm = Parameter((T,), nonneg=True)   # Dose point around which to linearize.
-	d_init_ccp = np.zeros(T)
+	# d_init_ccp = np.zeros(T)
+	d_init_ccp = np.load(init_file) if INIT_FROM_FILE else np.zeros((T,K))
 
 	# Form objective.
 	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
@@ -133,7 +139,8 @@ def main():
 
 	print("CCP: Solving dynamic problem...")
 	obj_old = np.inf
-	d_parm.value = d_init_ccp
+	# d_parm.value = d_init_ccp
+	d_parm.value = d_init_ccp[:,0]
 	k = 0
 	while k < max_iter_ccp:
 		# Solve linearized problem.
@@ -211,7 +218,8 @@ def main():
 	# Initialize main loop.
 	rho_init = 5.0
 	u_init = np.zeros(u.shape)
-	d_init_admm = np.zeros(d_tld.shape)
+	# d_init_admm = np.zeros(d_tld.shape)
+	d_init_admm = np.load(init_file) if INIT_FROM_FILE else np.zeros(d_tld.shape)
 
 	# Set up beam subproblem processes.
 	pipes = []
@@ -335,4 +343,4 @@ def main():
 	print("CCP Solve Time - ADMM Solve Time:", solve_time_ccp - solve_time_admm)
 
 if __name__ == "__main__":
-    main()
+	main()

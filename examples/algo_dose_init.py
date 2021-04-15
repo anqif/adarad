@@ -13,7 +13,8 @@ from adarad.utilities.data_utils import line_integral_mat, health_prog_act
 
 from example_utils import simple_structures, simple_colormap
 
-output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
+# output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
+output_path = "/home/anqi/Documents/software/adarad/examples/output/"
 output_prefix = output_path + "ex1_simple_"
 init_prefix = output_prefix + "init_"
 final_prefix = output_prefix + "ccp_"
@@ -116,7 +117,8 @@ def main():
 	# Additional constraints.
 	# constrs = [b <= beam_upper[t_s,:], d <= dose_upper[t_s,:], d >= dose_lower[t_s,:], h_ptv <= health_upper[t_s,0], h_oar >= health_lower[t_s,1:]]
 	# constrs = [h_ptv <= health_upper[-1,0] + h_hi_slack, h_oar >= health_lower[-1,1:] - h_lo_slack]
-	constrs = [h_ptv <= health_upper[-1,0], h_oar >= health_lower[-1,1:] - h_lo_slack]
+	# constrs = [h_ptv <= health_upper[-1,0], h_oar >= health_lower[-1,1:] - h_lo_slack]
+	constrs = [b <= np.sum(beam_upper, axis=0), h_ptv <= health_upper[-1,0], h_oar >= health_lower[-1,1:] - h_lo_slack]
 
 	# Solve problem.
 	print("Stage 1: Solving problem...")
@@ -128,12 +130,14 @@ def main():
 
 	# Save results.
 	b_static = b.value   # Save optimal static beams for stage 2.
+	d_static = np.vstack([A_list[t] @ b_static for t in range(T)])
 	d_stage_1 = d.value
 	# h_stage_1 = h.value
 	h_stage_1 = h_init - alpha[t_s]*d_stage_1 - beta[t_s]*d_stage_1**2 + gamma[t_s]
 
 	print("Stage 1 Results")
 	print("Objective:", prob_1.value)
+	print("Optimal Beam (Max):", np.max(b_static))
 	print("Optimal Dose:", d_stage_1)
 	print("Optimal Health:", h_stage_1)
 	print("Solve Time:", prob_1.solver_stats.solve_time)
@@ -157,7 +161,8 @@ def main():
 	# Stage 2a: Dynamic scaling problem with constant factor.
 	u = Variable(nonneg=True)
 	b = u*b_static
-	d = vstack([A_list[t] @ b for t in range(T)])
+	# d = vstack([A_list[t] @ b for t in range(T)])
+	d = u*d_static
 	h = Variable((T+1,K))
 
 	# Used in Taylor expansion of PTV health dynamics.
@@ -166,7 +171,8 @@ def main():
 	# h_tayl_slack = Parameter((T,), value=np.zeros(T))
 
 	# Form objective.
-	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
+	# d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
+	d_penalty = square(u)*(sum_squares(d_static[:,:-1]) + 0.25*sum_squares(d_static[:,-1])).value
 	h_penalty = sum(pos(h[1:,0])) + 0.25*sum(neg(h[1:,1:]))
 	s_tayl_penalty = h_tayl_slack_weight*sum(h_tayl_slack)
 
@@ -183,14 +189,18 @@ def main():
 	constrs = [h[0] == h_init]
 	for t in range(T):
 		# For PTV, use simple linear model (beta_t = 0).
-		constrs += [h[t+1,0] == h[t,0] - alpha[t,0]*d[t,0] + gamma[t,0] - h_tayl_slack[t]]
+		# constrs += [h[t+1,0] == h[t,0] - alpha[t,0]*d[t,0] + gamma[t,0] - h_tayl_slack[t]]
+		constrs += [h[t+1,0] == h[t,0] - alpha[t,0]*u*d_static[t,0] + gamma[t,0] - h_tayl_slack[t]]
 
 		# For OAR, use linear-quadratic model with lossless relaxation.
-		constrs += [h[t+1,1:] <= h[t,1:] - multiply(alpha[t,1:], d[t,1:]) - multiply(beta[t,1:], square(d[t,1:])) + gamma[t,1:]]
+		# constrs += [h[t+1,1:] <= h[t,1:] - multiply(alpha[t,1:], d[t,1:]) - multiply(beta[t,1:], square(d[t,1:])) + gamma[t,1:]]
+		constrs += [h[t+1,1:] <= h[t,1:] - u*multiply(alpha[t,1:], d_static[t,1:]).value - square(u)*multiply(beta[t,1:], square(d_static[t,1:])).value + gamma[t,1:]]
 
 	# Additional constraints.
 	# constrs += [b <= np.min(beam_upper, axis=0), d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:]]
-	constrs += [b <= np.min(beam_upper, axis=0), d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:] - h_lo_slack]
+	# constrs += [b <= np.min(beam_upper, axis=0), d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:] - h_lo_slack]
+	constrs += [b <= np.min(beam_upper, axis=0), u*d_static <= dose_upper, u*d_static >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:] - h_lo_slack]
+	# constrs += [d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:] - h_lo_slack]
 
 	# Warm start.
 	u.value = 1
@@ -213,16 +223,26 @@ def main():
 	print("Stage 2 Initialization")
 	print("Objective:", prob_2a.value)
 	print("Optimal Beam Weight:", u_stage_2_init)
+	print("Optimal Beam (Max):", np.max(b.value))
 	# print("Optimal Dose:", d_stage_2_init)
 	# print("Optimal Health:", h_stage_2_init)
 	# print("Optimal Health Slack:", s_stage_2_init)
 	print("Solve Time:", prob_2a.solver_stats.solve_time)
 
+	# Plot optimal dose and health over time.
+	plot_treatment(d_stage_2_init, stepsize = 10, bounds = (dose_lower, dose_upper), title="Treatment Dose vs. Time",
+				   color = colors[0], one_idx = True)
+	plot_health(h_stage_2_init, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
+				title = "Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True)
+
+	# raise RuntimeError("Stop 1")
+
 	# Stage 2b: Dynamic scaling problem with time-varying factors.
 	# Define variables.
 	u = Variable((T,), nonneg=True)
 	b = vstack([u[t]*b_static for t in range(T)])
-	d = vstack([A_list[t] @ b[t] for t in range(T)])
+	# d = vstack([A_list[t] @ b[t] for t in range(T)])
+	d = vstack([u[t]*d_static[t,:] for t in range(T)])
 	h = Variable((T+1,K))
 
 	# Used in Taylor expansion of PTV health dynamics.
@@ -232,7 +252,8 @@ def main():
 	d_parm = Parameter((T,), nonneg=True)
 
 	# Form objective.
-	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
+	# d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
+	d_penalty = sum_squares(u[t]*d_static[:,:-1]) + 0.25*sum_squares(u[t]*d_static[:,-1])
 	h_penalty = sum(pos(h[1:,0])) + 0.25*sum(neg(h[1:,1:]))
 	s_tayl_penalty = h_tayl_slack_weight*sum(h_tayl_slack)
 
@@ -250,10 +271,15 @@ def main():
 	for t in range(T):
 		# For PTV, use first-order Taylor expansion of dose around d_parm.
 		# constrs += [h[t+1,0] == h[t,0] - alpha[t,0]*d[t,0] - (2*d[t,0] - d_parm[t,0])*beta[t,0]*d_parm[t,0] + gamma[t,0] - h_tayl_slack[t]]
-		constrs += [h[t+1,0] == h[t,0] - alpha[t,0]*d[t,0] - (2*d[t,0] - d_parm[t])*beta[t,0]*d_parm[t] + gamma[t,0] - h_tayl_slack[t]]
+		# constrs += [h[t+1,0] == h[t,0] - alpha[t,0]*d[t,0] - (2*d[t,0] - d_parm[t])*beta[t,0]*d_parm[t] + gamma[t,0] - h_tayl_slack[t]]
+		constrs += [h[t+1,0] == h[t,0] - alpha[t,0]*u[t]*d_static[t,0] - (2*u[t]*d_static[t,0] - d_parm[t])*beta[t,0]*d_parm[t] + gamma[t,0] - h_tayl_slack[t]]
 
 		# For OAR, use linear-quadratic model with lossless relaxation.
-		constrs += [h[t+1,1:] <= h[t,1:] - multiply(alpha[t,1:], d[t,1:]) - multiply(beta[t,1:], square(d[t,1:])) + gamma[t,1:]]
+		# constrs += [h[t+1,1:] <= h[t,1:] - multiply(alpha[t,1:], d[t,1:]) - multiply(beta[t,1:], square(d[t,1:])) + gamma[t,1:]]
+		constrs += [h[t+1,1:] <= h[t,1:] - u[t]*multiply(alpha[t,1:], d_static[t,1:]).value - square(u[t])*multiply(beta[t,1:], square(d_static[t,1:])).value + gamma[t,1:]]
+		# alpha_d_static = multiply(alpha[t,1:], d_static[t,1:]).value
+		# beta_d_static_sq = multiply(beta[t,1:], square(d_static[t,1:])).value
+		# constrs += [h[t+1,1:] <= h[t,1:] - u[t]*alpha_d_static - square(u[t])*beta_d_static_sq + gamma[t,1:]]
 
 	# Additional constraints.
 	# constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:]]
@@ -300,7 +326,8 @@ def main():
 
 	print("Stage 2 Results")
 	print("Objective:", prob_2b.value)
-	print("Optimal Beam Weight:", u_stage_2)
+	# print("Optimal Beam Weight:", u_stage_2)
+	print("Optimal Beam Weight (Median):", np.median(u_stage_2))
 	# print("Optimal Dose:", d_stage_2)
 	# print("Optimal Health:", h_stage_2)
 	# print("Optimal Health Slack:", s_stage_2)
@@ -320,6 +347,8 @@ def main():
 				color = colors[0], one_idx = True, filename = init_prefix + "doses.png")
 	plot_health(h_stage_2, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", label = "Treated", 
 				color = colors[0], one_idx = True, filename = init_prefix + "health.png")
+
+	# raise RuntimeError("Stop 2")
 
 	# Main Stage: Dynamic optimal control problem.
 	# Define variables.
