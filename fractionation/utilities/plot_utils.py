@@ -227,7 +227,7 @@ def plot_single(h, varname, curves = [], stepsize = 10, maxcols = 5, T_treat = N
 	if ylim is not None:
 		plt.setp(axs, ylim = ylim)
 
-	plot_internal(h, axs, varname, curves, stepsize, rows, maxcols, T_treat, bounds, subtitles, label, one_idx, one_shift, *args, **kwargs)
+	plot_internal(h, axs, varname, curves, stepsize, maxcols, T_treat, bounds, subtitles, label, one_idx, one_shift, *args, **kwargs)
 
 	if title is not None:
 		plt.suptitle(title)
@@ -236,7 +236,7 @@ def plot_single(h, varname, curves = [], stepsize = 10, maxcols = 5, T_treat = N
 	if filename is not None:
 		fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
-def plot_internal(h, axs, varname, curves = [], stepsize = 10, rows = 1, maxcols = 5, T_treat = None, bounds = None, subtitles = None, label = "Treated",
+def plot_internal(h, axs, varname, curves = [], stepsize = 10, maxcols = 5, T_treat = None, bounds = None, subtitles = None, label = "Treated",
 				  one_idx = False, one_shift = False, *args, **kwargs):
 	# if len(h.shape) == 1:
 	#	h = h[:,np.newaxis]
@@ -304,7 +304,7 @@ def plot_internal(h, axs, varname, curves = [], stepsize = 10, rows = 1, maxcols
 	
 	left = axs.size - m if hasattr(axs, "size") else 0
 	for col in range(left):
-		axs[rows-1, maxcols-1-col].set_axis_off()
+		axs[-1, maxcols-1-col].set_axis_off()
 	
 	if len(curves) != 0:
 		ax.legend(handles = handles, loc = "upper right", borderaxespad = 1)
