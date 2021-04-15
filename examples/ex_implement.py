@@ -4,9 +4,8 @@
 import numpy
 import matplotlib.pyplot as plt
 
-from fractionation.medicine.physics import BeamSet
-from fractionation.medicine.case import Case
-from fractionation.visualization.plotter import CasePlotter
+from fractionation import Case, CasePlotter
+from fractionation import BeamSet
 
 def main(datapath = ""):
     # Construct the clinical case.
@@ -17,7 +16,7 @@ def main(datapath = ""):
     case.physics.dose_matrix = numpy.load(datapath + "patient_01-dose_mat.npy")
 
     # Solve using ADMM algorithm.
-    status, result = case.plan(use_slack=True, slack_weight=1e4, max_iter=1, solver="MOSEK", ccp_verbose=True)
+    status, result = case.plan(use_slack=True, slack_weight=1e4, max_iter=15, solver="MOSEK", ccp_verbose=True)
     # status, result = case.plan(use_slack=True, slack_weight=1e4, ccp_max_iter=15, solver="MOSEK", rho=5,
     #                           admm_max_iter=500, use_admm=True, admm_verbose=True)
     print("Solve status: {}".format(status))
@@ -39,7 +38,7 @@ def main(datapath = ""):
     case.prescription["PTV"].dose_upper = 10
 
     # Re-plan the case with new dose constraint.
-    status2, result2 = case.plan(use_slack=True, slack_weight=1e4, max_iter=1, solver="MOSEK", ccp_verbose=True)
+    status2, result2 = case.plan(use_slack=True, slack_weight=1e4, max_iter=15, solver="MOSEK", ccp_verbose=True)
     # status2, result2 = case.plan(use_slack=True, slack_weight=1e4, ccp_max_iter=15, solver="ECOS", rho=5,
     #                             admm_max_iter=500, use_admm=True)
     print("Solve status: {}".format(status2))

@@ -17,5 +17,11 @@ You should have received a copy of the GNU General Public License
 along with Fractionation. If not, see <http://www.gnu.org/licenses/>.
 """
 
+from fractionation.medicine.case import Case
+from fractionation.medicine.patient import Anatomy, Structure
+from fractionation.medicine.physics import Physics, BeamSet
+from fractionation.medicine.prescription import Prescription, StructureRx
+from fractionation.visualization.plotter import CasePlotter
+
 from fractionation.admm_funcs import dynamic_treatment_admm
 from fractionation.admm_funcs import mpc_treatment_admm
