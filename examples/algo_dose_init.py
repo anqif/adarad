@@ -414,4 +414,4 @@ def main():
 			  label = "Treated", color = colors[0], one_idx = True, filename = final_prefix + "health.png")
 
 if __name__ == "__main__":
-    main()
+	main()
