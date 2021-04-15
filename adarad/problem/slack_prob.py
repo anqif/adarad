@@ -5,7 +5,7 @@ import itertools
 from cvxpy import *
 from collections import defaultdict
 
-from fractionation.problem.dyn_prob import dyn_objective, rx_to_constrs
+from adarad.problem.dyn_prob import dyn_objective, rx_to_constrs
 
 # Total slack penalty across periods.
 def slack_penalty(slack_vars, slack_weights = None):

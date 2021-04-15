@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib
 matplotlib.use("TKAgg")
 
-from fractionation.utilities.plot_utils import *
-from fractionation.utilities.data_utils import line_integral_mat
+from adarad.utilities.plot_utils import *
+from adarad.utilities.data_utils import line_integral_mat
 from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
@@ -35,5 +35,5 @@ def main(figpath = "", datapath = ""):
 						  filename = filename, **struct_kw)
 
 if __name__ == '__main__':
-	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/",
-		 datapath = "C:/Users/Anqi/Documents/Software/fractionation/examples/data/")
+	main(figpath = "C:/Users/Anqi/Documents/Software/adarad/examples/output/figures/",
+		 datapath = "C:/Users/Anqi/Documents/Software/adarad/examples/data/")

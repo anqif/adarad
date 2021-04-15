@@ -3,8 +3,8 @@ import matplotlib
 matplotlib.use("TKAgg")
 import pickle
 
-from fractionation.utilities.data_utils import line_integral_mat, health_prog_act
-from fractionation.utilities.plot_utils import plot_structures
+from adarad.utilities.data_utils import line_integral_mat, health_prog_act
+from adarad.utilities.plot_utils import plot_structures
 
 from example_utils import simple_structures, simple_colormap
 
@@ -83,4 +83,4 @@ def main(datapath=""):
     patient_rx["health_constrs"] = {"lower": health_lower[:, ~is_target], "upper": health_upper[:, is_target]}
 
 if __name__ == '__main__':
-    main(datapath = "/home/anqi/Documents/software/fractionation/examples/data/")
+    main(datapath = "/home/anqi/Documents/software/adarad/examples/data/")

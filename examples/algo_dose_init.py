@@ -7,13 +7,13 @@ import cvxpy
 from cvxpy import *
 from cvxpy.settings import SOLUTION_PRESENT
 
-from fractionation.init_funcs import *
-from fractionation.utilities.plot_utils import *
-from fractionation.utilities.data_utils import line_integral_mat, health_prog_act
+from adarad.init_funcs import *
+from adarad.utilities.plot_utils import *
+from adarad.utilities.data_utils import line_integral_mat, health_prog_act
 
 from example_utils import simple_structures, simple_colormap
 
-output_path = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/"
+output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
 output_prefix = output_path + "ex1_simple_"
 init_prefix = output_prefix + "init_"
 final_prefix = output_prefix + "ccp_"

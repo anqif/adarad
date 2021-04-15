@@ -1,9 +1,9 @@
 treatment_length : 20
-dose_matrix: /home/anqi/Documents/software/fractionation/examples/data/cardioid_5_structs_1000_beams-dose_matrix.npy
+dose_matrix: /home/anqi/Documents/software/adarad/examples/data/cardioid_5_structs_1000_beams-dose_matrix.npy
 visualization:
-  beam_angles: /home/anqi/Documents/software/fractionation/examples/data/cardioid_5_structs_1000_beams-angles.npy
-  beam_offsets: /home/anqi/Documents/software/fractionation/examples/data/cardioid_5_structs_1000_beams-offsets.npy
-  structure_regions: /home/anqi/Documents/software/fractionation/examples/data/cardioid_5_structs_1000_beams-regions.p
+  beam_angles: /home/anqi/Documents/software/adarad/examples/data/cardioid_5_structs_1000_beams-angles.npy
+  beam_offsets: /home/anqi/Documents/software/adarad/examples/data/cardioid_5_structs_1000_beams-offsets.npy
+  structure_regions: /home/anqi/Documents/software/adarad/examples/data/cardioid_5_structs_1000_beams-regions.p
 beams:
   lower_bound : 0
   upper_bound : 1.0

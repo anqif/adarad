@@ -6,10 +6,10 @@ from time import time
 from multiprocessing import Process, Pipe
 from collections import Counter
 
-from fractionation.admm_slack_funcs import dynamic_treatment_admm_slack
-from fractionation.problem.dyn_prob import rx_slice, dyn_objective
-from fractionation.problem.dyn_prob_admm import *
-from fractionation.utilities.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
+from adarad.admm_slack_funcs import dynamic_treatment_admm_slack
+from adarad.problem.dyn_prob import rx_slice, dyn_objective
+from adarad.problem.dyn_prob_admm import *
+from adarad.utilities.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
 
 def run_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
 	# Construct proximal dose problem.

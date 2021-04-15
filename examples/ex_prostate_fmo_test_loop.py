@@ -2,13 +2,13 @@ import numpy as np
 import matplotlib
 # matplotlib.use("TKAgg")
 
-from fractionation.init_funcs import dyn_init_dose
-from fractionation.quad_funcs import dyn_quad_treat
-from fractionation.quad_admm_funcs import dyn_quad_treat_admm
+from adarad.init_funcs import dyn_init_dose
+from adarad.quad_funcs import dyn_quad_treat
+from adarad.quad_admm_funcs import dyn_quad_treat_admm
 
-from fractionation.utilities.file_utils import yaml_to_dict
-from fractionation.utilities.data_utils import line_integral_mat, health_prog_act
-from fractionation.utilities.plot_utils import *
+from adarad.utilities.file_utils import yaml_to_dict
+from adarad.utilities.data_utils import line_integral_mat, health_prog_act
+from adarad.utilities.plot_utils import *
 
 from example_utils import simple_structures, simple_colormap
 
@@ -81,7 +81,7 @@ def main(figpath = "", datapath = ""):
 		 				filename = figpath + figprefix + rhoprefix + "doses.png")
 
 if __name__ == '__main__':
-	# main(figpath = "/home/anqif/fractionation/examples/output/figures/",
-	#	 datapath = "/home/anqif/fractionation/examples/data/")
-	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/",
-		 datapath = "C:/Users/Anqi/Documents/Software/fractionation/examples/data/")
+	# main(figpath = "/home/anqif/adarad/examples/output/figures/",
+	#	 datapath = "/home/anqif/adarad/examples/data/")
+	main(figpath = "C:/Users/Anqi/Documents/Software/adarad/examples/output/figures/",
+		 datapath = "C:/Users/Anqi/Documents/Software/adarad/examples/data/")

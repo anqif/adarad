@@ -5,14 +5,14 @@ import cvxpy.settings as cvxpy_s
 from cvxpy import SolverError
 from collections import Counter
 
-from fractionation.ccp_funcs import ccp_solve
-from fractionation.init_funcs import dyn_init_dose
-from fractionation.mpc_funcs import print_results
-from fractionation.problem.dyn_prob import rx_slice
+from adarad.ccp_funcs import ccp_solve
+from adarad.init_funcs import dyn_init_dose
+from adarad.mpc_funcs import print_results
+from adarad.problem.dyn_prob import rx_slice
 
-from fractionation.quadratic.dyn_quad_prob import build_dyn_quad_prob, dyn_quad_obj
-from fractionation.quadratic.slack_quad_prob import build_dyn_slack_quad_prob
-from fractionation.utilities.data_utils import *
+from adarad.quadratic.dyn_quad_prob import build_dyn_quad_prob, dyn_quad_obj
+from adarad.quadratic.slack_quad_prob import build_dyn_slack_quad_prob
+from adarad.utilities.data_utils import *
 
 def print_quad_results(result, is_target, slack_dict=None):
 	if slack_dict is None:

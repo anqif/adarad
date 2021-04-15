@@ -2,8 +2,8 @@ import numpy as np
 import cvxpy
 from cvxpy import *
 
-from fractionation.init_funcs import *
-from fractionation.utilities.data_utils import line_integral_mat, health_prog_act
+from adarad.init_funcs import *
+from adarad.utilities.data_utils import line_integral_mat, health_prog_act
 from example_utils import simple_structures, simple_colormap
 
 # Problem data.

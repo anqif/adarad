@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib
 matplotlib.use("TKAgg")
 
-from fractionation.utilities.data_utils import health_prognosis
-from fractionation.utilities.plot_utils import plot_health
+from adarad.utilities.data_utils import health_prognosis
+from adarad.utilities.plot_utils import plot_health
 
 def main(savepath = ""):
     T = 20   # Length of treatment.

@@ -1,15 +1,15 @@
 import yaml
 import os.path
 
-from fractionation.medicine.physics import Physics
-from fractionation.medicine.patient import Anatomy, Structure
-from fractionation.medicine.prescription import Prescription, StructureRx
-from fractionation.visualization.history import RunRecord
+from adarad.medicine.physics import Physics
+from adarad.medicine.patient import Anatomy, Structure
+from adarad.medicine.prescription import Prescription, StructureRx
+from adarad.visualization.history import RunRecord
 
-from fractionation.quad_funcs import dyn_quad_treat
-from fractionation.quad_admm_funcs import dyn_quad_treat_admm
-from fractionation.utilities.data_utils import check_slack_parms
-from fractionation.utilities.read_utils import *
+from adarad.quad_funcs import dyn_quad_treat
+from adarad.quad_admm_funcs import dyn_quad_treat_admm
+from adarad.utilities.data_utils import check_slack_parms
+from adarad.utilities.read_utils import *
 
 class Case(object):
     def __init__(self, path=None, anatomy=None, physics=None, prescription=None):

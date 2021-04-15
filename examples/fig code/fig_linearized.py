@@ -97,4 +97,4 @@ def main(figpath = ""):
 	fig3.savefig(figpath + "health_dyn_lin_3.png", bbox_inches = "tight", dpi = 300)
 
 if __name__ == '__main__':
-	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/")
+	main(figpath = "C:/Users/Anqi/Documents/Software/adarad/examples/output/figures/")

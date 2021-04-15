@@ -1,5 +1,5 @@
 import numpy as np
-from fractionation.utilities.data_utils import health_prog_act
+from adarad.utilities.data_utils import health_prog_act
 
 class Structure(object):
     def __init__(self, name, is_target=False, health_init=0, alpha=0, beta=0, gamma=0):

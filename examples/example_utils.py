@@ -1,6 +1,6 @@
 import numpy as np
 from matplotlib.colors import ListedColormap, BoundaryNorm
-from fractionation.utilities.data_utils import circle, ellipse, cardioid
+from adarad.utilities.data_utils import circle, ellipse, cardioid
 
 def save_data(result, savepath = "", fileprefix = ""):
 	if "primal" in result and "dual" in result:

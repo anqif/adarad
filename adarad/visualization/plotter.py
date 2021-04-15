@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 
-from fractionation.medicine.case import Case
-from fractionation.visualization.history import RunRecord
-from fractionation.utilities.plot_utils import plot_single, plot_slacks, plot_residuals
-from fractionation.utilities.data_utils import line_segments
+from adarad.medicine.case import Case
+from adarad.visualization.history import RunRecord
+from adarad.utilities.plot_utils import plot_single, plot_slacks, plot_residuals
+from adarad.utilities.data_utils import line_segments
 
 class StructMap(object):
     def __init__(self, x, y, regions):

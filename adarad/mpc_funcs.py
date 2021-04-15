@@ -1,9 +1,9 @@
 import cvxpy.settings as cvxpy_s
 from collections import Counter
 
-from fractionation.problem.dyn_prob import *
-from fractionation.problem.slack_prob import build_dyn_slack_prob
-from fractionation.utilities.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
+from adarad.problem.dyn_prob import *
+from adarad.problem.slack_prob import build_dyn_slack_prob
+from adarad.utilities.data_utils import pad_matrix, check_dyn_matrices, health_prognosis
 
 def print_results(prob, status=None, slack_dict=None):
 	if status is None:

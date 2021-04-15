@@ -1,5 +1,5 @@
 treatment_length : 20
-dose_matrix: /home/anqi/Documents/software/fractionation/examples/data/patient_01-dose_mat.npy
+dose_matrix: /home/anqi/Documents/software/adarad/examples/data/patient_01-dose_mat.npy
 beams:
   lower_bound : 0
   upper_bound : 1.0

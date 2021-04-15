@@ -1,11 +1,8 @@
-# import adarad, numpy
-# from adarad import Case, CasePlotter
-
-import numpy
+import adarad, numpy
 import matplotlib.pyplot as plt
 
-from fractionation import Case, CasePlotter
-from fractionation import BeamSet
+from adarad import Case, CasePlotter
+from adarad import BeamSet
 
 def main(datapath = ""):
     # Construct the clinical case.
@@ -57,4 +54,4 @@ def main(datapath = ""):
     #                     untreated_kw=untreated_kw, saved_plans_kw=saved_plans_kw, color=colors[2])
 
 if __name__ == '__main__':
-    main(datapath = "/home/anqi/Documents/software/fractionation/examples/data/")
+    main(datapath = "/home/anqi/Documents/software/adarad/examples/data/")

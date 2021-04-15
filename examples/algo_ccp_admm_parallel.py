@@ -9,9 +9,9 @@ from cvxpy import *
 from cvxpy.settings import SOLUTION_PRESENT
 from multiprocessing import Process, Pipe
 
-from fractionation.problem.dyn_prob import rx_slice, rx_to_constrs
-from fractionation.utilities.plot_utils import *
-from fractionation.utilities.data_utils import line_integral_mat, health_prog_act
+from adarad.problem.dyn_prob import rx_slice, rx_to_constrs
+from adarad.utilities.plot_utils import *
+from adarad.utilities.data_utils import line_integral_mat, health_prog_act
 
 from example_utils import simple_structures, simple_colormap
 

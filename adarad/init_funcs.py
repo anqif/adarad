@@ -3,10 +3,10 @@ import numpy as np
 import cvxpy.settings as cvxpy_s
 from cvxpy import *
 
-from fractionation.ccp_funcs import ccp_solve
-from fractionation.problem.dyn_prob import *
-from fractionation.quadratic.dyn_quad_prob import dyn_quad_obj, get_constrs_by_struct, form_dyn_constrs
-from fractionation.utilities.data_utils import check_quad_vectors
+from adarad.ccp_funcs import ccp_solve
+from adarad.problem.dyn_prob import *
+from adarad.quadratic.dyn_quad_prob import dyn_quad_obj, get_constrs_by_struct, form_dyn_constrs
+from adarad.utilities.data_utils import check_quad_vectors
 
 # Pos penalty function.
 def pos_penalty(var, goal=None, weight=None):

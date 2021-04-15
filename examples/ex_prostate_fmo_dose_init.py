@@ -7,13 +7,13 @@ import cvxpy
 from cvxpy import *
 from cvxpy.settings import SOLUTION_PRESENT
 
-from fractionation.init_funcs import *
-from fractionation.utilities.plot_utils import *
-from fractionation.utilities.file_utils import yaml_to_dict
-from fractionation.utilities.data_utils import health_prog_act
+from adarad.init_funcs import *
+from adarad.utilities.plot_utils import *
+from adarad.utilities.file_utils import yaml_to_dict
+from adarad.utilities.data_utils import health_prog_act
 
-input_path = "C:/Users/Anqi/Documents/Software/fractionation/examples/data/"
-output_path = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/"
+input_path = "C:/Users/Anqi/Documents/Software/adarad/examples/data/"
+output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
 fig_path = output_path + "figures/"
 
 output_prefix = output_path + "ex3_prostate_fmo_"

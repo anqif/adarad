@@ -3,10 +3,10 @@ import matplotlib
 matplotlib.use("TKAgg")
 from matplotlib.colors import LogNorm
 
-from fractionation.quad_funcs import dyn_quad_treat, mpc_quad_treat
-from fractionation.quad_admm_funcs import dyn_quad_treat_admm, mpc_quad_treat_admm
-from fractionation.utilities.plot_utils import *
-from fractionation.utilities.data_utils import line_integral_mat, health_prog_act
+from adarad.quad_funcs import dyn_quad_treat, mpc_quad_treat
+from adarad.quad_admm_funcs import dyn_quad_treat_admm, mpc_quad_treat_admm
+from adarad.utilities.plot_utils import *
+from adarad.utilities.data_utils import line_integral_mat, health_prog_act
 
 from example_utils import simple_structures, simple_colormap
 
@@ -156,5 +156,5 @@ def main(figpath = "", datapath = ""):
 		plot_stacked([h_dict, d_dict], figsize = (16,10), show = False, filename = figpath + "ex2_mpc_health_doses_iter_{0}.png".format(i+1))
 
 if __name__ == '__main__':
-	main(figpath = "C:/Users/Anqi/Documents/Software/fractionation/examples/output/figures/movie/", 
-		 datapath = "C:/Users/Anqi/Documents/Software/fractionation/examples/data/")
+	main(figpath = "C:/Users/Anqi/Documents/Software/adarad/examples/output/figures/movie/",
+		 datapath = "C:/Users/Anqi/Documents/Software/adarad/examples/data/")

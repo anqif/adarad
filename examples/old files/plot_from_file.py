@@ -1,8 +1,8 @@
 import matplotlib
 matplotlib.use("TKAgg")
 
-from fractionation.utilities.plot_utils import *
-from fractionation.utilities.data_utils import health_prognosis
+from adarad.utilities.plot_utils import *
+from adarad.utilities.data_utils import health_prognosis
 
 from example_utils import simple_structures, simple_colormap
 
@@ -109,5 +109,5 @@ def main(savepath = "", loadpath = "", fileprefix = ""):
 	#		  	filename = savepath + fileprefix + "mpc_admm_beams.png")
 
 if __name__ == '__main__':
-	main(savepath = "/home/anqi/Documents/software/fractionation/fractionation/output/", \
-		 loadpath = "/home/anqi/Documents/software/fractionation/fractionation/output/", fileprefix = "ex_simple_noisy_")
+	main(savepath = "/home/anqi/Documents/software/adarad/adarad/output/", \
+		 loadpath = "/home/anqi/Documents/software/adarad/adarad/output/", fileprefix = "ex_simple_noisy_")

@@ -5,8 +5,8 @@ from time import time
 import cvxpy.settings as cvxpy_s
 from cvxpy import Constant
 
-from fractionation.utilities.data_utils import pad_matrix
-from fractionation.mpc_funcs import build_dyn_prob, dyn_objective
+from adarad.utilities.data_utils import pad_matrix
+from adarad.mpc_funcs import build_dyn_prob, dyn_objective
 
 def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose = False, full_hist = False, *args, **kwargs):
 	if d_init is None:

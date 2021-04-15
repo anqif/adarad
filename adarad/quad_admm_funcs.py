@@ -6,15 +6,15 @@ from time import time
 from multiprocessing import Process, Pipe
 from collections import Counter
 
-from fractionation.init_funcs import dyn_init_dose
-from fractionation.ccp_funcs import ccp_solve
-from fractionation.mpc_funcs import print_results
-from fractionation.problem.dyn_prob import rx_slice
+from adarad.init_funcs import dyn_init_dose
+from adarad.ccp_funcs import ccp_solve
+from adarad.mpc_funcs import print_results
+from adarad.problem.dyn_prob import rx_slice
 
-from fractionation.quad_admm_slack_funcs import dyn_quad_treat_admm_slack
-from fractionation.quadratic.dyn_quad_prob import dyn_quad_obj
-from fractionation.quadratic.dyn_quad_prob_admm import *
-from fractionation.utilities.data_utils import *
+from adarad.quad_admm_slack_funcs import dyn_quad_treat_admm_slack
+from adarad.quadratic.dyn_quad_prob import dyn_quad_obj
+from adarad.quadratic.dyn_quad_prob_admm import *
+from adarad.utilities.data_utils import *
 
 def run_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
     # Construct proximal dose problem.

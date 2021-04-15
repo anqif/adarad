@@ -5,8 +5,8 @@ import itertools
 from cvxpy import *
 from collections import defaultdict
 
-from fractionation.problem.slack_prob import rx_to_constrs
-from fractionation.quadratic.dyn_quad_prob import dyn_quad_obj
+from adarad.problem.slack_prob import rx_to_constrs
+from adarad.quadratic.dyn_quad_prob import dyn_quad_obj
 
 # Total slack penalty across periods.
 def slack_quad_penalty(slack_vars, is_target, slack_weights = None):

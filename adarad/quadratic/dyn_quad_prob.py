@@ -2,7 +2,7 @@ import cvxpy
 import numpy as np
 from cvxpy import *
 
-from fractionation.problem.dyn_prob import dose_penalty, health_penalty, rx_to_lower_constrs, rx_to_upper_constrs, rx_to_constrs
+from adarad.problem.dyn_prob import dose_penalty, health_penalty, rx_to_lower_constrs, rx_to_upper_constrs, rx_to_constrs
 
 # Full objective function.
 def dyn_quad_obj(d_var, h_var, patient_rx):

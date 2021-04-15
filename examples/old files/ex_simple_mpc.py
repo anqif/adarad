@@ -3,10 +3,10 @@ matplotlib.use("TKAgg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from fractionation.utilities.plot_utils import *
-from fractionation.utilities.data_utils import line_integral_mat, health_prognosis
-from fractionation.mpc_funcs import dynamic_treatment, mpc_treatment
-from fractionation.admm_funcs import dynamic_treatment_admm, mpc_treatment_admm
+from adarad.utilities.plot_utils import *
+from adarad.utilities.data_utils import line_integral_mat, health_prognosis
+from adarad.mpc_funcs import dynamic_treatment, mpc_treatment
+from adarad.admm_funcs import dynamic_treatment_admm, mpc_treatment_admm
 
 from example_utils import simple_structures, simple_colormap, save_data
 
@@ -165,4 +165,4 @@ def main(figpath = "", datapath = ""):
 
 if __name__ == '__main__':
 	main(figpath = "/home/anqi/Dropbox/Research/Fractionation/Figures/", \
-		 datapath = "/home/anqi/Documents/software/fractionation/examples/output/")
+		 datapath = "/home/anqi/Documents/software/adarad/examples/output/")

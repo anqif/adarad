@@ -1,6 +1,6 @@
 import numpy as np
 from warnings import warn
-from fractionation.medicine.physics import BeamSet
+from adarad.medicine.physics import BeamSet
 
 def load_dose_matrix(data, T, K):
     if "dose_matrix" not in data:

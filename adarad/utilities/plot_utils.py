@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
 
-from fractionation.utilities.data_utils import line_segments
+from adarad.utilities.data_utils import line_segments
 
 # Extract subset of a colormap.
 # http://stackoverflow.com/questions/18926031/how-to-extract-a-subset-of-a-colormap-as-a-new-colormap-in-matplotlib

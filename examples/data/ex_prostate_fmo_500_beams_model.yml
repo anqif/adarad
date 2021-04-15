@@ -1,5 +1,5 @@
 treatment_length : 60
-dose_matrix: /home/anqi/Documents/software/fractionation/examples/data/prostate_7_structs_500_beams-dose_matrix.npy
+dose_matrix: /home/anqi/Documents/software/adarad/examples/data/prostate_7_structs_500_beams-dose_matrix.npy
 beams:
   lower_bound : 0
   upper_bound : 0.001
