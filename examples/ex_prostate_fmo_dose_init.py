@@ -272,7 +272,7 @@ def main():
 
 	# Additional constraints.
 	# constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
-	constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target] - h_lo_slack]
+	constrs += [b >= beam_lower, b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target] - h_lo_slack]
 	prob_2b = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.
@@ -362,7 +362,7 @@ def main():
 		constrs += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d[t,~is_target]) - multiply(beta[t,~is_target], square(d[t,~is_target])) + gamma[t,~is_target]]
 
 	# Additional constraints.
-	constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	constrs += [b >= beam_lower, b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
 	prob_main = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.

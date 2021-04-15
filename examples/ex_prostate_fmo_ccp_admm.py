@@ -9,19 +9,21 @@ from cvxpy import *
 from cvxpy.settings import SOLUTION_PRESENT
 from multiprocessing import Process, Pipe
 
-from adarad.problem.dyn_prob import rx_slice, rx_to_constrs
 from adarad.utilities.plot_utils import *
-from adarad.utilities.data_utils import line_integral_mat, health_prog_act
-
-from example_utils import simple_structures, simple_colormap
+from adarad.utilities.file_utils import yaml_to_dict
+from adarad.utilities.data_utils import health_prog_act
 
 INIT_FROM_FILE = True
+input_path = "/home/anqi/Documents/software/adarad/examples/data/"
 output_path = "/home/anqi/Documents/software/adarad/examples/output/"
-output_prefix = output_path + "ex1_simple_"
+
+output_prefix = output_path + "ex3_prostate_fmo_"
 init_file = output_prefix + "init_doses.npy"
+final_ccp_prefix = output_prefix + "ccp_"
+final_admm_prefix = output_prefix + "admm_"
 
 # Beam subproblems.
-def run_beam_proc(pipe, A, beam_upper, dose_upper, dose_lower, rho_init):
+def run_beam_proc(pipe, A, beam_lower, beam_upper, dose_upper, dose_lower, rho_init):
 	K, n = A.shape
 
 	# Define variables.
@@ -38,14 +40,14 @@ def run_beam_proc(pipe, A, beam_upper, dose_upper, dose_lower, rho_init):
 	c_penalty = (rho/2.0)*sum_squares(d - d_tld - u)
 	obj = d_penalty + c_penalty
 
-	constrs = [b <= beam_upper, d <= dose_upper, d >= dose_lower]
+	constrs = [b >= beam_lower, b <= beam_upper, d <= dose_upper, d >= dose_lower]
 	prob = Problem(Minimize(obj), constrs)
 
 	# ADMM loop.
 	finished = False
 	while not finished:
 		d_tld.value, u.value = pipe.recv()
-		prob.solve(solver = "MOSEK")
+		prob.solve(solver = "MOSEK", warm_start = True)
 		if prob.status not in SOLUTION_PRESENT:
 			raise RuntimeError("ADMM: Solver failed on beam subproblem with status {0}".format(prob.status))
 		pipe.send((d.value, prob.solver_stats.solve_time))
@@ -56,50 +58,36 @@ def run_beam_proc(pipe, A, beam_upper, dose_upper, dose_lower, rho_init):
 
 def main():
 	# Problem data.
-	T = 20           # Length of treatment.
-	n_grid = 1000
-	offset = 5       # Displacement between beams (pixels).
-	n_angle = 20     # Number of angles.
-	n_bundle = 50    # Number of beams per angle.
-	n = n_angle*n_bundle   # Total number of beams.
+	patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford.yml")
 
-	# Anatomical structures.
-	x_grid, y_grid, regions = simple_structures(n_grid, n_grid)
-	struct_kw = simple_colormap(one_idx = True)
-	K = np.unique(regions).size   # Number of structures.
+	# Patient data.
+	A_list = patient_bio["dose_matrices"]
+	alpha = patient_bio["alpha"]
+	beta = patient_bio["beta"]
+	gamma = patient_bio["gamma"]
+	h_init = patient_bio["health_init"]
 
-	A, angles, offs_vec = line_integral_mat(regions, angles = n_angle, n_bundle = n_bundle, offset = offset)
-	A = A/n_grid
-	A_list = T*[A]
+	# Treatment data.
+	t_s = 0  # Static session.
+	T = len(A_list)
+	K, n = A_list[0].shape
 
-	alpha = np.array(T*[[0.01, 0.50, 0.25, 0.15, 0.005]])
-	beta = np.array(T*[[0.001, 0.05, 0.025, 0.015, 0.0005]])
-	gamma = np.array(T*[[0.05, 0, 0, 0, 0]])
-	h_init = np.array([1] + (K-1)*[0])
-	is_target = np.array([True] + (K-1)*[False])
+	is_target = patient_rx["is_target"]
+	num_ptv = np.sum(is_target)
+	num_oar = K - num_ptv
+
+	beam_lower = patient_rx["beam_constrs"]["lower"]
+	beam_upper = patient_rx["beam_constrs"]["upper"]
+	dose_lower = patient_rx["dose_constrs"]["lower"]
+	dose_upper = patient_rx["dose_constrs"]["upper"]
+	health_lower = patient_rx["health_constrs"]["lower"]
+	health_upper = patient_rx["health_constrs"]["upper"]
 
 	# Health prognosis.
-	prop_cycle = plt.rcParams['axes.prop_cycle']
-	colors = prop_cycle.by_key()['color']
-	h_prog = health_prog_act(h_init, T, gamma = gamma)
+	prop_cycle = plt.rcParams["axes.prop_cycle"]
+	colors = prop_cycle.by_key()["color"]
+	h_prog = health_prog_act(h_init, T, gamma=gamma)
 	h_curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
-
-	# Beam constraints.
-	beam_upper = np.full((T,n), 1.0)
-
-	# Dose constraints.
-	dose_lower = np.zeros((T,K))
-	dose_upper = np.full((T,K), 20)
-
-	# Health constraints.
-	health_lower = np.full((T,K), -np.inf)
-	health_upper = np.full((T,K), np.inf)
-	health_lower[:,1] = -1.0     # Lower bound on OARs.
-	health_lower[:,2] = -2.0
-	health_lower[:,3] = -2.0
-	health_lower[:,4] = -3.0
-	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
-	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 
 	# CCP: Dynamic optimal control problem.
 	# Define variables.
@@ -109,28 +97,32 @@ def main():
 
 	# Used in Taylor expansion of PTV health dynamics.
 	h_slack_weight = 1e4
-	h_slack = Variable((T,), nonneg=True)   # Slack in approximation.
-	d_parm = Parameter((T,), nonneg=True)   # Dose point around which to linearize.
-	# d_init_ccp = np.zeros(T)
+	h_slack = Variable((T,K), nonneg=True)   # Slack in approximation.
+	d_parm = Parameter((T,K), nonneg=True)   # Dose point around which to linearize.
+	# d_init_ccp = np.zeros((T,K))
 	d_init_ccp = np.load(init_file) if INIT_FROM_FILE else np.zeros((T,K))
 
 	# Form objective.
 	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
-	h_penalty = sum(pos(h[1:,0])) + 0.25*sum(neg(h[1:,1:]))
-	s_penalty = h_slack_weight*sum(h_slack)
+	h_penalty = sum(pos(h[1:,is_target])) + 0.25*sum(neg(h[1:,~is_target]))
+	s_penalty = h_slack_weight*sum(h_slack[:,is_target])
 	obj = d_penalty + h_penalty + s_penalty
 
 	# Health dynamics.
 	constrs = [h[0] == h_init]
 	for t in range(T):
 		# For PTV, use first-order Taylor expansion of dose around d_parm.
-		constrs += [h[t+1,0] == h[t,0] - alpha[t,0]*d[t,0] - (2*d[t,0] - d_parm[t])*beta[t,0]*d_parm[t] + gamma[t,0] - h_slack[t]]
+		constrs += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target])
+						- multiply(2*d[t,is_target] - d_parm[t,is_target], multiply(beta[t,is_target], d_parm[t,is_target]))
+						+ gamma[t,is_target] - h_slack[t,is_target]]
 
 		# For OAR, use linear-quadratic model with lossless relaxation.
-		constrs += [h[t+1,1:] <= h[t,1:] - multiply(alpha[t,1:], d[t,1:]) - multiply(beta[t,1:], square(d[t,1:])) + gamma[t,1:]]
+		constrs += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d[t,~is_target])
+						- multiply(beta[t,~is_target], square(d[t,~is_target])) + gamma[t,~is_target]]
 
 	# Additional constraints.
-	constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:]]
+	constrs += [b >= beam_lower, b <= beam_upper, d <= dose_upper, d >= dose_lower,
+				h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
 	prob_ccp = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.
@@ -139,12 +131,11 @@ def main():
 
 	print("CCP: Solving dynamic problem...")
 	obj_old = np.inf
-	# d_parm.value = d_init_ccp
-	d_parm.value = d_init_ccp[:,0]
+	d_parm.value = d_init_ccp
 	k = 0
 	while k < max_iter_ccp:
 		# Solve linearized problem.
-		prob_ccp.solve(solver = "MOSEK")
+		prob_ccp.solve(solver = "MOSEK", warm_start = True)
 		if prob_ccp.status not in SOLUTION_PRESENT:
 			raise RuntimeError("CCP: Solver failed on iteration {0} with status {1}".format(k, prob_ccp.status))
 
@@ -162,7 +153,7 @@ def main():
 	b_ccp = b.value
 	d_ccp = d.value
 	# h_ccp = h.value
-	h_ccp = health_prog_act(h_init, T, alpha, beta, gamma, is_target)
+	h_ccp = health_prog_act(h_init, T, alpha, beta, gamma, d_ccp, is_target)
 	h_slack_ccp = h_slack.value
 
 	obj_ccp = prob_ccp.value
@@ -177,12 +168,17 @@ def main():
 	print("Solve Time:", solve_time_ccp)
 	print("Iterations:", iters_ccp)
 
-	# Plot optimal beam, health, and dose over time.
-	# plot_beams(b_ccp, angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), 
-	#		   title = "CCP: Beam Intensities vs. Time", one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
-	# plot_treatment(d_ccp, stepsize = 10, bounds = (dose_lower, dose_upper), title = "CCP: Treatment Dose vs. Time", one_idx = True)
-	# plot_health(h_ccp, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
-	#			title = "CCP: Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True)
+	# Save to file.
+	np.save(final_ccp_prefix + "beams.npy", b_ccp)
+	np.save(final_ccp_prefix + "doses.npy", d_ccp)
+	np.save(final_ccp_prefix + "health.npy", h_ccp)
+	np.save(final_ccp_prefix + "health_slack.npy", h_slack_ccp)
+
+	# Plot optimal health and dose over time.
+	plot_treatment(d_ccp, stepsize = 10, bounds = (dose_lower, dose_upper), title = "CCP: Treatment Dose vs. Time", one_idx = True,
+					filename = final_ccp_prefix + "doses.png")
+	plot_health(h_ccp, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "CCP: Health Status vs. Time",
+	 			label = "Treated", color = colors[0], one_idx = True, filename = final_ccp_prefix + "health.png")
 
 	# ADMM: Dynamic optimal control problem.
 	rho = Parameter(pos=True)
@@ -192,14 +188,14 @@ def main():
 	h = Variable((T+1,K))
 	d_tld = Variable((T,K), nonneg=True)
 	d_cons_parm = Parameter((T,K), nonneg=True)
-	d_tayl_parm = Parameter((T,), nonneg=True)
+	d_tayl_parm = Parameter((T,K), nonneg=True)
 
 	# Used in Taylor expansion of PTV health dynamics.
 	h_slack_weight = 1e4
-	h_slack = Variable((T,), nonneg=True)   # Slack in approximation.
+	h_slack = Variable((T,K), nonneg=True)   # Slack in approximation.
 
-	h_penalty = sum(pos(h[1:,0])) + 0.25*sum(neg(h[1:,1:]))
-	s_penalty = h_slack_weight*sum(h_slack)
+	h_penalty = sum(pos(h[1:,is_target])) + 0.25*sum(neg(h[1:,~is_target]))
+	s_penalty = h_slack_weight*sum(h_slack[:,is_target])
 	c_penalty = (rho/2.0)*sum_squares(d_tld - d_cons_parm + u)
 	obj = h_penalty + s_penalty + c_penalty
 
@@ -207,11 +203,15 @@ def main():
 	constrs = [h[0] == h_init]
 	for t in range(T):
 		# For PTV, use first-order Taylor expansion of dose around d_parm.
-		constrs += [h[t+1,0] == h[t,0] - alpha[t,0]*d_tld[t,0] - (2*d_tld[t,0] - d_tayl_parm[t])*beta[t,0]*d_tayl_parm[t] + gamma[t,0] - h_slack[t]]
+		constrs += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d_tld[t,is_target])
+						- multiply(2*d_tld[t,is_target] - d_tayl_parm[t,is_target], multiply(beta[t,is_target], d_tayl_parm[t,is_target]))
+						+ gamma[t,is_target] - h_slack[t,is_target]]
 
 		# For OAR, use linear-quadratic model with lossless relaxation.
-		constrs += [h[t+1,1:] <= h[t,1:] - multiply(alpha[t,1:], d_tld[t,1:]) - multiply(beta[t,1:], square(d_tld[t,1:])) + gamma[t,1:]]
-	constrs += [d_tld <= dose_upper, d_tld >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:]]
+		constrs += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d_tld[t,~is_target])
+						- multiply(beta[t,~is_target], square(d_tld[t,~is_target])) + gamma[t,~is_target]]
+	constrs += [d_tld <= dose_upper, d_tld >= dose_lower,
+				h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
 
 	prob_h = Problem(Minimize(obj), constrs)
 	prob_h_dict = {"prob": prob_h, "h": h, "h_slack": h_slack, "d_tld": d_tld, "d_cons_parm": d_cons_parm, "d_tayl_parm": d_tayl_parm}
@@ -228,7 +228,8 @@ def main():
 	for t in range(T):
 		local, remote = Pipe()
 		pipes += [local]
-		procs += [Process(target=run_beam_proc, args=(remote, A_list[t], beam_upper[t], dose_upper[t], dose_lower[t], rho_init))]
+		procs += [Process(target=run_beam_proc, args=(remote, A_list[t], beam_lower[t], beam_upper[t],
+													  dose_upper[t], dose_lower[t], rho_init))]
 		procs[-1].start()
 
 	# Solve using ADMM.
@@ -260,11 +261,11 @@ def main():
 		# Solve health subproblem using CCP.
 		obj_old = np.inf
 		prob_h_dict["d_cons_parm"].value = d_var_val
-		prob_h_dict["d_tayl_parm"].value = d_tld_var_val_old[:,0]   # TODO: What dose point should we linearize PTV health dynamics around?
+		prob_h_dict["d_tayl_parm"].value = d_tld_var_val_old   # TODO: What dose point should we linearize PTV health dynamics around?
 
 		for l in range(max_iter_ccp):
 			# Solve linearized problem.
-			prob_h_dict["prob"].solve(solver = "MOSEK")
+			prob_h_dict["prob"].solve(solver = "MOSEK", warm_start = True)
 			if prob_h_dict["prob"].status not in SOLUTION_PRESENT:
 				raise RuntimeError("ADMM CCP: Solver failed on ADMM iteration {0}, CCP iteration {1} with status {2}".format(k, l, prob_h_dict["prob"].status))
 			solve_time_admm += prob_h_dict["prob"].solver_stats.solve_time
@@ -275,7 +276,7 @@ def main():
 			if obj_diff <= eps_ccp:
 				break
 			obj_old = prob_h_dict["prob"].value
-			prob_h_dict["d_tayl_parm"].value = prob_h_dict["d_tld"].value[:,0]
+			prob_h_dict["d_tayl_parm"].value = prob_h_dict["d_tld"].value
 
 		d_tld_var_val_old = d_tld_var_val
 		d_tld_var_val = prob_h_dict["d_tld"].value
@@ -307,15 +308,15 @@ def main():
 	iters_admm = k
 	b_admm = np.row_stack(b_rows)
 	d_var_val = np.row_stack(d_rows)
-	d_admm = (d_var_val + d_tld_var_val)/2.0
+	d_admm = (d_var_val + d_tld_var_val)/2.0   # Final dose = average of original and consensus dose values.
 	# h_admm = prob_h_dict["h"].value
 	h_admm = health_prog_act(h_init, T, alpha, beta, gamma, d_admm, is_target)
 	h_slack_admm = prob_h_dict["h_slack"].value
 
 	# Calculate true objective.
 	d_penalty_admm = np.sum(d_admm[:,:-1]**2) + 0.25*np.sum(d_admm[:,-1]**2)
-	h_penalty_admm = np.sum(np.maximum(h_admm[1:,0], 0)) + 0.25*np.sum(np.maximum(-h_admm[1:,1:], 0))
-	s_penalty_admm = h_slack_weight*np.sum(h_slack_admm)
+	h_penalty_admm = np.sum(np.maximum(h_admm[1:,is_target], 0)) + 0.25*np.sum(np.maximum(-h_admm[1:,~is_target], 0))
+	s_penalty_admm = h_slack_weight*np.sum(h_slack_admm[:,is_target])
 	obj_admm = d_penalty_admm + h_penalty_admm + s_penalty_admm
 
 	print("ADMM Results")
@@ -329,12 +330,12 @@ def main():
 	# Plot optimal beam, health, and dose over time.
 	h_curves += [{"h": h_ccp, "label": "Treated (CCP)", "kwargs": {"color": colors[2]}}]
 	d_curves  = [{"d": d_ccp, "label": "Dose Plan (CCP)", "kwargs": {"color": colors[2]}}]
-	plot_beams(b_admm, angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5), 
-			   title = "Beam Intensities vs. Time", one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
 	plot_treatment(d_admm, curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper), 
-				title = "Treatment Dose vs. Time", label = "Dose Plan (ADMM)", color = colors[0], one_idx = True)
+					title = "Treatment Dose vs. Time", label = "Dose Plan (ADMM)", color = colors[0], one_idx = True,
+					filename = final_admm_prefix + "doses.png")
 	plot_health(h_admm, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
-				title = "Health Status vs. Time", label = "Treated (ADMM)", color = colors[0], one_idx = True)
+				title = "Health Status vs. Time", label = "Treated (ADMM)", color = colors[0], one_idx = True,
+				filename = final_admm_prefix + "health.png")
 
 	print("Compare CCP and ADMM Results")
 	print("Difference in Objective:", np.abs(obj_ccp - obj_admm))
