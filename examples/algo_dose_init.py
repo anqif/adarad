@@ -252,8 +252,7 @@ def main():
 	d_parm = Parameter((T,), nonneg=True)
 
 	# Form objective.
-	# d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
-	d_penalty = sum_squares(u[t]*d_static[:,:-1]) + 0.25*sum_squares(u[t]*d_static[:,-1])
+	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
 	h_penalty = sum(pos(h[1:,0])) + 0.25*sum(neg(h[1:,1:]))
 	s_tayl_penalty = h_tayl_slack_weight*sum(h_tayl_slack)
 
