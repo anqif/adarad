@@ -12,6 +12,7 @@ from fractionation.utilities.plot_utils import *
 from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
+	np.random.seed(1)
 	# Import data.
 	figprefix = "ex_prostate_FMO_stanford_test-admm-"
 	patient_bio, patient_rx, visuals = yaml_to_dict(datapath + "ex_prostate_FMO_stanford_test.yml")
@@ -38,8 +39,8 @@ def main(figpath = "", datapath = ""):
 	curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
 	# Dynamic treatment.
-	admm_max_iter = 500
-	rho_list = [1, 5, 20, 50]
+	admm_max_iter = 1000
+	rho_list = [0.4, 0.5, 0.6]
 	for rho in rho_list:
 		# res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
 		#							 max_iter = 30, solver = "MOSEK", ccp_verbose = True)
