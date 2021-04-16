@@ -97,7 +97,7 @@ def main():
 
 	# Form objective.
 	d_penalty = sum_squares(d[:-1]) + 0.25*square(d[-1])
-	h_penalty_ptv = pos(h_ptv)
+	h_penalty_ptv = sum(pos(h_ptv))
 	h_penalty_oar = 0.25*sum(neg(h_oar))
 	h_penalty = h_penalty_ptv + h_penalty_oar
 

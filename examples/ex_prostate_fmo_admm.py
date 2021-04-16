@@ -89,97 +89,6 @@ def main():
 	h_prog = health_prog_act(h_init, T, gamma=gamma)
 	h_curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
-	# CCP: Dynamic optimal control problem.
-	# Define variables.
-	b = Variable((T,n), nonneg=True)
-	d = vstack([A_list[t] @ b[t] for t in range(T)])
-	h = Variable((T+1,K))
-
-	# Used in Taylor expansion of PTV health dynamics.
-	h_slack_weight = 1e4
-	h_slack = Variable((T,K), nonneg=True)   # Slack in approximation.
-	d_parm = Parameter((T,K), nonneg=True)   # Dose point around which to linearize.
-	# d_init_ccp = np.zeros((T,K))
-	d_init_ccp = np.load(init_file) if INIT_FROM_FILE else np.zeros((T,K))
-
-	# Form objective.
-	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
-	h_penalty = sum(pos(h[1:,is_target])) + 0.25*sum(neg(h[1:,~is_target]))
-	s_penalty = h_slack_weight*sum(h_slack[:,is_target])
-	obj = d_penalty + h_penalty + s_penalty
-
-	# Health dynamics.
-	constrs = [h[0] == h_init]
-	for t in range(T):
-		# For PTV, use first-order Taylor expansion of dose around d_parm.
-		constrs += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target])
-						- multiply(2*d[t,is_target] - d_parm[t,is_target], multiply(beta[t,is_target], d_parm[t,is_target]))
-						+ gamma[t,is_target] - h_slack[t,is_target]]
-
-		# For OAR, use linear-quadratic model with lossless relaxation.
-		constrs += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d[t,~is_target])
-						- multiply(beta[t,~is_target], square(d[t,~is_target])) + gamma[t,~is_target]]
-
-	# Additional constraints.
-	constrs += [b >= beam_lower, b <= beam_upper, d <= dose_upper, d >= dose_lower,
-				h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
-	prob_ccp = Problem(Minimize(obj), constrs)
-
-	# Solve using CCP.
-	max_iter_ccp = 15
-	eps_ccp = 1e-3
-
-	print("CCP: Solving dynamic problem...")
-	obj_old = np.inf
-	d_parm.value = d_init_ccp
-	k = 0
-	while k < max_iter_ccp:
-		# Solve linearized problem.
-		prob_ccp.solve(solver = "MOSEK", warm_start = True)
-		if prob_ccp.status not in SOLUTION_PRESENT:
-			raise RuntimeError("CCP: Solver failed on iteration {0} with status {1}".format(k, prob_ccp.status))
-
-		# Terminate if change in objective is small.
-		obj_diff = obj_old - prob_ccp.value
-		print("CCP Iteration {0}, Objective Difference: {1}".format(k, obj_diff))
-		k = k + 1
-		if obj_diff <= eps_ccp:
-			break
-
-		obj_old = prob_ccp.value
-		d_parm.value = d.value
-
-	# Save results.
-	b_ccp = b.value
-	d_ccp = d.value
-	# h_ccp = h.value
-	h_ccp = health_prog_act(h_init, T, alpha, beta, gamma, d_ccp, is_target)
-	h_slack_ccp = h_slack.value
-
-	obj_ccp = prob_ccp.value
-	solve_time_ccp = prob_ccp.solver_stats.solve_time
-	iters_ccp = k
-
-	print("CCP Results")
-	print("Objective:", obj_ccp)
-	# print("Optimal Dose:", d_ccp)
-	# print("Optimal Health:", h_ccp)
-	# print("Optimal Health Slack:", h_slack_ccp)
-	print("Solve Time:", solve_time_ccp)
-	print("Iterations:", iters_ccp)
-
-	# Save to file.
-	np.save(final_ccp_prefix + "beams.npy", b_ccp)
-	np.save(final_ccp_prefix + "doses.npy", d_ccp)
-	np.save(final_ccp_prefix + "health.npy", h_ccp)
-	np.save(final_ccp_prefix + "health_slack.npy", h_slack_ccp)
-
-	# Plot optimal health and dose over time.
-	# plot_treatment(d_ccp, stepsize = 10, bounds = (dose_lower, dose_upper), title = "CCP: Treatment Dose vs. Time", one_idx = True,
-	#				filename = final_ccp_prefix + "doses.png")
-	# plot_health(h_ccp, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "CCP: Health Status vs. Time",
-	# 			label = "Treated", color = colors[0], one_idx = True, filename = final_ccp_prefix + "health.png")
-
 	# ADMM: Dynamic optimal control problem.
 	rho = Parameter(pos=True)
 	u = Parameter((T,K))
@@ -217,7 +126,9 @@ def main():
 	prob_h_dict = {"prob": prob_h, "h": h, "h_slack": h_slack, "d_tld": d_tld, "d_cons_parm": d_cons_parm, "d_tayl_parm": d_tayl_parm}
 
 	# Initialize main loop.
-	rho_init = 70.0
+	max_iter_ccp = 5
+	eps_ccp = 1e-3
+	rho_init = 60.0   # 70.0
 	u_init = np.zeros(u.shape)
 	# d_init_admm = np.zeros(d_tld.shape)
 	d_init_admm = np.load(init_file) if INIT_FROM_FILE else np.zeros(d_tld.shape)
@@ -237,7 +148,8 @@ def main():
 	eps_abs = 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 
-	print("ADMM: Solving dynamic problem...")
+	# print("ADMM: Solving dynamic problem...")
+	print("ADMM: Solving problem with rho = {0}".format(rho_init))
 	rho.value = rho_init
 	u.value = u_init
 	d_tld_var_val = d_init_admm
@@ -345,23 +257,18 @@ def main():
 	# Plot primal and dual residual norms over time.
 	plot_residuals(r_prim_admm, r_dual_admm, semilogy = True)
 
-	# Plot optimal health and dose over time.
+	# Compare optimal health and dose over time.
+	h_ccp = np.load(final_ccp_prefix + "health.npy")
+	d_ccp = np.load(final_ccp_prefix + "doses.npy")
 	h_curves += [{"h": h_ccp, "label": "Treated (CCP)", "kwargs": {"color": colors[2]}}]
 	d_curves  = [{"d": d_ccp, "label": "Dose Plan (CCP)", "kwargs": {"color": colors[2]}}]
+
 	plot_treatment(d_admm, curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper), 
 					title = "Treatment Dose vs. Time", label = "Dose Plan (ADMM)", color = colors[0], one_idx = True,
 					filename = final_admm_prefix + "doses.png")
 	plot_health(h_admm, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
 				title = "Health Status vs. Time", label = "Treated (ADMM)", color = colors[0], one_idx = True,
 				filename = final_admm_prefix + "health.png")
-
-	print("Compare CCP and ADMM Results")
-	print("Difference in Objective:", np.abs(obj_ccp - obj_admm))
-	print("Normed Difference in Beams:", LA.norm(b_ccp - b_admm))
-	print("Normed Difference in Dose:", LA.norm(d_ccp - d_admm))
-	print("Normed Difference in Health:", LA.norm(h_ccp - h_admm))
-	print("Normed Difference in Health Slack:", LA.norm(h_slack_ccp - h_slack_admm))
-	print("CCP Solve Time - ADMM Solve Time:", solve_time_ccp - solve_time_admm)
 
 if __name__ == "__main__":
 	main()

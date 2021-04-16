@@ -82,7 +82,7 @@ def main():
 
 	# Form objective.
 	d_penalty = sum_squares(d[:-1]) + 0.25*square(d[-1])   # Lower penalty on generic body voxels.
-	h_penalty_ptv = pos(h_ptv)
+	h_penalty_ptv = sum(pos(h_ptv))
 	h_penalty_oar = (num_ptv/num_oar)*sum(neg(h_oar))
 	h_penalty = h_penalty_ptv + h_penalty_oar
 
