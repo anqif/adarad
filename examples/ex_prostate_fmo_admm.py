@@ -128,7 +128,7 @@ def main():
 	# Initialize main loop.
 	max_iter_ccp = 5
 	eps_ccp = 1e-3
-	rho_init = 60.0   # 70.0
+	rho_init = 80.0   # 70.0
 	u_init = np.zeros(u.shape)
 	# d_init_admm = np.zeros(d_tld.shape)
 	d_init_admm = np.load(init_file) if INIT_FROM_FILE else np.zeros(d_tld.shape)

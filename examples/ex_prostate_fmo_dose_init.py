@@ -100,10 +100,13 @@ def main():
 	obj = d_penalty + h_penalty + s_penalty
 
 	# Additional constraints.
-	# constrs = [b <= beam_upper[t_s,:], d <= dose_upper[t_s,:], d >= dose_lower[t_s,:], h_ptv <= health_upper[t_s,is_target], h_oar >= health_lower[t_s,~is_target]]
+	# constrs = [b <= beam_upper[t_s,:], d <= dose_upper[t_s,:], d >= dose_lower[t_s,:], h_ptv <= health_upper[t_s,is_target],
+	# 			 h_oar >= health_lower[t_s,~is_target]]
 	# constrs = [h_ptv <= health_upper[-1,is_target] + h_hi_slack, h_oar >= health_lower[-1,~is_target] - h_lo_slack]
 	# constrs = [h_ptv <= health_upper[-1,is_target], h_oar >= health_lower[-1,~is_target] - h_lo_slack]
-	constrs = [b <= np.sum(beam_upper, axis=0), h_ptv <= health_upper[-1,is_target], h_oar >= health_lower[-1,~is_target] - h_lo_slack]
+	# constrs = [b <= np.sum(beam_upper, axis=0), h_ptv <= health_upper[-1,is_target], h_oar >= health_lower[-1,~is_target] - h_lo_slack]
+	constrs = [b <= np.sum(beam_upper, axis=0), d <= np.sum(dose_upper, axis=0), h_ptv <= health_upper[-1, is_target],
+			   h_oar >= health_lower[-1, ~is_target] - h_lo_slack]
 
 	# Solve problem.
 	print("Stage 1: Solving problem...")

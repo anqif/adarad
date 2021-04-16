@@ -217,7 +217,7 @@ def main():
 	prob_h_dict = {"prob": prob_h, "h": h, "h_slack": h_slack, "d_tld": d_tld, "d_cons_parm": d_cons_parm, "d_tayl_parm": d_tayl_parm}
 
 	# Initialize main loop.
-	rho_init = 70.0
+	rho_init = 80.0
 	u_init = np.zeros(u.shape)
 	# d_init_admm = np.zeros(d_tld.shape)
 	d_init_admm = np.load(init_file) if INIT_FROM_FILE else np.zeros(d_tld.shape)

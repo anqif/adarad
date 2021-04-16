@@ -24,7 +24,7 @@ def dyn_quad_obj(d_var, h_var, patient_rx):
 # Select constraint bound matrices by structure index.
 def get_constrs_by_struct(constrs, struct_idx, struct_dim = 1):
     if struct_dim not in [0, 1]:
-        raise ValueError("struct_di must be either 0 or 1")
+        raise ValueError("struct_dim must be either 0 or 1")
 
     constrs_s = {}
     for key in constrs.keys():

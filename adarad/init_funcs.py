@@ -1,5 +1,6 @@
 import cvxpy
 import numpy as np
+from warnings import warn
 import cvxpy.settings as cvxpy_s
 from cvxpy import *
 
@@ -104,6 +105,43 @@ def dyn_stat_obj(d_var, h_var, patient_rx):
     h_penalty = health_penalty(h_var, patient_rx["health_goal"], patient_rx["health_weights"])
     return d_penalty + h_penalty
 
+# Objective function for constant scaled problem.
+def dyn_scale_const_obj(u_var, d_static, h_var, patient_rx, fast_ssq = False):
+    T, K = h_var.shape
+    if d_static.shape[0] != (T, K):
+        raise ValueError("d_static must have dimensions ({0},{1})".format(T, K))
+    if patient_rx["dose_goal"].shape != (T, K):
+        raise ValueError("dose_goal must have dimensions ({0},{1})".format(T, K))
+    if patient_rx["health_goal"].shape != (T, K):
+        raise ValueError("health_goal must have dimensions ({0},{1})".format(T, K))
+
+    # Fast handling of total dose penalty = \sum_{t,k} w_k * d_{tk}^2,
+    # i.e., case when dose_penalty = square_penalty and dose_goal = 0.
+    if fast_ssq:
+        if np.count_nonzero(patient_rx["dose_goal"]) != 0:
+            warn("Ignoring dose_goal even though not all elements are zero.")
+
+        d_weights = patient_rx["dose_weights"]
+        if d_weights is None:
+            d_weights = np.ones(K)
+        if d_weights.shape not in [(K,), (K,1)]:
+            raise ValueError("dose_weights must have exactly {0} rows".format(K))
+        if np.any(d_weights < 0):
+            raise ValueError("dose_weights must all be nonnegative")
+
+        const_vec_ssq = np.array([sum_squares(d_static[:,k]).value for k in range(K)])
+        const_ssq = d_weights @ const_vec_ssq
+        d_penalty = square(u_var) * const_ssq
+        h_penalties = [health_penalty(h_var[t + 1], patient_rx["health_goal"][t], patient_rx["health_weights"]) for t in range(T)]
+        return d_penalty + sum(h_penalties)
+    else:
+        penalties = []
+        for t in range(T):
+            d_penalty = dose_penalty(u_var * d_static[t], patient_rx["dose_goal"][t], patient_rx["dose_weights"])
+            h_penalty = health_penalty(h_var[t + 1], patient_rx["health_goal"][t], patient_rx["health_weights"])
+            penalties.append(d_penalty + h_penalty)
+        return sum(penalties)
+
 # Health bound constraints for PTV.
 def rx_to_ptv_constrs(h_ptv, rx_dict_ptv):
     constrs = []
@@ -134,9 +172,50 @@ def rx_to_oar_constrs(h_oar, rx_dict_oar):
         raise ValueError("Upper bound must be infinity for all non-targets")
     return constrs
 
+def rx_to_oar_constrs_slack(h_oar, rx_dict_oar):
+    if "upper" in rx_dict_oar and not np.all(np.isinf(rx_dict_oar["upper"])):
+        raise ValueError("Upper bound must be infinity for all non-targets")
+
+    constrs = []
+    h_slack = Constant(0)
+    if "lower" in rx_dict_oar:
+        rx_lower = rx_dict_oar["lower"]
+        if np.any(rx_lower == np.inf):
+            raise ValueError("Lower bound cannot be infinity")
+
+        if np.isscalar(rx_lower):
+            if np.isfinite(rx_lower):
+                h_slack = Variable(h_oar.shape, nonneg=True, name="OAR health lower bound slack")
+                constrs.append(h_oar >= rx_lower - h_slack)
+        else:
+            if rx_lower.shape != h_oar.shape:
+                raise ValueError("rx_lower must have dimensions {0}".format(h_oar.shape))
+            is_finite = np.isfinite(rx_lower)
+            if np.any(is_finite):
+                h_slack = Variable(h_oar.shape, nonneg=True, name="OAR health lower bound slack")
+                constrs.append(h_oar[is_finite] >= rx_lower[is_finite] - h_slack[is_finite])
+    return constrs, h_slack
+
+def constr_sum_upper(expr, upper, T_treat):
+    n = expr.shape[0]
+    if np.isscalar(upper):
+        if np.isfinite(upper):
+            return [expr <= T_treat * upper]
+        else:
+            return []
+    elif upper.shape == (T_treat, n):
+        upper_sum = np.sum(upper, axis = 0)
+        is_finite = np.isfinite(upper_sum)
+        if np.any(is_finite):
+            return [expr[is_finite] <= upper_sum[is_finite]]
+        else:
+            return []
+    else:
+        raise TypeError("Upper bound must be a scalar or array with dimensions ({0},{1})".format(T_treat, n))
+
 # Static optimal control problem in session t_static.
 # OAR health status is linear-quadratic, while PTV health status is linear (beta = 0) with an optional slack term.
-def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static = 0, use_slack = False, slack_weight = 0):
+def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static = 0, slack_oar_weight = 1):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     if h_init.shape[0] != K:
@@ -159,20 +238,10 @@ def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_stati
     h_lin = h_init - multiply(alpha_t, d) + gamma_t   # Linear terms only.
     h_quad = h_lin - multiply(beta_t, square(d))      # Linear-quadratic dynamics.
 
-    # Allow slack in PTV health dynamics.
-    if use_slack:
-        h_slack = Variable((K,), nonneg=True, name="health dynamics slack")
-        obj_slack = slack_weight * sum(h_slack)  # TODO: Set slack weight relative to overall health penalty.
-        h_lin_s = h_lin - h_slack
-    else:
-        h_slack = Constant(0)
-        obj_slack = 0
-        h_lin_s = h_lin
-
     # Approximate PTV health status by linearizing around d = 0 (drop quadratic dose term).
     # Keep modeling OAR health status with linear-quadratic dynamics.
     is_target = patient_rx_t["is_target"]
-    h_app_ptv = h_lin_s[is_target]
+    h_app_ptv = h_lin[is_target]
     h_app_oar = h_quad[~is_target]
     
     # Objective function.
@@ -180,30 +249,44 @@ def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_stati
     h_penalty_ptv = pos_penalty(h_app_ptv, patient_rx_t["health_goal"][is_target], patient_rx_t["health_weights"][1][is_target])
     # h_penalty_oar = hinge_penalty(h_app_oar[~is_target], patient_rx_t["health_goal"][~is_target], [w[~is_target] for w in patient_rx_t["health_weights"]])
     h_penalty_oar = neg_penalty(h_app_oar, patient_rx_t["health_goal"][~is_target], patient_rx_t["health_weights"][0][~is_target])
-    obj_base = d_penalty + h_penalty_ptv + h_penalty_oar
+    h_penalty = h_penalty_ptv + h_penalty_oar
+    obj_base = d_penalty + h_penalty
 
-    # TODO: Constraints must be modified, e.g., PTV health bound taken from last session T.
     # Additional beam constraints.
     constrs = []
-    if "beam_constrs" in patient_rx_t:
-        constrs += rx_to_constrs(b, patient_rx_t["beam_constrs"])
+    if "beam_constrs" in patient_rx and "upper" in patient_rx["beam_constrs"]:
+        beam_upper = patient_rx["beam_constrs"]["upper"]
+        if np.any(beam_upper < 0):
+            raise ValueError("Beam upper bound must be nonnegative")
+        constrs += constr_sum_upper(b, beam_upper, T_treat)
 
     # Additional dose constraints.
-    if "dose_constrs" in patient_rx_t:
-        constrs += rx_to_constrs(d, patient_rx_t["dose_constrs"])
+    if "dose_constrs" in patient_rx and "upper" in patient_rx["dose_constrs"]:
+        dose_upper = patient_rx["dose_constrs"]["upper"]
+        if np.any(dose_upper < 0):
+            raise ValueError("Dose upper bound must be nonnegative")
+        constrs += constr_sum_upper(d, dose_upper, T_treat)
 
     # Additional health constraints.
-    if "health_constrs" in patient_rx_t:
-        # constrs += rx_to_quad_constrs(h, patient_rx_t["health_constrs"], patient_rx_t["is_target"], struct_dim = 0)
-        rx_t_health_constrs_ptv = get_constrs_by_struct(patient_rx_t["health_constrs"], is_target, struct_dim = 0)
-        rx_t_health_constrs_oar = get_constrs_by_struct(patient_rx_t["health_constrs"], ~is_target, struct_dim = 0)
-        # TODO: Translate RX to PTV/OAR constraints with proper bound checks.
-        constrs += rx_to_ptv_constrs(h_app_ptv, rx_t_health_constrs_ptv)
-        constrs += rx_to_oar_constrs(h_app_oar, rx_t_health_constrs_oar)
+    if "health_constrs" in patient_rx:
+        # Health bounds from final treatment session.
+        patient_rx_fin = rx_slice(patient_rx, T_treat - 1, T_treat, squeeze = True)
+        rx_fin_health_constrs_ptv = get_constrs_by_struct(patient_rx_fin["health_constrs"], is_target, struct_dim = 0)
+        rx_fin_health_constrs_oar = get_constrs_by_struct(patient_rx_fin["health_constrs"], ~is_target, struct_dim = 0)
+
+        # Add slack to lower bound on health of OARs, but keep strict upper bound on health of PTVs.
+        constrs += rx_to_ptv_constrs(h_app_ptv, rx_fin_health_constrs_ptv)
+        # constrs += rx_to_oar_constrs(h_app_oar, rx_fin_health_constrs_oar)
+        constr_oar, h_oar_slack = rx_to_oar_constrs_slack(h_app_oar, rx_fin_health_constrs_oar)
+        constrs += constr_oar
+        obj_slack = slack_oar_weight*sum(h_oar_slack)
+    else:
+        h_oar_slack = Constant(0)
+        obj_slack = 0
 
     obj = obj_base + obj_slack
     prob = Problem(Minimize(obj), constrs)
-    return prob, b, h_quad, d, h_slack
+    return prob, b, h_quad, d, h_oar_slack
 
 # Scaled beam problem with b_t = u_t*b^{static}, where u_t >= 0 are scaling factors and b^{static} is a beam constant.
 def build_scale_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_static, use_slack = False, slack_weight = 0):
@@ -223,9 +306,9 @@ def build_scale_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_stat
     b_list = []
     d_list = []
     for t in range(T_treat):
-        d_static = A_list[t] @ b_static
-        b_list.append(u[t] * b_static)   # b_t = u_t * b_static
-        d_list.append(u[t] * d_static)   # d_t = A_tb_t = u_t * (A_tb_static)
+        d_static_t = A_list[t] @ b_static
+        b_list.append(u[t] * b_static)     # b_t = u_t * b_static
+        d_list.append(u[t] * d_static_t)   # d_t = A_tb_t = u_t * (A_tb_static)
     b = vstack(b_list)   # Beams.
     d = vstack(d_list)   # Doses.
     
@@ -249,16 +332,19 @@ def build_scale_const_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, 
     if b_static.shape[0] != n:
         raise ValueError("b_static must be a vector of {0} elements".format(n))
     if not np.all(b_static >= 0):
-        raise ValueError("b_static must be a nonnegative vector")
+        raise ValueError("b_static must be a non-negative vector")
 
     # Define variables.
     u = Variable(nonneg=True, name="beam weight")         # Beam scaling factor.
     h = Variable((T_treat + 1, K), name="health")         # Health statuses.
     b = u * b_static                                      # Beams per session.
-    d = vstack([A_list[t] @ b for t in range(T_treat)])   # Doses.
+    # d = vstack([A_list[t] @ b for t in range(T_treat)])   # Doses.
+    d_static = np.vstack([A_list[t] @ b_static for t in range(T_treat)])
+    d = u * d_static
 
     # Objective function.
-    obj_base = dyn_quad_obj(d, h, patient_rx)
+    # obj_base = dyn_quad_obj(d, h, patient_rx)
+    obj_base = dyn_scale_const_obj(u, d_static, h, patient_rx)
 
     # Since beams are same across sessions, set constraints to max(B_t^{lower}) <= b <= min(B_t^{upper}),
     # where the max/min are taken over sessions t = 1,...,T.
