@@ -292,6 +292,7 @@ def main():
 
 	obj_old = np.inf
 	d_parm.value = d_stage_2_init
+	prob_2b_solve_time = 0
 	for k in range(ccp_max_iter):
 		# Solve linearized problem.
 		prob_2b.solve(solver = "MOSEK", warm_start = True)
@@ -306,7 +307,8 @@ def main():
 
 		obj_old = prob_2b.value
 		d_parm.value = d.value
-	solve_time += prob_2b.solver_stats.solve_time
+		prob_2b_solve_time += prob_2b.solver_stats.solve_time
+	solve_time += prob_2b_solve_time
 
 	# Save results.
 	u_stage_2 = u.value
@@ -323,7 +325,7 @@ def main():
 	# print("Optimal Dose:", d_stage_2)
 	# print("Optimal Health:", h_stage_2)
 	# print("Optimal Health Slack:", s_stage_2)
-	print("Solve Time:", prob_2b.solver_stats.solve_time)
+	print("Solve Time:", prob_2b_solve_time)
 
 	# Save to file.
 	np.save(init_prefix + "beams.npy", b_stage_2)
@@ -382,6 +384,7 @@ def main():
 
 	obj_old = np.inf
 	d_parm.value = d_stage_2   # Initialize using optimal dose from stage 2.
+	prob_main_solve_time = 0
 	for k in range(ccp_max_iter):
 		# Solve linearized problem.
 		prob_main.solve(solver = "MOSEK", warm_start = True)
@@ -396,7 +399,8 @@ def main():
 
 		obj_old = prob_main.value
 		d_parm.value = d.value
-	solve_time += prob_main.solver_stats.solve_time
+		prob_main_solve_time += prob_main.solver_stats.solve_time
+	solve_time += prob_main_solve_time
 
 	# Save results.
 	b_main = b.value
@@ -410,7 +414,7 @@ def main():
 	# print("Optimal Dose:", d_main)
 	# print("Optimal Health:", h_main)
 	# print("Optimal Health Slack:", s_main)
-	print("Solve Time:", prob_main.solver_stats.solve_time)
+	print("Solve Time:", prob_main_solve_time)
 	print("Total Solve Time:", solve_time)
 
 	# Save to file.
