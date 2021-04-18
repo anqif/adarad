@@ -139,6 +139,7 @@ def main():
 		prob_ccp.solve(solver = "MOSEK", warm_start = True)
 		if prob_ccp.status not in SOLUTION_PRESENT:
 			raise RuntimeError("CCP: Solver failed on iteration {0} with status {1}".format(k, prob_ccp.status))
+		solve_time_ccp += prob_ccp.solver_stats.solve_time
 
 		# Terminate if change in objective is small.
 		obj_diff = obj_old - prob_ccp.value
@@ -149,7 +150,6 @@ def main():
 
 		obj_old = prob_ccp.value
 		d_parm.value = d.value
-		solve_time_ccp += prob_ccp.solver_stats.solve_time
 
 	# Save results.
 	b_ccp = b.value
