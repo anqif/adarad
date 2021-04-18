@@ -14,8 +14,10 @@ from adarad.utilities.data_utils import health_prog_act
 
 # input_path = "C:/Users/Anqi/Documents/Software/adarad/examples/data/"
 # output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
-input_path = "/home/anqi/Documents/software/adarad/examples/data/"
-output_path = "/home/anqi/Documents/software/adarad/examples/output/"
+# input_path = "/home/anqi/Documents/software/adarad/examples/data/"
+# output_path = "/home/anqi/Documents/software/adarad/examples/output/"
+input_path = "/home/anqif/adarad/examples/data/"
+output_path = "/home/anqif/adarad/examples/output/"
 fig_path = output_path + "figures/"
 
 output_prefix = output_path + "ex3_prostate_fmo_"

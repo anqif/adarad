@@ -14,8 +14,10 @@ from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
 
 INIT_FROM_FILE = True
-input_path = "/home/anqi/Documents/software/adarad/examples/data/"
-output_path = "/home/anqi/Documents/software/adarad/examples/output/"
+# input_path = "/home/anqi/Documents/software/adarad/examples/data/"
+# output_path = "/home/anqi/Documents/software/adarad/examples/output/"
+input_path = "/home/anqif/adarad/examples/data/"
+output_path = "/home/anqif/adarad/examples/output/"
 
 output_prefix = output_path + "ex3_prostate_fmo_"
 init_file = output_prefix + "init_doses.npy"
@@ -126,7 +128,7 @@ def main():
 	prob_h_dict = {"prob": prob_h, "h": h, "h_slack": h_slack, "d_tld": d_tld, "d_cons_parm": d_cons_parm, "d_tayl_parm": d_tayl_parm}
 
 	# Initialize main loop.
-	max_iter_ccp = 5
+	max_iter_ccp = 10   # 5
 	eps_ccp = 1e-3
 	rho_init = 80.0   # 70.0
 	u_init = np.zeros(u.shape)
@@ -144,7 +146,7 @@ def main():
 		procs[-1].start()
 
 	# Solve using ADMM.
-	admm_max_iter = 1000
+	admm_max_iter = 20   # 1000
 	eps_abs = 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 
