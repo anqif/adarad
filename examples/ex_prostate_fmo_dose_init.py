@@ -296,6 +296,7 @@ def main():
 		prob_2b.solve(solver = "MOSEK", warm_start = True)
 		if prob_2b.status not in SOLUTION_PRESENT:
 			raise RuntimeError("Stage 2 CCP: Solver failed on iteration {0} with status {1}".format(k, prob_2b.status))
+		prob_2b_solve_time += prob_2b.solver_stats.solve_time
 
 		# Terminate if change in objective is small.
 		obj_diff = obj_old - prob_2b.value
@@ -305,7 +306,6 @@ def main():
 
 		obj_old = prob_2b.value
 		d_parm.value = d.value
-		prob_2b_solve_time += prob_2b.solver_stats.solve_time
 	solve_time += prob_2b_solve_time
 
 	# Save results.
@@ -324,6 +324,7 @@ def main():
 	# print("Optimal Health:", h_stage_2)
 	# print("Optimal Health Slack:", s_stage_2)
 	print("Solve Time:", prob_2b_solve_time)
+	print("Initial Solve Time:", solve_time)
 
 	# Save to file.
 	np.save(init_prefix + "beams.npy", b_stage_2)
@@ -388,6 +389,7 @@ def main():
 		prob_main.solve(solver = "MOSEK", warm_start = True)
 		if prob_main.status not in SOLUTION_PRESENT:
 			raise RuntimeError("Main Stage CCP: Solver failed on iteration {0} with status {1}".format(k, prob_main.status))
+		prob_main_solve_time += prob_main.solver_stats.solve_time
 
 		# Terminate if change in objective is small.
 		obj_diff = obj_old - prob_main.value
@@ -397,7 +399,6 @@ def main():
 
 		obj_old = prob_main.value
 		d_parm.value = d.value
-		prob_main_solve_time += prob_main.solver_stats.solve_time
 	solve_time += prob_main_solve_time
 
 	# Save results.
