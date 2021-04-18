@@ -126,7 +126,7 @@ def main():
 	prob_h_dict = {"prob": prob_h, "h": h, "h_slack": h_slack, "d_tld": d_tld, "d_cons_parm": d_cons_parm, "d_tayl_parm": d_tayl_parm}
 
 	# Initialize main loop.
-	max_iter_ccp = 5
+	max_iter_ccp = 10   # 5
 	eps_ccp = 1e-3
 	rho_init = 80.0   # 70.0
 	u_init = np.zeros(u.shape)
@@ -144,7 +144,7 @@ def main():
 		procs[-1].start()
 
 	# Solve using ADMM.
-	admm_max_iter = 1000
+	admm_max_iter = 20   # 1000
 	eps_abs = 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 

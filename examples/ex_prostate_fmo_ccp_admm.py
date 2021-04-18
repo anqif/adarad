@@ -130,9 +130,10 @@ def main():
 	eps_ccp = 1e-3
 
 	print("CCP: Solving dynamic problem...")
+	k = 0
+	solve_time_ccp = 0
 	obj_old = np.inf
 	d_parm.value = d_init_ccp
-	k = 0
 	while k < max_iter_ccp:
 		# Solve linearized problem.
 		prob_ccp.solve(solver = "MOSEK", warm_start = True)
@@ -148,6 +149,7 @@ def main():
 
 		obj_old = prob_ccp.value
 		d_parm.value = d.value
+		solve_time_ccp += prob_ccp.solver_stats.solve_time
 
 	# Save results.
 	b_ccp = b.value
@@ -157,7 +159,6 @@ def main():
 	h_slack_ccp = h_slack.value
 
 	obj_ccp = prob_ccp.value
-	solve_time_ccp = prob_ccp.solver_stats.solve_time
 	iters_ccp = k
 
 	print("CCP Results")
