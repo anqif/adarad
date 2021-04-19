@@ -53,8 +53,8 @@ def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, u
     # Stage 1: Solve static (convex) problem in initial session.
     if init_verbose:
         print("Stage 1: Solving static problem in session {0}".format(t_static))
-    prob_1, b, h, d, h_slack = build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static = t_static)
-    # prob_1, b, h, d, h_slack = build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static = t_static,
+    prob_1, b, h, d, h_actual, h_slack = build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static = t_static)
+    # prob_1, b, h, d, h_actual, h_slack = build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static = t_static,
     #     use_slack = use_slack, slack_weight = slack_weight/T_treat)
     prob_1.solve(*args, **kwargs)
     if prob_1.status not in cvxpy_s.SOLUTION_PRESENT:
@@ -149,7 +149,7 @@ def dyn_scale_const_obj(u_var, d_static, h_var, patient_rx, fast_ssq = False):
         return sum(penalties)
 
 # Health bound constraints for PTV.
-def rx_to_ptv_constrs(h_ptv, rx_dict_ptv):
+def rx_to_ptv_constrs(h_ptv, rx_dict_ptv, slack_upper = 0):
     constrs = []
 
     # Lower bound.
@@ -158,18 +158,18 @@ def rx_to_ptv_constrs(h_ptv, rx_dict_ptv):
 
     # Upper bound.
     if "upper" in rx_dict_ptv:
-        c_upper = rx_to_upper_constrs(h_ptv, rx_dict_ptv["upper"], only_ptv = True)
+        c_upper = rx_to_upper_constrs(h_ptv, rx_dict_ptv["upper"], only_ptv = True, slack = slack_upper)
         if c_upper is not None:
             constrs.append(c_upper)
     return constrs
 
 # Health bound constraints for OAR.
-def rx_to_oar_constrs(h_oar, rx_dict_oar):
+def rx_to_oar_constrs(h_oar, rx_dict_oar, slack_lower = 0):
     constrs = []
 
     # Lower bound.
     if "lower" in rx_dict_oar:
-        c_lower = rx_to_lower_constrs(h_oar, rx_dict_oar["lower"], only_oar = True)
+        c_lower = rx_to_lower_constrs(h_oar, rx_dict_oar["lower"], only_oar = True, slack = slack_lower)
         if c_lower is not None:
             constrs.append(c_lower)
 
@@ -178,29 +178,29 @@ def rx_to_oar_constrs(h_oar, rx_dict_oar):
         raise ValueError("Upper bound must be infinity for all non-targets")
     return constrs
 
-def rx_to_oar_constrs_slack(h_oar, rx_dict_oar):
-    if "upper" in rx_dict_oar and not np.all(np.isinf(rx_dict_oar["upper"])):
-        raise ValueError("Upper bound must be infinity for all non-targets")
-
-    constrs = []
-    h_slack = Constant(0)
-    if "lower" in rx_dict_oar:
-        rx_lower = rx_dict_oar["lower"]
-        if np.any(rx_lower == np.inf):
-            raise ValueError("Lower bound cannot be infinity")
-
-        if np.isscalar(rx_lower):
-            if np.isfinite(rx_lower):
-                h_slack = Variable(h_oar.shape, nonneg=True, name="OAR health lower bound slack")
-                constrs.append(h_oar >= rx_lower - h_slack)
-        else:
-            if rx_lower.shape != h_oar.shape:
-                raise ValueError("rx_lower must have dimensions {0}".format(h_oar.shape))
-            is_finite = np.isfinite(rx_lower)
-            if np.any(is_finite):
-                h_slack = Variable(h_oar.shape, nonneg=True, name="OAR health lower bound slack")
-                constrs.append(h_oar[is_finite] >= rx_lower[is_finite] - h_slack[is_finite])
-    return constrs, h_slack
+# def rx_to_oar_constrs_slack(h_oar, rx_dict_oar):
+#     if "upper" in rx_dict_oar and not np.all(np.isinf(rx_dict_oar["upper"])):
+#         raise ValueError("Upper bound must be infinity for all non-targets")
+#
+#     constrs = []
+#     h_slack = Constant(0)
+#     if "lower" in rx_dict_oar:
+#         rx_lower = rx_dict_oar["lower"]
+#         if np.any(rx_lower == np.inf):
+#             raise ValueError("Lower bound cannot be infinity")
+#
+#         if np.isscalar(rx_lower):
+#             if np.isfinite(rx_lower):
+#                 h_slack = Variable(h_oar.shape, nonneg=True, name="OAR health lower bound slack")
+#                 constrs.append(h_oar >= rx_lower - h_slack)
+#         else:
+#             if rx_lower.shape != h_oar.shape:
+#                 raise ValueError("rx_lower must have dimensions {0}".format(h_oar.shape))
+#             is_finite = np.isfinite(rx_lower)
+#             if np.any(is_finite):
+#                 h_slack = Variable(h_oar.shape, nonneg=True, name="OAR health lower bound slack")
+#                 constrs.append(h_oar[is_finite] >= rx_lower[is_finite] - h_slack[is_finite])
+#     return constrs, h_slack
 
 def constr_sum_upper(expr, upper, T_treat):
     n = expr.shape[0]
@@ -249,6 +249,7 @@ def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_stati
     is_target = patient_rx_t["is_target"]
     h_app_ptv = h_lin[is_target]
     h_app_oar = h_quad[~is_target]
+    h_app = multiply(h_lin, is_target) + multiply(h_quad, ~is_target)
     
     # Objective function.
     d_penalty = dose_penalty(d, patient_rx_t["dose_goal"], patient_rx_t["dose_weights"])
@@ -283,16 +284,20 @@ def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_stati
         # Add slack to lower bound on health of OARs, but keep strict upper bound on health of PTVs.
         constrs += rx_to_ptv_constrs(h_app_ptv, rx_fin_health_constrs_ptv)
         # constrs += rx_to_oar_constrs(h_app_oar, rx_fin_health_constrs_oar)
-        constr_oar, h_oar_slack = rx_to_oar_constrs_slack(h_app_oar, rx_fin_health_constrs_oar)
-        constrs += constr_oar
-        obj_slack = slack_oar_weight*sum(h_oar_slack)
+        h_slack = Variable((K,), nonneg=True)
+        constrs += rx_to_oar_constrs(h_app_oar, rx_fin_health_constrs_oar, slack_lower = h_slack[~is_target])
+        obj_slack = slack_oar_weight*sum(h_slack)
+        # constr_oar, h_oar_slack = rx_to_oar_constrs_slack(h_app_oar, rx_fin_health_constrs_oar)
+        # constrs += constr_oar
+        # obj_slack = slack_oar_weight*sum(h_oar_slack)
     else:
-        h_oar_slack = Constant(0)
+        # h_oar_slack = Constant(np.zeros(h_app_oar.shape))
+        h_slack = Constant(np.zeros((K,)))
         obj_slack = 0
 
     obj = obj_base + obj_slack
     prob = Problem(Minimize(obj), constrs)
-    return prob, b, h_quad, d, h_oar_slack
+    return prob, b, h_app, d, h_quad, h_slack
 
 # Scaled beam problem with b_t = u_t*b^{static}, where u_t >= 0 are scaling factors and b^{static} is a beam constant.
 def build_scale_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_static, use_dyn_slack = False,
@@ -488,7 +493,7 @@ def form_scale_const_constrs(b, h, u, d_static, alpha, beta, gamma, h_init, pati
         obj_dyn_slack = slack_dyn_weight*sum(h_dyn_slack)   # TODO: Set slack weight relative to overall health penalty.
         h_approx -= h_dyn_slack
     else:
-        h_dyn_slack = Constant((T_treat, K))
+        h_dyn_slack = Constant(np.zeros((T_treat, K)))
         obj_dyn_slack = 0
 
     constrs = [h[0] == h_init]
@@ -512,7 +517,7 @@ def form_scale_const_constrs(b, h, u, d_static, alpha, beta, gamma, h_init, pati
         h_bnd_slack = Variable((T_treat + T_recov, K), nonneg=True, name="health bound slack")
         obj_bnd_slack = slack_bnd_weight * sum(h_bnd_slack)
     else:
-        h_bnd_slack = Constant((T_treat + T_recov, K))
+        h_bnd_slack = Constant(np.zeros((T_treat + T_recov, K)))
         obj_bnd_slack = 0
 
     # Additional health constraints.

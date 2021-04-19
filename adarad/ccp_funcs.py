@@ -48,6 +48,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 		# Save entire history of doses.
 		if full_hist:
 			dose_list.append(d.value.copy())
+		h_slack_sum[k] = np.sum(h_slack.value)
 
 		# Check stopping criterion.
 		obj_diff = obj_cur - prob.value
@@ -56,7 +57,6 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 		# Update linearization point and objective.
 		d_cur = d.value
 		obj_cur = prob.value
-		h_slack_sum[k] = np.sum(h_slack.value)
 		k = k + 1
 	end = time()
 
