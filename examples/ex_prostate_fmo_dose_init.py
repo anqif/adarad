@@ -71,6 +71,15 @@ def main():
 	h_prog = health_prog_act(h_init, T, gamma = gamma)
 	h_curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
+	patient_rx_ada = {"is_target": is_target,
+				  	  "dose_goal": np.zeros((T,K)),
+				  	  "dose_weights": np.array((K-1)*[1] + [0.25]),
+				  	  "health_goal": np.zeros((T,K)),
+				  	  "health_weights": [np.array([0] + (K-1)*[num_ptv/num_oar]), np.array([1] + (K-1)*[0])],
+				  	  "beam_constrs": {"lower": beam_lower, "upper": beam_upper},
+				  	  "dose_constrs": {"lower": dose_lower, "upper": dose_upper},
+				  	  "health_constrs": {"lower": health_lower, "upper": health_upper}}
+
 	# Stage 1: Static beam problem.
 	# Define variables.
 	b = Variable((n,), nonneg=True)
@@ -107,8 +116,8 @@ def main():
 	# constrs = [h_ptv <= health_upper[-1,is_target] + h_hi_slack, h_oar >= health_lower[-1,~is_target] - h_lo_slack]
 	# constrs = [h_ptv <= health_upper[-1,is_target], h_oar >= health_lower[-1,~is_target] - h_lo_slack]
 	# constrs = [b <= np.sum(beam_upper, axis=0), h_ptv <= health_upper[-1,is_target], h_oar >= health_lower[-1,~is_target] - h_lo_slack]
-	constrs = [b <= np.sum(beam_upper, axis=0), d <= np.sum(dose_upper, axis=0), h_ptv <= health_upper[-1, is_target],
-			   h_oar >= health_lower[-1, ~is_target] - h_lo_slack]
+	constrs = [b <= np.sum(beam_upper, axis=0), d <= np.sum(dose_upper, axis=0), h_ptv <= health_upper[-1,is_target],
+			   h_oar >= health_lower[-1,~is_target] - h_lo_slack]
 
 	# Solve problem.
 	print("Stage 1: Solving problem...")
@@ -131,6 +140,21 @@ def main():
 	print("Optimal Beam (Max):", np.max(b_static))
 	print("Optimal Health:", h_stage_1)
 	print("Solve Time:", prob_1.solver_stats.solve_time)
+
+	# Compare with AdaRad package.
+	# prob_1_ada, b_1_ada, h_1_ada, d_1_ada, h_actual_1_ada, h_slack_1_ada = \
+	# 	build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx_ada, t_static = 0, slack_oar_weight = h_lo_slack_weight)
+	# prob_1_ada.solve(solver = "MOSEK")
+	# if prob_1_ada.status not in SOLUTION_PRESENT:
+	# 	raise RuntimeError("AdaRad Stage 1: Solver failed with status {0}".format(prob_1_ada.status))
+	#
+	# print("Compare with AdaRad")
+	# print("Difference in Objective:", np.abs(prob_1.value - prob_1_ada.value))
+	# print("Normed Difference in Beam:", np.linalg.norm(b_static - b_1_ada.value))
+	# print("Normed Difference in Dose:", np.linalg.norm(d_stage_1 - d_1_ada.value))
+	# print("Normed Difference in Health:", np.linalg.norm(h.value - h_1_ada.value))
+	# print("Normed Difference in Health Slack:", np.linalg.norm(h_lo_slack.value - h_slack_1_ada[~is_target].value))
+	# print("AdaRad Solve Time:", prob_1_ada.solver_stats.solve_time)
 
 	# Plot optimal dose and health per structure.
 	xlim_eps = 0.5
@@ -166,14 +190,14 @@ def main():
 	# Form objective.
 	# d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])   # Lower penalty on generic body voxels.
 	d_penalty = square(u)*(sum_squares(d_static[:,:-1]) + 0.25*sum_squares(d_static[:,-1])).value
-	h_penalty = sum(pos(h[1:,is_target])) + 0.25*sum(neg(h[1:,~is_target]))
-	s_tayl_penalty = h_tayl_slack_weight*sum(h_tayl_slack[:,is_target])
+	h_penalty = sum(pos(h[1:,is_target])) + (num_ptv/num_oar)*sum(neg(h[1:,~is_target]))
+	s_tayl_penalty = h_tayl_slack_weight*sum(h_tayl_slack)
 
 	# Add slack to lower health bounds.
 	# TODO: Should we continue to add slack to lower health bound on OARs?
 	h_lo_slack_weight = 0.25
-	h_lo_slack = Variable((T, num_oar), nonneg=True)
-	s_lo_penalty = h_lo_slack_weight * sum(h_lo_slack)
+	h_lo_slack = Variable((T,num_oar), nonneg=True)
+	s_lo_penalty = h_lo_slack_weight*sum(h_lo_slack)
 
 	# s_penalty = s_tayl_penalty
 	s_penalty = s_tayl_penalty + s_lo_penalty
@@ -224,6 +248,23 @@ def main():
 	# print("Optimal Health Slack:", s_stage_2_init)
 	print("Solve Time:", prob_2a.solver_stats.solve_time)
 
+	# Compare with AdaRad package.
+	# prob_2a_ada, u_2a_ada, b_2a_ada, h_2a_ada, d_2a_ada, h_lin_dyn_slack_2a_ada, h_lin_bnd_slack_2a_ada = \
+	# 	build_scale_lin_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx_ada, b_1_ada.value, use_dyn_slack = True,
+	# 		slack_dyn_weight = h_tayl_slack_weight, use_bnd_slack = True, slack_bnd_weight = h_lo_slack_weight)
+	# prob_2a_ada.solve(solver = "MOSEK")
+	# if prob_2a_ada.status not in SOLUTION_PRESENT:
+	# 	raise RuntimeError("AdaRad Stage 2a: Solver failed with status {0}".format(prob_2a_ada.status))
+	#
+	# print("Compare with AdaRad")
+	# print("Difference in Objective:", np.abs(prob_2a.value - prob_2a_ada.value))
+	# print("Normed Difference in Beam:", np.linalg.norm(u_stage_2_init*b_static - b_2a_ada.value))
+	# print("Normed Difference in Dose:", np.linalg.norm(d_stage_2_init - d_2a_ada.value))
+	# print("Normed Difference in Health:", np.linalg.norm(h.value - h_2a_ada.value))
+	# print("Normed Difference in Health Slack (Dynamics):", np.linalg.norm(s_stage_2_init - h_lin_dyn_slack_2a_ada.value))
+	# print("Normed Difference in Health Slack (Bound):", np.linalg.norm(h_lo_slack.value - h_lin_bnd_slack_2a_ada[:,~is_target].value))
+	# print("AdaRad Solve Time:", prob_2a_ada.solver_stats.solve_time)
+
 	# Plot optimal dose and health over time.
 	plot_treatment(d_stage_2_init, stepsize = 10, bounds = (dose_lower, dose_upper), title="Treatment Dose vs. Time",
 				   color = colors[0], one_idx = True)
@@ -247,7 +288,7 @@ def main():
 
 	# Form objective.
 	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])   # Lower penalty on generic body voxels.
-	h_penalty = sum(pos(h[1:,is_target])) + 0.25*sum(neg(h[1:,~is_target]))
+	h_penalty = sum(pos(h[1:,is_target])) + (num_ptv/num_oar)*sum(neg(h[1:,~is_target]))
 	s_tayl_penalty = h_tayl_slack_weight*sum(h_tayl_slack[:,is_target])
 
 	# Add slack to lower health bounds.
@@ -328,6 +369,25 @@ def main():
 	print("Solve Time:", prob_2b_solve_time)
 	print("Total Initial Solve Time:", solve_time)
 
+	# Compare with AdaRad package.
+	# prob_2b_ada, u_2b_ada, b_2b_ada, h_2b_ada, d_2b_ada, d_parm_2b_ada, h_dyn_slack_2b_ada, h_bnd_slack_2b_ada = \
+	# 	build_scale_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx_ada, b_static, use_dyn_slack = True,
+	# 		slack_dyn_weight = h_tayl_slack_weight, use_bnd_slack = True, slack_bnd_weight = h_lo_slack_weight)
+	#
+	# result_2b_ada = ccp_solve(prob_2b_ada, d_2b_ada, d_parm_2b_ada, d_2a_ada.value, h_dyn_slack_2b_ada, max_iter = ccp_max_iter,
+	# 					ccp_eps = ccp_eps, solver = "MOSEK", warm_start = True)
+	# if result_2b_ada["status"] not in SOLUTION_PRESENT:
+	# 	raise RuntimeError("Stage 2b: CCP solve failed with status {0}".format(result_2b_ada["status"]))
+	#
+	# print("Compare with AdaRad")
+	# print("Difference in Objective:", np.abs(prob_2b.value - prob_2b_ada.value))
+	# print("Normed Difference in Beam:", np.linalg.norm(b_stage_2 - b_2b_ada.value))
+	# print("Normed Difference in Dose:", np.linalg.norm(d_stage_2 - d_2b_ada.value))
+	# print("Normed Difference in Health:", np.linalg.norm(h.value - h_2b_ada.value))
+	# print("Normed Difference in Health Slack (Dynamics):", np.linalg.norm(s_stage_2 - h_dyn_slack_2b_ada.value))
+	# print("Normed Difference in Health Slack (Bound):", np.linalg.norm(h_lo_slack.value - h_bnd_slack_2b_ada[:,~is_target].value))
+	# print("AdaRad Solve Time:", result_2b_ada["solve_time"])
+
 	# Save to file.
 	np.save(init_prefix + "beams.npy", b_stage_2)
 	np.save(init_prefix + "doses.npy", d_stage_2)
@@ -337,8 +397,8 @@ def main():
 	# Plot optimal dose and health over time.
 	plot_treatment(d_stage_2, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", 
 				color = colors[0], one_idx = True, filename = init_prefix + "doses.png")
-	plot_health(h_stage_2, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", label = "Treated", 
-				color = colors[0], one_idx = True, filename = init_prefix + "health.png")
+	plot_health(h_stage_2, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time",
+				label = "Treated", color = colors[0], one_idx = True, filename = init_prefix + "health.png")
 
 	# raise RuntimeError("Stop 2")
 
@@ -355,7 +415,7 @@ def main():
 
 	# Form objective.
 	d_penalty = sum_squares(d[:,:-1]) + 0.25*sum_squares(d[:,-1])
-	h_penalty = sum(pos(h[1:,is_target])) + 0.25*sum(neg(h[1:,~is_target]))
+	h_penalty = sum(pos(h[1:,is_target])) + (num_ptv/num_oar)*sum(neg(h[1:,~is_target]))
 	s_penalty = h_tayl_slack_weight*sum(h_tayl_slack[:,is_target])
 	obj = d_penalty + h_penalty + s_penalty
 
