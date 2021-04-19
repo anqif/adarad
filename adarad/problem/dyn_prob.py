@@ -80,37 +80,49 @@ def rx_slice(patient_rx, t_start, t_end, t_step=1, squeeze=True):
     return rx_cur
 
 # Extract lower bound constraints from patient prescription.
-def rx_to_lower_constrs(expr, rx_lower, only_oar = False):
+def rx_to_lower_constrs(expr, rx_lower, only_oar = False, slack = 0):
     if np.any(rx_lower == np.inf):
         raise ValueError("Lower bound cannot be infinity")
 
     if np.isscalar(rx_lower):
         if np.isfinite(rx_lower):
-            return expr >= rx_lower
+            return expr >= rx_lower - slack
     else:
         if rx_lower.shape != expr.shape:
             bnd_str = "rx_lower" if only_oar else "rx_lower of non-targets"
             raise ValueError("{0} must have dimensions {1}".format(bnd_str, expr.shape))
         is_finite = np.isfinite(rx_lower)
         if np.any(is_finite):
-            return expr[is_finite] >= rx_lower[is_finite]
+            is_slack_scalar = slack.is_scalar() if isinstance(slack, Expression) else np.isscalar(slack)
+            if is_slack_scalar:
+                return expr[is_finite] >= rx_lower[is_finite] - slack
+            else:
+                if slack.shape != expr.shape:
+                    raise ValueError("slack must be a scalar or array of dimensions".format(expr.shape))
+                return expr[is_finite] >= rx_lower[is_finite] - slack[is_finite]
     return
 
 # Extract upper bound constraints from patient prescription.
-def rx_to_upper_constrs(expr, rx_upper, only_ptv = False):
+def rx_to_upper_constrs(expr, rx_upper, only_ptv = False, slack = 0):
     if np.any(rx_upper == -np.inf):
         raise ValueError("Upper bound cannot be negative infinity")
 
     if np.isscalar(rx_upper):
         if np.isfinite(rx_upper):
-            return expr <= rx_upper
+            return expr <= rx_upper + slack
     else:
         if rx_upper.shape != expr.shape:
             bnd_str = "rx_upper" if only_ptv else "rx_upper of targets"
             raise ValueError("{0} must have dimensions {1}".format(bnd_str, expr.shape))
         is_finite = np.isfinite(rx_upper)
         if np.any(is_finite):
-            return expr[is_finite] <= rx_upper[is_finite]
+            is_slack_scalar = slack.is_scalar() if isinstance(slack, Expression) else np.isscalar(slack)
+            if is_slack_scalar:
+                return expr[is_finite] <= rx_upper[is_finite] + slack
+            else:
+                if slack.shape != expr.shape:
+                    raise ValueError("slack must be a scalar or array of dimensions".format(expr.shape))
+                return expr[is_finite] <= rx_upper[is_finite] + slack[is_finite]
     return
 
 # Extract constraints from patient prescription.

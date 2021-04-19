@@ -326,7 +326,7 @@ def main():
 	# print("Optimal Health:", h_stage_2)
 	# print("Optimal Health Slack:", s_stage_2)
 	print("Solve Time:", prob_2b_solve_time)
-	print("Initial Solve Time:", solve_time)
+	print("Total Initial Solve Time:", solve_time)
 
 	# Save to file.
 	np.save(init_prefix + "beams.npy", b_stage_2)
