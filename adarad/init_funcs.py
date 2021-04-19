@@ -112,8 +112,9 @@ def dyn_stat_obj(d_var, h_var, patient_rx):
 
 # Objective function for constant scaled problem.
 def dyn_scale_const_obj(u_var, d_static, h_var, patient_rx, fast_ssq = False):
-    T, K = h_var.shape
-    if d_static.shape[0] != (T, K):
+    T_plus_1, K = h_var.shape
+    T = T_plus_1 - 1
+    if d_static.shape != (T, K):
         raise ValueError("d_static must have dimensions ({0},{1})".format(T, K))
     if patient_rx["dose_goal"].shape != (T, K):
         raise ValueError("dose_goal must have dimensions ({0},{1})".format(T, K))
@@ -445,12 +446,8 @@ def form_scale_constrs(b, h, u, d_static, alpha, beta, gamma, h_init, patient_rx
 
     # Additional health constraints.
     if "health_constrs" in patient_rx:
-        patient_rx_hslack = patient_rx["health_constrs"].copy()
-        if use_bnd_slack and "lower" in patient_rx["health_constrs"]:
-            is_target = patient_rx["is_target"]
-            patient_rx_hslack["lower"][:,~is_target] -= h_bnd_slack[:T_treat,~is_target]
         # constrs += rx_to_quad_constrs(h[1:], patient_rx["health_constrs"], patient_rx["is_target"])
-        constrs += rx_to_quad_constrs(h[1:], patient_rx_hslack, patient_rx["is_target"])
+        constrs += rx_to_quad_constrs(h[1:], patient_rx["health_constrs"], patient_rx["is_target"], slack_lower = h_bnd_slack[:T_treat])
 
     # Health dynamics for recovery stage.
     # TODO: Should we return h_r or calculate it later?
@@ -464,12 +461,8 @@ def form_scale_constrs(b, h, u, d_static, alpha, beta, gamma, h_init, patient_rx
 
         # Additional health constraints during recovery.
         if "recov_constrs" in patient_rx:
-            patient_rx_rslack = patient_rx["recov_constrs"].copy()
-            if use_bnd_slack and "lower" in patient_rx["recov_constrs"]:
-                is_target = patient_rx["is_target"]
-                patient_rx_rslack["lower"][:,~is_target] -= h_bnd_slack[T_treat:,~is_target]
             # constrs_r += rx_to_quad_constrs(h_r, patient_rx["recov_constrs"], patient_rx["is_target"])
-            constrs_r += rx_to_quad_constrs(h_r, patient_rx_rslack, patient_rx["is_target"])
+            constrs_r += rx_to_quad_constrs(h_r, patient_rx["recov_constrs"], patient_rx["is_target"], slack_lower = h_bnd_slack[T_treat:])
         constrs += constrs_r
 
     obj_slack = obj_dyn_slack + obj_bnd_slack
@@ -524,12 +517,8 @@ def form_scale_const_constrs(b, h, u, d_static, alpha, beta, gamma, h_init, pati
 
     # Additional health constraints.
     if "health_constrs" in patient_rx:
-        patient_rx_hslack = patient_rx["health_constrs"].copy()
-        if use_bnd_slack and "lower" in patient_rx["health_constrs"]:
-            is_target = patient_rx["is_target"]
-            patient_rx_hslack["lower"][:,~is_target] -= h_bnd_slack[:T_treat,~is_target]
         # constrs += rx_to_quad_constrs(h[1:], patient_rx["health_constrs"], patient_rx["is_target"])
-        constrs += rx_to_quad_constrs(h[1:], patient_rx_hslack, patient_rx["is_target"])
+        constrs += rx_to_quad_constrs(h[1:], patient_rx["health_constrs"], patient_rx["is_target"], slack_lower = h_bnd_slack[:T_treat])
 
     # Health dynamics for recovery stage.
     # TODO: Should we return h_r or calculate it later?
@@ -539,16 +528,12 @@ def form_scale_const_constrs(b, h, u, d_static, alpha, beta, gamma, h_init, pati
         h_r = Variable((T_recov, K), name="recovery")
         constrs_r = [h_r[0] == h[-1] + gamma_r[0]]
         for t in range(T_recov - 1):
-            constrs_r.append(h_r[t + 1] == h_r[t] + gamma_r[t + 1])
+            constrs_r.append(h_r[t+1] == h_r[t] + gamma_r[t + 1])
 
         # Additional health constraints during recovery.
         if "recov_constrs" in patient_rx:
-            patient_rx_rslack = patient_rx["recov_constrs"].copy()
-            if use_bnd_slack and "lower" in patient_rx["recov_constrs"]:
-                is_target = patient_rx["is_target"]
-                patient_rx_rslack["lower"][:,~is_target] -= h_bnd_slack[T_treat:,~is_target]
             # constrs_r += rx_to_quad_constrs(h_r, patient_rx["recov_constrs"], patient_rx["is_target"])
-            constrs_r += rx_to_quad_constrs(h_r, patient_rx_rslack, patient_rx["is_target"])
+            constrs_r += rx_to_quad_constrs(h_r, patient_rx["recov_constrs"], patient_rx["is_target"], slack_lower = h_bnd_slack[T_treat:])
         constrs += constrs_r
 
     obj_slack = obj_dyn_slack + obj_bnd_slack

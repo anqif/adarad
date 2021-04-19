@@ -84,6 +84,15 @@ def main():
 	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 
+	patient_rx = {"is_target": is_target,
+				  "dose_goal": np.zeros((T,K)),
+				  "dose_weights": np.array((K-1)*[1] + [0.25]),
+				  "health_goal": np.zeros((T,K)),
+				  "health_weights": [np.array([0] + (K-1)*[0.25]), np.array([1] + (K-1)*[0])],
+				  "beam_constrs": {"upper": beam_upper},
+				  "dose_constrs": {"lower": dose_lower, "upper": dose_upper},
+				  "health_constrs": {"lower": health_lower, "upper": health_upper}}
+
 	# Stage 1: Static beam problem.
 	# Define variables.
 	b = Variable((n,), nonneg=True)
@@ -142,6 +151,21 @@ def main():
 	print("Optimal Health:", h_stage_1)
 	print("Solve Time:", prob_1.solver_stats.solve_time)
 
+	# Compare with AdaRad package.
+	prob_1_ada, b_ada, h_ada, d_ada, h_slack_ada = build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx,
+																		t_static=0, slack_oar_weight=h_lo_slack_weight)
+	prob_1_ada.solve(solver = "MOSEK")
+	if prob_1_ada.status not in SOLUTION_PRESENT:
+		raise RuntimeError("AdaRad Stage 1: Solver failed with status {0}".format(prob_1_ada.status))
+
+	print("Compare with AdaRad")
+	print("Difference in Objective:", np.abs(prob_1.value - prob_1_ada.value))
+	print("Normed Difference in Beam:", np.linalg.norm(b_static - b_ada.value))
+	print("Normed Difference in Dose:", np.linalg.norm(d_stage_1 - d_ada.value))
+	print("Normed Difference in Health:", np.linalg.norm(h_stage_1 - h_ada.value))
+	print("Normed Difference in Health Slack:", np.linalg.norm(h_lo_slack.value - h_slack_ada.value))
+	print("AdaRad Solve Time:", prob_1_ada.solver_stats.solve_time)
+
 	# Plot optimal dose and health per structure.
 	xlim_eps = 0.5
 	plt.bar(range(K), d_stage_1, width = 0.8)
@@ -157,6 +181,8 @@ def main():
 	plt.title("Health Status vs. Structure")
 	plt.xlim(-xlim_eps, K-1+xlim_eps)
 	plt.show()
+
+	# raise RuntimeError("Stop 0")
 
 	# Stage 2a: Dynamic scaling problem with constant factor.
 	u = Variable(nonneg=True)
@@ -228,6 +254,24 @@ def main():
 	# print("Optimal Health:", h_stage_2_init)
 	# print("Optimal Health Slack:", s_stage_2_init)
 	print("Solve Time:", prob_2a.solver_stats.solve_time)
+
+	# Compare with AdaRad package.
+	prob_2a_ada, u_ada, b_ada, h_ada, d_ada, h_lin_dyn_slack_ada, h_lin_bnd_slack_ada = \
+		build_scale_lin_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_static,
+		use_dyn_slack = True, slack_dyn_weight = h_tayl_slack_weight, use_bnd_slack=True,
+		slack_bnd_weight = h_lo_slack_weight)
+	prob_2a_ada.solve(solver="MOSEK")
+	if prob_2a_ada.status not in SOLUTION_PRESENT:
+		raise RuntimeError("AdaRad Stage 2a: Solver failed with status {0}".format(prob_2a_ada.status))
+
+	print("Compare with AdaRad")
+	print("Difference in Objective:", np.abs(prob_2a.value - prob_2a_ada.value))
+	print("Normed Difference in Beam:", np.linalg.norm(u_stage_2_init*b_static - b_ada.value))
+	print("Normed Difference in Dose:", np.linalg.norm(d_stage_2_init - d_ada.value))
+	print("Normed Difference in Health:", np.linalg.norm(h.value - h_ada.value))
+	print("Normed Difference in Health Slack (Dynamics):", np.linalg.norm(s_stage_2_init - h_lin_dyn_slack_ada[:,0].value))
+	print("Normed Difference in Health Slack (Bound):", np.linalg.norm(h_lo_slack.value - h_lin_bnd_slack_ada[:,1:].value))
+	print("AdaRad Solve Time:", prob_2a_ada.solver_stats.solve_time)
 
 	# Plot optimal dose and health over time.
 	plot_treatment(d_stage_2_init, stepsize = 10, bounds = (dose_lower, dose_upper), title="Treatment Dose vs. Time",
@@ -331,6 +375,8 @@ def main():
 	# print("Optimal Health:", h_stage_2)
 	# print("Optimal Health Slack:", s_stage_2)
 	print("Solve Time:", prob_2b.solver_stats.solve_time)
+
+	# TODO: Compare with AdaRad package.
 
 	# Save to file.
 	np.save(init_prefix + "beams.npy", b_stage_2)
