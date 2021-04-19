@@ -154,7 +154,8 @@ def main():
 	# Save results.
 	b_ccp = b.value
 	d_ccp = d.value
-	h_ccp = h.value
+	# h_ccp = h.value
+	h_ccp = health_prog_act(h_init, T, alpha, beta, gamma, d_ccp, is_target)
 	h_slack_ccp = h_slack.value
 
 	obj_ccp = prob_ccp.value
@@ -299,7 +300,8 @@ def main():
 	b_admm = np.row_stack(b_rows)
 	d_var_val = np.row_stack(d_rows)
 	d_admm = (d_var_val + d_tld_var_val)/2.0
-	h_admm = prob_h_dict["h"].value
+	# h_admm = prob_h_dict["h"].value
+	h_admm = health_prog_act(h_init, T, alpha, beta, gamma, d_admm, is_target)
 	h_slack_admm = prob_h_dict["h_slack"].value
 
 	# Calculate true objective.

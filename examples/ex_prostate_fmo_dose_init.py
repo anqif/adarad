@@ -34,9 +34,27 @@ def form_step_xy(x, y, buf = 0, shift = 0):
 
 	return x_buf, y_buf
 
+def fin_upper_constr(x, bound):
+	if np.isscalar(bound):
+		if not np.isinf(bound):
+			return [x <= bound]
+	else:
+		if not np.all(x.shape == bound.shape):
+			raise ValueError("bound must have dimensions {0}".format(x.shape))
+		is_finite = ~np.isinf(bound)
+		if np.all(is_finite):
+			return [x <= bound]
+		elif np.any(is_finite):
+			return [x[is_finite] <= bound[is_finite]]
+	return []
+
+def fin_lower_constr(x, bound):
+	return fin_upper_constr(-x, -bound)
+
 def main():
 	# Problem data.
-	patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford.yml")
+	# patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford.yml")
+	patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford_test.yml")
 
 	# Patient data.
 	A_list = patient_bio["dose_matrices"]
@@ -166,7 +184,9 @@ def main():
 		constrs += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d[t,~is_target]) - multiply(beta[t,~is_target], square(d[t,~is_target])) + gamma[t,~is_target]]
 
 	# Additional constraints.
-	constrs += [b <= np.min(beam_upper, axis=0), d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	constrs += [b <= np.min(beam_upper, axis=0), b >= np.max(beam_lower, axis=0)]
+	constrs += [h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	constrs += fin_upper_constr(d, dose_upper) + fin_lower_constr(d, dose_lower)
 
 	# Warm start.
 	u.value = 1
@@ -223,7 +243,8 @@ def main():
 		constrs += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d[t,~is_target]) - multiply(beta[t,~is_target], square(d[t,~is_target])) + gamma[t,~is_target]]
 
 	# Additional constraints.
-	constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	constrs += [b <= beam_upper, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	constrs += fin_upper_constr(d, dose_upper) + fin_lower_constr(d, dose_lower)
 	prob_2b = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.
@@ -310,7 +331,8 @@ def main():
 		constrs += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d[t,~is_target]) - multiply(beta[t,~is_target], square(d[t,~is_target])) + gamma[t,~is_target]]
 
 	# Additional constraints.
-	constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	constrs += [b <= beam_upper, h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+	constrs += fin_upper_constr(d, dose_upper) + fin_lower_constr(d, dose_lower)
 	prob_main = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.

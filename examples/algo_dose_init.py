@@ -32,6 +32,23 @@ def form_step_xy(x, y, buf = 0, shift = 0):
 
 	return x_buf, y_buf
 
+def fin_upper_constr(x, bound):
+	if np.isscalar(bound):
+		if not np.isinf(bound):
+			return [x <= bound]
+	else:
+		if not np.all(x.shape == bound.shape):
+			raise ValueError("bound must have dimensions {0}".format(x.shape))
+		is_finite = ~np.isinf(bound)
+		if np.all(is_finite):
+			return [x <= bound]
+		elif np.any(is_finite):
+			return [x[is_finite] <= bound[is_finite]]
+	return []
+
+def fin_lower_constr(x, bound):
+	return fin_upper_constr(-x, -bound)
+
 def main():
 	# Problem data.
 	T = 20           # Length of treatment.
@@ -191,6 +208,8 @@ def main():
 	# Additional constraints.
 	# constrs += [b <= np.min(beam_upper, axis=0), d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:]]
 	constrs += [b <= np.min(beam_upper, axis=0), d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:] - h_lo_slack]
+	# constrs += [b <= np.min(beam_upper, axis=0), h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:] - h_lo_slack]
+	# constrs += fin_upper_constr(d, dose_upper) + fin_lower_constr(d, dose_lower)
 
 	# Warm start.
 	u.value = 1
@@ -258,6 +277,8 @@ def main():
 	# Additional constraints.
 	# constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:]]
 	constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:] - h_lo_slack]
+	# constrs += [b <= beam_upper, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:] - h_lo_slack]
+	# constrs += fin_upper_constr(d, dose_upper) + fin_lower_constr(d, dose_lower)
 	prob_2b = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.
@@ -351,6 +372,8 @@ def main():
 
 	# Additional constraints.
 	constrs += [b <= beam_upper, d <= dose_upper, d >= dose_lower, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:]]
+	# constrs += [b <= beam_upper, h[1:,0] <= health_upper[:,0], h[1:,1:] >= health_lower[:,1:]]
+	# constrs += fin_upper_constr(d, dose_upper) + fin_lower_constr(d, dose_lower)
 	prob_main = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.
