@@ -84,14 +84,14 @@ def main():
 	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 
-	patient_rx = {"is_target": is_target,
-				  "dose_goal": np.zeros((T,K)),
-				  "dose_weights": np.array((K-1)*[1] + [0.25]),
-				  "health_goal": np.zeros((T,K)),
-				  "health_weights": [np.array([0] + (K-1)*[0.25]), np.array([1] + (K-1)*[0])],
-				  "beam_constrs": {"upper": beam_upper},
-				  "dose_constrs": {"lower": dose_lower, "upper": dose_upper},
-				  "health_constrs": {"lower": health_lower, "upper": health_upper}}
+	# patient_rx = {"is_target": is_target,
+	# 			  "dose_goal": np.zeros((T,K)),
+	# 			  "dose_weights": np.array((K-1)*[1] + [0.25]),
+	# 			  "health_goal": np.zeros((T,K)),
+	# 			  "health_weights": [np.array([0] + (K-1)*[0.25]), np.array([1] + (K-1)*[0])],
+	# 			  "beam_constrs": {"upper": beam_upper},
+	# 			  "dose_constrs": {"lower": dose_lower, "upper": dose_upper},
+	# 			  "health_constrs": {"lower": health_lower, "upper": health_upper}}
 
 	# Stage 1: Static beam problem.
 	# Define variables.
