@@ -18,7 +18,8 @@ input_path = "/home/anqi/Documents/software/adarad/examples/data/"
 output_path = "/home/anqi/Documents/software/adarad/examples/output/"
 fig_path = output_path + "figures/"
 
-output_prefix = output_path + "ex3_prostate_fmo_"
+# output_prefix = output_path + "ex3_prostate_fmo_"
+output_prefix = output_path + "ex3_prostate_fmo_full_"
 init_prefix = output_prefix + "init_"
 final_prefix = output_prefix + "ccp_"
 
@@ -38,7 +39,8 @@ def form_step_xy(x, y, buf = 0, shift = 0):
 
 def main():
 	# Problem data.
-	patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford.yml")
+	# patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford.yml")
+	patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford_full.yml")
 
 	# Patient data.
 	A_list = patient_bio["dose_matrices"]
@@ -100,7 +102,7 @@ def main():
 	# h_hi_slack = Variable(h_ptv.shape, nonneg=True)
 	# s_hi_penalty = h_hi_slack_weight*sum(h_hi_slack)
 
-	h_lo_slack_weight = 0.25
+	h_lo_slack_weight = 1/(K-1)   # 0.25
 	h_lo_slack = Variable(h_oar.shape, nonneg=True)
 	s_lo_penalty = h_lo_slack_weight*sum(h_lo_slack)
 
@@ -193,7 +195,7 @@ def main():
 
 	# Add slack to lower health bounds.
 	# TODO: Should we continue to add slack to lower health bound on OARs?
-	h_lo_slack_weight = 0.25
+	h_lo_slack_weight = 1/(K-1)   # 0.25
 	h_lo_slack = Variable((T,num_oar), nonneg=True)
 	s_lo_penalty = h_lo_slack_weight*sum(h_lo_slack)
 
@@ -291,7 +293,7 @@ def main():
 
 	# Add slack to lower health bounds.
 	# TODO: Should we continue to add slack to lower health bound on OARs?
-	h_lo_slack_weight = 0.25
+	h_lo_slack_weight = 1/(K-1)   # 0.25
 	h_lo_slack = Variable((T, num_oar), nonneg=True)
 	s_lo_penalty = h_lo_slack_weight * sum(h_lo_slack)
 
