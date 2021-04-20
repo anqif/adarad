@@ -19,7 +19,8 @@ INIT_FROM_FILE = True
 input_path = "/home/anqif/adarad/examples/data/"
 output_path = "/home/anqif/adarad/examples/output/"
 
-output_prefix = output_path + "ex3_prostate_fmo_"
+# output_prefix = output_path + "ex3_prostate_fmo_"
+output_prefix = output_path + "ex3_prostate_fmo_full_"
 init_file = output_prefix + "init_doses.npy"
 final_ccp_prefix = output_prefix + "ccp_"
 final_admm_prefix = output_prefix + "admm_"
@@ -60,7 +61,8 @@ def run_beam_proc(pipe, A, beam_lower, beam_upper, dose_upper, dose_lower, rho_i
 
 def main():
 	# Problem data.
-	patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford.yml")
+	# patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford.yml")
+	patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford_full.yml")
 
 	# Patient data.
 	A_list = patient_bio["dose_matrices"]
