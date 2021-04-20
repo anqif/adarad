@@ -146,8 +146,8 @@ def main():
 		procs[-1].start()
 
 	# Solve using ADMM.
-	admm_max_iter = 20   # 1000
-	eps_abs = 1e-6   # Absolute stopping tolerance.
+	admm_max_iter = 50   # 20, 1000
+	eps_abs = 5e-2   # 1e-1, 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 
 	# print("ADMM: Solving dynamic problem...")
