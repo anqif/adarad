@@ -118,7 +118,7 @@ def main():
 	h_slack_weight = 1e4
 	h_slack = Variable((T,K), nonneg=True)   # Slack in approximation.
 
-	h_penalty = sum(pos(h[1:,is_target])) + 0.25*sum(neg(h[1:,~is_target]))
+	h_penalty = sum(pos(h[1:,is_target])) + (num_ptv/num_oar)*sum(neg(h[1:,~is_target]))
 	s_penalty = h_slack_weight*sum(h_slack[:,is_target])
 	c_penalty = (rho/2.0)*sum_squares(d_tld - d_cons_parm + u)
 	obj = h_penalty + s_penalty + c_penalty
