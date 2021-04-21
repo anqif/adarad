@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use("TKAgg")
+from time import time
 
 import cvxpy
 from cvxpy import *
@@ -132,7 +133,9 @@ def main():
 	prob_1.solve(solver = "MOSEK")
 	if prob_1.status not in SOLUTION_PRESENT:
 		raise RuntimeError("Stage 1: Solver failed with status {0}".format(prob_1.status))
+	setup_time = 0 if prob_1.solver_stats.setup_time is None else prob_1.solver_stats.setup_time
 	solve_time = prob_1.solver_stats.solve_time
+	run_time = (0 if prob_1.solver_stats.setup_time is None else prob_1.solver_stats.setup_time) + prob_1.solver_stats.solve_time
 
 	# Save results.
 	b_static = b.value   # Save optimal static beams for stage 2.
@@ -146,6 +149,7 @@ def main():
 	print("Optimal Dose:", d_stage_1)
 	print("Optimal Beam (Max):", np.max(b_static))
 	print("Optimal Health:", h_stage_1)
+	print("Setup Time:", prob_1.solver_stats.setup_time)
 	print("Solve Time:", prob_1.solver_stats.solve_time)
 
 	# Compare with AdaRad package.
@@ -240,7 +244,9 @@ def main():
 	prob_2a.solve(solver = "MOSEK", warm_start = True)
 	if prob_2a.status not in SOLUTION_PRESENT:
 		raise RuntimeError("Stage 2 Initialization: Solver failed with status {0}".format(prob_2a.status))
+	setup_time += 0 if prob_2a.solver_stats.setup_time is None else prob_2a.solver_stats.setup_time
 	solve_time += prob_2a.solver_stats.solve_time
+	run_time += (0 if prob_2a.solver_stats.setup_time is None else prob_2a.solver_stats.setup_time) + prob_2a.solver_stats.solve_time
 
 	# Save results.
 	u_stage_2_init = u.value
@@ -255,6 +261,7 @@ def main():
 	# print("Optimal Dose:", d_stage_2_init)
 	# print("Optimal Health:", h_stage_2_init)
 	# print("Optimal Health Slack:", s_stage_2_init)
+	print("Setup Time:", prob_2a.solver_stats.setup_time)
 	print("Solve Time:", prob_2a.solver_stats.solve_time)
 
 	# Compare with AdaRad package.
@@ -342,12 +349,16 @@ def main():
 
 	obj_old = np.inf
 	d_parm.value = d_stage_2_init
+	prob_2b_setup_time = 0
 	prob_2b_solve_time = 0
+
+	start = time()
 	for k in range(ccp_max_iter):
 		# Solve linearized problem.
 		prob_2b.solve(solver = "MOSEK", warm_start = True)
 		if prob_2b.status not in SOLUTION_PRESENT:
 			raise RuntimeError("Stage 2 CCP: Solver failed on iteration {0} with status {1}".format(k, prob_2b.status))
+		prob_2b_setup_time += 0 if prob_2b.solver_stats.setup_time is None else prob_2b.solver_stats.setup_time
 		prob_2b_solve_time += prob_2b.solver_stats.solve_time
 
 		# Terminate if change in objective is small.
@@ -358,7 +369,12 @@ def main():
 
 		obj_old = prob_2b.value
 		d_parm.value = d.value
+	end = time()
+	prob_2b_runtime = end - start
+
+	setup_time += prob_2b_setup_time
 	solve_time += prob_2b_solve_time
+	run_time += prob_2b_runtime
 
 	# Save results.
 	u_stage_2 = u.value
@@ -375,8 +391,15 @@ def main():
 	# print("Optimal Dose:", d_stage_2)
 	# print("Optimal Health:", h_stage_2)
 	# print("Optimal Health Slack:", s_stage_2)
+	print("Setup Time:", prob_2b_setup_time)
 	print("Solve Time:", prob_2b_solve_time)
-	print("Total Initial Solve Time:", solve_time)
+	print("Runtime:", prob_2b_runtime)
+
+	print("\nSolver Stats: Initialization")
+	print("Total Setup Time:", setup_time)
+	print("Total Solve Time:", solve_time)
+	print("Total (Setup + Solve) Time:", setup_time + solve_time)
+	print("Total Runtime:", run_time)
 
 	# Compare with AdaRad package.
 	# prob_2b_ada, u_2b_ada, b_2b_ada, h_2b_ada, d_2b_ada, d_parm_2b_ada, h_dyn_slack_2b_ada, h_bnd_slack_2b_ada = \
@@ -454,12 +477,16 @@ def main():
 
 	obj_old = np.inf
 	d_parm.value = d_stage_2   # Initialize using optimal dose from stage 2.
+	prob_main_setup_time = 0
 	prob_main_solve_time = 0
+
+	start = time()
 	for k in range(ccp_max_iter):
 		# Solve linearized problem.
 		prob_main.solve(solver = "MOSEK", warm_start = True)
 		if prob_main.status not in SOLUTION_PRESENT:
 			raise RuntimeError("Main Stage CCP: Solver failed on iteration {0} with status {1}".format(k, prob_main.status))
+		prob_main_setup_time += 0 if prob_main.solver_stats.setup_time is None else prob_main.solver_stats.setup_time
 		prob_main_solve_time += prob_main.solver_stats.solve_time
 
 		# Terminate if change in objective is small.
@@ -470,7 +497,12 @@ def main():
 
 		obj_old = prob_main.value
 		d_parm.value = d.value
+	end = time()
+	prob_main_runtime = end - start
+
+	setup_time += prob_main_setup_time
 	solve_time += prob_main_solve_time
+	run_time += prob_main_runtime
 
 	# Save results.
 	b_main = b.value
@@ -484,8 +516,16 @@ def main():
 	# print("Optimal Dose:", d_main)
 	# print("Optimal Health:", h_main)
 	# print("Optimal Health Slack:", s_main)
+	print("Setup Time:", prob_main_setup_time)
 	print("Solve Time:", prob_main_solve_time)
+	print("Total (Setup + Solve) Time:", prob_main_setup_time + prob_main_solve_time)
+	print("Runtime:", prob_main_runtime)
+
+	print("\nSolver Stats: All Stages")
+	print("Total Setup Time:", setup_time)
 	print("Total Solve Time:", solve_time)
+	print("Total (Setup + Solve) Time:", setup_time + solve_time)
+	print("Total Runtime:", run_time)
 
 	# Save to file.
 	np.save(final_prefix + "beams.npy", b_main)

@@ -3,6 +3,7 @@ import numpy.linalg as LA
 import matplotlib
 import matplotlib.pyplot as plt
 # matplotlib.use("TKAgg")
+from time import time
 
 import cvxpy
 from cvxpy import *
@@ -61,7 +62,9 @@ def run_beam_proc(pipe, A, beam_lower, beam_upper, dose_upper, dose_lower, rho_i
 		prob.solve(solver = "MOSEK", warm_start = True)
 		if prob.status not in SOLUTION_PRESENT:
 			raise RuntimeError("ADMM: Solver failed on beam subproblem with status {0}".format(prob.status))
-		pipe.send((d.value, prob.solver_stats.solve_time))
+		setup_time = 0 if prob.solver_stats.setup_time is None else prob.solver_stats.setup_time
+		total_time = setup_time + prob.solver_stats.solve_time
+		pipe.send((d.value, total_time))
 		finished = pipe.recv()
 
 	# Send final beams and doses.
@@ -168,9 +171,11 @@ def main():
 	d_tld_var_val_old = d_init_admm
 
 	k = 0
-	solve_time_admm = 0
+	total_time_admm = 0
 	r_prim_norms = np.zeros(admm_max_iter)
 	r_dual_norms = np.zeros(admm_max_iter)
+
+	start = time()
 	finished = (k >= admm_max_iter)
 	while not finished:
 		if k % 10 == 0:
@@ -182,7 +187,7 @@ def main():
 		dt_update = [pipe.recv() for pipe in pipes]
 		d_rows, d_times = map(list, zip(*dt_update))
 		d_var_val = np.row_stack(d_rows)
-		solve_time_admm += np.max(d_times)   # Take max of all solve times, since subproblems solved in parallel.
+		total_time_admm += np.max(d_times)   # Take max of all solve times, since subproblems solved in parallel.
 
 		# Solve health subproblem using CCP.
 		obj_old = np.inf
@@ -194,7 +199,8 @@ def main():
 			prob_h_dict["prob"].solve(solver = "MOSEK", warm_start = True)
 			if prob_h_dict["prob"].status not in SOLUTION_PRESENT:
 				raise RuntimeError("ADMM CCP: Solver failed on ADMM iteration {0}, CCP iteration {1} with status {2}".format(k, l, prob_h_dict["prob"].status))
-			solve_time_admm += prob_h_dict["prob"].solver_stats.solve_time
+			setup_time = 0 if prob_h_dict["prob"].solver_stats.setup_time is None else prob_h_dict["prob"].solver_stats.setup_time
+			total_time_admm += setup_time + prob_h_dict["prob"].solver_stats.solve_time
 
 			# Terminate if change in objective is small.
 			obj_diff = obj_old - prob_h_dict["prob"].value
@@ -229,9 +235,11 @@ def main():
 	bd_update = [pipe.recv() for pipe in pipes]
 	b_rows, d_rows = map(list, zip(*bd_update))
 	[p.terminate() for p in procs]
+	end = time()
 
 	# Save results.
 	iters_admm = k
+	runtime_admm = end - start
 	r_prim_admm = np.array(r_prim_norms[:iters_admm])
 	r_dual_admm = np.array(r_dual_norms[:iters_admm])
 
@@ -253,7 +261,8 @@ def main():
 	# print("Optimal Dose:", d_admm)
 	# print("Optimal Health:", h_admm)
 	# print("Optimal Health Slack:", h_slack_admm)
-	print("Solve Time:", solve_time_admm)
+	print("Setup + Solve Time:", total_time_admm)
+	print("Runtime:", runtime_admm)
 	print("Iterations:", iters_admm)
 	print("Primal Residual (Norm):", r_prim_admm[-1])
 	print("Dual Residual (Norm):", r_dual_admm[-1])

@@ -24,6 +24,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 		raise ValueError("ccp_eps must be a non-negative scalar.")
 	
 	k = 0
+	setup_time = 0
 	solve_time = 0
 	finished = False
 	obj_cur = np.inf
@@ -42,6 +43,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 		prob.solve(*args, **kwargs)
 		if prob.status not in cvxpy_s.SOLUTION_PRESENT:
 			raise RuntimeError("Solver failed with status {0}".format(prob.status))
+		setup_time += 0 if prob.solver_stats.setup_time is None else prob.solver_stats.setup_time
 		solve_time += prob.solver_stats.solve_time
 		status_list.append(prob.status)
 
@@ -63,8 +65,8 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 	# Take majority as final status.
 	status, status_count = Counter(status_list).most_common(1)[0]
 	doses = dose_list if full_hist else d.value
-	return {"obj": obj_cur, "status": status, "num_iters": k, "total_time": start - end, "solve_time": solve_time,
-			"doses": doses, "health_slacks": np.array(h_slack_sum[:k])}
+	return {"obj": obj_cur, "status": status, "num_iters": k, "total_time": end - start, "setup_time": setup_time,
+			"solve_time": solve_time, "doses": doses, "health_slacks": np.array(h_slack_sum[:k])}
 
 def bed_health_prog(h_init, T, alphas, betas, doses = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]
