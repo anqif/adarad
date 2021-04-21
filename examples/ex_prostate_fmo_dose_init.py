@@ -12,6 +12,8 @@ from adarad.utilities.plot_utils import *
 from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
 
+SHOW_PLOTS = False
+
 # input_path = "C:/Users/Anqi/Documents/Software/adarad/examples/data/"
 # output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
 # input_path = "/home/anqi/Documents/software/adarad/examples/data/"
@@ -22,8 +24,11 @@ fig_path = output_path + "figures/"
 
 # output_prefix = output_path + "ex3_prostate_fmo_"
 output_prefix = output_path + "ex3_prostate_fmo_full_"
+fig_prefix = fig_path + "ex3_prostate_fmo_full_"
 init_prefix = output_prefix + "init_"
 final_prefix = output_prefix + "ccp_"
+init_fig_prefix = fig_prefix + "init_"
+final_fig_prefix = fig_prefix + "ccp_"
 
 def form_step_xy(x, y, buf = 0, shift = 0):
 	x_shift = x - shift
@@ -165,7 +170,8 @@ def main():
 	plt.step(*form_step_xy(np.arange(K), dose_upper[-1,:], buf = 0.5), where = "mid", lw = 1, ls = "--", color = colors[1])
 	plt.title("Treatment Dose vs. Structure")
 	plt.xlim(-xlim_eps, K-1+xlim_eps)
-	plt.show()
+	if SHOW_PLOTS:
+		plt.show()
 
 	health_bounds_fin = np.zeros(K)
 	health_bounds_fin[is_target] = health_upper[-1,is_target]
@@ -174,7 +180,8 @@ def main():
 	plt.step(*form_step_xy(np.arange(K), health_bounds_fin, buf = 0.5), where = "mid", lw = 1, ls = "--", color = colors[1])
 	plt.title("Health Status vs. Structure")
 	plt.xlim(-xlim_eps, K-1+xlim_eps)
-	plt.show()
+	if SHOW_PLOTS:
+		plt.show()
 
 	# raise RuntimeError("Stop 0")
 
@@ -269,9 +276,9 @@ def main():
 
 	# Plot optimal dose and health over time.
 	plot_treatment(d_stage_2_init, stepsize = 10, bounds = (dose_lower, dose_upper), title="Treatment Dose vs. Time",
-				   color = colors[0], one_idx = True)
+				   color = colors[0], one_idx = True, show = SHOW_PLOTS)
 	plot_health(h_stage_2_init, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
-				title = "Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True)
+				title = "Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True, show = SHOW_PLOTS)
 
 	# raise RuntimeError("Stop 1")
 
@@ -397,10 +404,10 @@ def main():
 	np.save(init_prefix + "health_slack.npy", s_stage_2)
 
 	# Plot optimal dose and health over time.
-	plot_treatment(d_stage_2, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", 
-				color = colors[0], one_idx = True, filename = init_prefix + "doses.png")
+	plot_treatment(d_stage_2, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time",
+				color = colors[0], one_idx = True, filename = init_fig_prefix + "doses.png", show = SHOW_PLOTS)
 	plot_health(h_stage_2, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time",
-				label = "Treated", color = colors[0], one_idx = True, filename = init_prefix + "health.png")
+				label = "Treated", color = colors[0], one_idx = True, filename = init_fig_prefix + "health.png", show = SHOW_PLOTS)
 
 	# raise RuntimeError("Stop 2")
 
@@ -488,9 +495,9 @@ def main():
 
 	# Plot optimal dose and health over time.
 	plot_treatment(d_main, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", one_idx = True, 
-			   filename = final_prefix + "doses.png")
+			   filename = final_fig_prefix + "doses.png", show = SHOW_PLOTS)
 	plot_health(h_main, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", 
-			  label = "Treated", color = colors[0], one_idx = True, filename = final_prefix + "health.png")
+			  label = "Treated", color = colors[0], one_idx = True, filename = final_fig_prefix + "health.png", show = SHOW_PLOTS)
 
 if __name__ == "__main__":
 	main()

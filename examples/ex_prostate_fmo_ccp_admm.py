@@ -20,6 +20,7 @@ input_path = "/home/anqif/adarad/examples/data/"
 output_path = "/home/anqif/adarad/examples/output/"
 
 output_prefix = output_path + "ex3_prostate_fmo_"
+# output_prefix = output_path + "ex3_prostate_fmo_full_"
 init_file = output_prefix + "init_doses.npy"
 final_ccp_prefix = output_prefix + "ccp_"
 final_admm_prefix = output_prefix + "admm_"
@@ -128,7 +129,7 @@ def main():
 	prob_ccp = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.
-	max_iter_ccp = 15
+	max_iter_ccp = 20
 	eps_ccp = 1e-3
 
 	print("CCP: Solving dynamic problem...")
@@ -236,7 +237,7 @@ def main():
 		procs[-1].start()
 
 	# Solve using ADMM.
-	admm_max_iter = 1000
+	admm_max_iter = 50   # 1000
 	eps_abs = 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 

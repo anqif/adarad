@@ -2,7 +2,7 @@ import numpy as np
 import numpy.linalg as LA
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.use("TKAgg")
+# matplotlib.use("TKAgg")
 
 import cvxpy
 from cvxpy import *
@@ -13,17 +13,25 @@ from adarad.utilities.plot_utils import *
 from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
 
+SHOW_PLOTS = False
 INIT_FROM_FILE = True
 # input_path = "/home/anqi/Documents/software/adarad/examples/data/"
 # output_path = "/home/anqi/Documents/software/adarad/examples/output/"
 input_path = "/home/anqif/adarad/examples/data/"
 output_path = "/home/anqif/adarad/examples/output/"
+fig_path = output_path + "figures/"
 
 # output_prefix = output_path + "ex3_prostate_fmo_"
 output_prefix = output_path + "ex3_prostate_fmo_full_"
+fig_prefix = fig_path + "ex3_prostate_fmo_full_"
+
 init_file = output_prefix + "init_doses.npy"
 final_ccp_prefix = output_prefix + "ccp_"
 final_admm_prefix = output_prefix + "admm_"
+final_fig_prefix = fig_prefix + "admm_"
+
+if SHOW_PLOTS:
+	matplotlib.use("TKAgg")
 
 # Beam subproblems.
 def run_beam_proc(pipe, A, beam_lower, beam_upper, dose_upper, dose_lower, rho_init):
@@ -148,8 +156,8 @@ def main():
 		procs[-1].start()
 
 	# Solve using ADMM.
-	admm_max_iter = 50   # 20, 1000
-	eps_abs = 5e-2   # 1e-1, 1e-6   # Absolute stopping tolerance.
+	admm_max_iter = 1000   # 75, 50, 100
+	eps_abs = 1e-2   # 1e-2, 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 
 	# print("ADMM: Solving dynamic problem...")
@@ -259,7 +267,7 @@ def main():
 	np.save(final_admm_prefix + "dual_residuals.npy", r_dual_admm)
 
 	# Plot primal and dual residual norms over time.
-	plot_residuals(r_prim_admm, r_dual_admm, semilogy = True)
+	plot_residuals(r_prim_admm, r_dual_admm, semilogy = True, show = SHOW_PLOTS, filename = final_fig_prefix + "residuals.png")
 
 	# Compare optimal health and dose over time.
 	h_ccp = np.load(final_ccp_prefix + "health.npy")
@@ -269,10 +277,10 @@ def main():
 
 	plot_treatment(d_admm, curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper), 
 					title = "Treatment Dose vs. Time", label = "Dose Plan (ADMM)", color = colors[0], one_idx = True,
-					filename = final_admm_prefix + "doses.png")
+					filename = final_fig_prefix + "doses.png", show = SHOW_PLOTS)
 	plot_health(h_admm, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
 				title = "Health Status vs. Time", label = "Treated (ADMM)", color = colors[0], one_idx = True,
-				filename = final_admm_prefix + "health.png")
+				filename = final_fig_prefix + "health.png", show = SHOW_PLOTS)
 
 if __name__ == "__main__":
 	main()
