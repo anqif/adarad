@@ -25,9 +25,10 @@ fig_path = output_path + "figures/"
 
 # output_prefix = output_path + "ex3_prostate_fmo_"
 output_prefix = output_path + "ex3_prostate_fmo_full_"
-fig_prefix = fig_path + "ex3_prostate_fmo_full_"
 init_prefix = output_prefix + "init_"
 final_prefix = output_prefix + "ccp_"
+
+fig_prefix = fig_path + "ex3_prostate_fmo_full_"
 init_fig_prefix = fig_prefix + "init_"
 final_fig_prefix = fig_prefix + "ccp_"
 

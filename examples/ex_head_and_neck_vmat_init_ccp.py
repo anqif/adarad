@@ -8,13 +8,21 @@ from adarad.utilities.plot_utils import *
 from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
 
-input_path = "/home/anqi/Documents/software/adarad/examples/data/"
-output_path = "/home/anqi/Documents/software/adarad/examples/output/"
+SHOW_PLOTS = True
+
+# input_path = "/home/anqi/Documents/software/adarad/examples/data/"
+# output_path = "/home/anqi/Documents/software/adarad/examples/output/"
+input_path = "/home/anqif/adarad/examples/data/"
+output_path = "/home/anqif/adarad/examples/output/"
 fig_path = output_path + "figures/"
 
 output_prefix = output_path + "ex4_head_and_neck_vmat_"
 init_prefix = output_prefix + "init_"
 final_prefix = output_prefix + "ccp_"
+
+fig_prefix = fig_path + "ex4_head_and_neck_vmat_"
+init_fig_prefix = fig_prefix + "init_"
+final_fig_prefix = fig_prefix + "ccp_"
 
 def form_step_xy(x, y, buf = 0, shift = 0):
 	x_shift = x - shift
@@ -107,7 +115,8 @@ def main():
     plt.step(*form_step_xy(np.arange(K), dose_upper[-1, :], buf=0.5), where="mid", lw=1, ls="--", color=colors[1])
     plt.title("Treatment Dose vs. Structure")
     plt.xlim(-xlim_eps, K - 1 + xlim_eps)
-    plt.show()
+    if SHOW_PLOTS:
+        plt.show()
 
     health_bounds_fin = np.zeros(K)
     health_bounds_fin[is_target] = health_upper[-1, is_target]
@@ -116,7 +125,8 @@ def main():
     plt.step(*form_step_xy(np.arange(K), health_bounds_fin, buf=0.5), where="mid", lw=1, ls="--", color=colors[1])
     plt.title("Health Status vs. Structure")
     plt.xlim(-xlim_eps, K - 1 + xlim_eps)
-    plt.show()
+    if SHOW_PLOTS:
+        plt.show()
 
     prob_2a, u_2a, b_2a, h_2a, d_2a, h_lin_dyn_slack_2a, h_lin_bnd_slack_2a = \
         build_scale_lin_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx_ada, b_static, use_dyn_slack=True,
@@ -144,9 +154,9 @@ def main():
 
     # Plot optimal dose and health over time.
     plot_treatment(d_stage_2_init, stepsize=10, bounds=(dose_lower, dose_upper), title="Treatment Dose vs. Time",
-                   color=colors[0], one_idx=True)
+                   color=colors[0], one_idx=True, show=SHOW_PLOTS)
     plot_health(h_stage_2_init, curves=h_curves, stepsize=10, bounds=(health_lower, health_upper),
-                title="Health Status vs. Time", label="Treated", color=colors[0], one_idx=True)
+                title="Health Status vs. Time", label="Treated", color=colors[0], one_idx=True, show=SHOW_PLOTS)
 
     # Stage 2b: Dynamic scaling problem with time-varying factors.
     ccp_max_iter = 20
@@ -188,9 +198,9 @@ def main():
 
     # Plot optimal dose and health over time.
     plot_treatment(d_stage_2, stepsize=10, bounds=(dose_lower, dose_upper), title="Treatment Dose vs. Time",
-                   color=colors[0], one_idx=True, filename=init_prefix + "doses.png")
+                   color=colors[0], one_idx=True, filename=init_fig_prefix + "doses.png", show=SHOW_PLOTS)
     plot_health(h_stage_2, curves=h_curves, stepsize=10, bounds=(health_lower, health_upper), title="Health Status vs. Time",
-                label="Treated", color=colors[0], one_idx=True, filename=init_prefix + "health.png")
+                label="Treated", color=colors[0], one_idx=True, filename=init_fig_prefix + "health.png", show=SHOW_PLOTS)
 
 if __name__ == "__main__":
     main()
