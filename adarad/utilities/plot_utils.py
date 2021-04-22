@@ -326,14 +326,14 @@ def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy =
 	fig.set_size_inches(*figsize)
 	if semilogy:
 		if r_primal is not None:
-			plt.semilogy(range(len(r_primal)), r_primal, label = "Primal", *args, **kwargs)
+			plt.semilogy(range(len(r_primal)), r_primal, label = "Primal Residual", *args, **kwargs)
 		if r_dual is not None:
-			plt.semilogy(range(len(r_dual)), r_dual, label = "Dual", *args, **kwargs)
+			plt.semilogy(range(len(r_dual)), r_dual, label = "Dual Residual", *args, **kwargs)
 	else:
 		if r_primal is not None:
-			plt.plot(range(len(r_primal)), r_primal, label = "Primal", *args, **kwargs)
+			plt.plot(range(len(r_primal)), r_primal, label = "Primal Residual", *args, **kwargs)
 		if r_dual is not None:
-			plt.plot(range(len(r_dual)), r_dual, label = "Dual", *args, **kwargs)
+			plt.plot(range(len(r_dual)), r_dual, label = "Dual Residual", *args, **kwargs)
 
 	plt.legend()
 	plt.xlabel("Iteration")

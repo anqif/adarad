@@ -44,7 +44,7 @@ def main():
     h_prog = health_prog_act(h_0, T, gamma = gamma)
 
     # Collect comparison curves.
-    d_curves = [{"d": d_init, "label": "Treated (Initial Plan)", "kwargs": {"color": colors[2]}}]   # , "linestyle": "dashed"}}]
+    d_curves = [{"d": d_init, "label": "Initial Plan", "kwargs": {"color": colors[2]}}]   # , "linestyle": "dashed"}}]
     h_curves = [{"h": h_init, "label": "Treated (Initial Plan)", "kwargs": {"color": colors[2]}},   # , "linestyle": "dashed"}}]
                 {"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
@@ -56,10 +56,10 @@ def main():
     #             label = "Treated (Final Plan)", color = colors[0], one_idx = True)
 
     plot_residuals(r_primal_admm, r_dual_admm, semilogy=True, filename=output_prefix + "residuals.png")
-    plot_treatment(d_admm, curves = d_curves, stepsize = 20, bounds = (dose_lower, dose_upper), label = "Treated (Final Plan)",
-                   color = colors[0], one_idx = True, filename = output_prefix + "doses.png", figsize = (16,10))
+    plot_treatment(d_admm, curves = d_curves, stepsize = 20, bounds = (dose_lower, dose_upper), label = "Final Plan",
+                   color = colors[0], one_idx = True, filename = output_prefix + "doses.png", figsize = (16,12))
     plot_health(h_admm, curves=h_curves, stepsize=20, bounds=(health_lower, health_upper), label="Treated (Final Plan)",
-                color = colors[0], one_idx = True, filename = output_prefix + "health.png", figsize = (16,10))
+                color = colors[0], one_idx = True, filename = output_prefix + "health.png", figsize = (16,12))
 
 if __name__ == "__main__":
     main()
