@@ -17,12 +17,16 @@ from adarad.utilities.data_utils import health_prog_act
 INIT_FROM_FILE = True
 input_path = "/home/anqi/Documents/software/adarad/examples/data/"
 output_path = "/home/anqi/Documents/software/adarad/examples/output/"
+fig_path = output_path + "figures/"
 
 # output_prefix = output_path + "ex3_prostate_fmo_"
 output_prefix = output_path + "ex3_prostate_fmo_full_"
 init_file = output_prefix + "init_doses.npy"
 final_ccp_prefix = output_prefix + "ccp_"
 final_admm_prefix = output_prefix + "admm_"
+
+fig_prefix = fig_path + "ex3_prostate_fmo_full_"
+final_admm_fig_prefix = fig_prefix + "admm_"
 
 # Beam subproblems.
 def run_beam_proc(pipe, A, beam_lower, beam_upper, dose_upper, dose_lower, rho_init):
@@ -276,10 +280,10 @@ def main():
 
 	plot_treatment(d_admm, curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper), 
 					title = "Treatment Dose vs. Time", label = "Dose Plan (ADMM)", color = colors[0], one_idx = True,
-					filename = final_admm_prefix + "doses.png")
+					filename = final_admm_fig_prefix + "doses.png")
 	plot_health(h_admm, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
 				title = "Health Status vs. Time", label = "Treated (ADMM)", color = colors[0], one_idx = True,
-				filename = final_admm_prefix + "health.png")
+				filename = final_admm_fig_prefix + "health.png")
 
 if __name__ == "__main__":
 	main()

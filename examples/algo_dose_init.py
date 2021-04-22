@@ -8,6 +8,7 @@ from cvxpy import *
 from cvxpy.settings import SOLUTION_PRESENT
 
 from adarad.init_funcs import *
+from adarad.quadratic.dyn_quad_prob import build_dyn_quad_prob
 from adarad.utilities.plot_utils import *
 from adarad.utilities.data_utils import line_integral_mat, health_prog_act
 
@@ -84,14 +85,14 @@ def main():
 	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
 
-	# patient_rx = {"is_target": is_target,
-	# 			  "dose_goal": np.zeros((T,K)),
-	# 			  "dose_weights": np.array((K-1)*[1] + [0.25]),
-	# 			  "health_goal": np.zeros((T,K)),
-	# 			  "health_weights": [np.array([0] + (K-1)*[0.25]), np.array([1] + (K-1)*[0])],
-	# 			  "beam_constrs": {"upper": beam_upper},
-	# 			  "dose_constrs": {"lower": dose_lower, "upper": dose_upper},
-	# 			  "health_constrs": {"lower": health_lower, "upper": health_upper}}
+	patient_rx = {"is_target": is_target,
+				  "dose_goal": np.zeros((T,K)),
+				  "dose_weights": np.array((K-1)*[1] + [0.25]),
+				  "health_goal": np.zeros((T,K)),
+				  "health_weights": [np.array([0] + (K-1)*[0.25]), np.array([1] + (K-1)*[0])],
+				  "beam_constrs": {"upper": beam_upper},
+				  "dose_constrs": {"lower": dose_lower, "upper": dose_upper},
+				  "health_constrs": {"lower": health_lower, "upper": health_upper}}
 
 	# Stage 1: Static beam problem.
 	# Define variables.
@@ -489,8 +490,24 @@ def main():
 	# print("Optimal Dose:", d_main)
 	# print("Optimal Health:", h_main)
 	# print("Optimal Health Slack:", s_main)
-	print("Solve Time:", prob_main.solver_stats.solve_time)
+	print("Solve Time:", ccp_main_solve_time)
 	print("Total Solve Time:", solve_time)
+
+	# Compare with AdaRad package.
+	# prob_main_ada, b_main_ada, h_main_ada, d_main_ada, d_parm_main_ada, h_dyn_slack_main_ada = \
+	# 	build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = h_tayl_slack_weight)
+	# result_main_ada = ccp_solve(prob_main_ada, d_main_ada, d_parm_main_ada, d_stage_2, h_dyn_slack_main_ada, max_iter = ccp_max_iter,
+	# 							ccp_verbose = True, ccp_eps = ccp_eps, solver = "MOSEK", warm_start = True)
+	# if result_main_ada["status"] not in SOLUTION_PRESENT:
+	# 	raise RuntimeError("Main Stage: CCP solve failed with status {0}".format(result_main_ada["status"]))
+	#
+	# print("Compare with AdaRad")
+	# print("Difference in Objective:", np.abs(prob_main.value - prob_main_ada.value))
+	# print("Normed Difference in Beam:", np.linalg.norm(b_main - b_main_ada.value))
+	# print("Normed Difference in Dose:", np.linalg.norm(d_main - d_main_ada.value))
+	# print("Normed Difference in Health:", np.linalg.norm(h.value - h_main_ada.value))
+	# print("Normed Difference in Health Slack (Dynamics):", np.linalg.norm(s_main - h_dyn_slack_main_ada[:,0].value))
+	# print("AdaRad Solve Time:", result_main_ada["solve_time"])
 
 	# Save to file.
 	np.save(final_prefix + "beams.npy", b_main)

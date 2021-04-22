@@ -24,6 +24,10 @@ output_prefix = output_path + "ex3_prostate_fmo_full_"
 init_prefix = output_prefix + "init_"
 final_prefix = output_prefix + "ccp_"
 
+fig_prefix = fig_path + "ex3_prostate_fmo_full_"
+init_fig_prefix = fig_prefix + "init_"
+final_fig_prefix = fig_prefix + "ccp_"
+
 def form_step_xy(x, y, buf = 0, shift = 0):
 	x_shift = x - shift
 	x_buf = np.zeros(x_shift.shape[0] + 2)
@@ -419,9 +423,9 @@ def main():
 
 	# Plot optimal dose and health over time.
 	plot_treatment(d_stage_2, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", 
-				color = colors[0], one_idx = True, filename = init_prefix + "doses.png")
+				color = colors[0], one_idx = True, filename = init_fig_prefix + "doses.png")
 	plot_health(h_stage_2, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time",
-				label = "Treated", color = colors[0], one_idx = True, filename = init_prefix + "health.png")
+				label = "Treated", color = colors[0], one_idx = True, filename = init_fig_prefix + "health.png")
 
 	# raise RuntimeError("Stop 2")
 
@@ -526,9 +530,9 @@ def main():
 
 	# Plot optimal dose and health over time.
 	plot_treatment(d_main, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", one_idx = True, 
-			   filename = final_prefix + "doses.png")
+			   filename = final_fig_prefix + "doses.png")
 	plot_health(h_main, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", 
-			  label = "Treated", color = colors[0], one_idx = True, filename = final_prefix + "health.png")
+			  label = "Treated", color = colors[0], one_idx = True, filename = final_fig_prefix + "health.png")
 
 if __name__ == "__main__":
 	main()
