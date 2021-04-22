@@ -337,7 +337,8 @@ def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy =
 
 	plt.legend()
 	plt.xlabel("Iteration")
-	plt.ylabel("Residual")
+	# plt.ylabel("$||r|| _2$")
+	plt.ylabel("$\ell_2$-norm of Residual")
 	
 	if title:
 		plt.title(title)
