@@ -33,6 +33,7 @@ def main():
     h_0 = patient_bio["health_init"]
 
     T = len(A_list)
+    K = h_0.shape[0]
     dose_lower = patient_rx["dose_constrs"]["lower"]
     dose_upper = patient_rx["dose_constrs"]["upper"]
     health_lower = patient_rx["health_constrs"]["lower"]
@@ -56,8 +57,11 @@ def main():
     #             label = "Treated (Final Plan)", color = colors[0], one_idx = True)
 
     plot_residuals(r_primal_admm, r_dual_admm, semilogy=True, filename=output_prefix + "residuals.png")
-    plot_treatment(d_admm, curves = d_curves, stepsize = 20, bounds = (dose_lower, dose_upper), label = "Final Plan",
-                   color = colors[0], one_idx = True, filename = output_prefix + "doses.png", figsize = (16,12))
+    # plot_treatment(d_admm, curves = d_curves, stepsize = 20, bounds = (dose_lower, dose_upper), label = "Final Plan",
+    #                color = colors[0], one_idx = True, filename = output_prefix + "doses.png", figsize = (16,12))
+    plot_treatment(d_admm, curves = d_curves, stepsize = 20, bounds = (np.zeros((T,K)), np.full((T,K), np.inf)),
+                   label = "Final Plan", color = colors[0], one_idx = True, filename = output_prefix + "doses.png",
+                   figsize = (16,12))
     plot_health(h_admm, curves=h_curves, stepsize=20, bounds=(health_lower, health_upper), label="Treated (Final Plan)",
                 color = colors[0], one_idx = True, filename = output_prefix + "health.png", figsize = (16,12))
 
