@@ -34,6 +34,9 @@ final_fig_prefix = fig_prefix + "admm_"
 if SHOW_PLOTS:
 	matplotlib.use("TKAgg")
 
+fig_prefix = fig_path + "ex3_prostate_fmo_full_"
+final_admm_fig_prefix = fig_prefix + "admm_"
+
 # Beam subproblems.
 def run_beam_proc(pipe, A, beam_lower, beam_upper, dose_upper, dose_lower, rho_init):
 	K, n = A.shape

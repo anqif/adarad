@@ -34,7 +34,7 @@ structures:
       initial : 0
       goal : 0
       weight :
-        under : 1
+        under : 0.1667
         over : 0
       lower_bound : -4.8
     alpha : 1
@@ -52,7 +52,7 @@ structures:
       initial : 0
       goal : 0
       weight :
-        under : 1
+        under : 0.1667
         over : 0
       lower_bound : -4.8
     alpha : 1
@@ -70,7 +70,7 @@ structures:
       initial: 0
       goal: 0
       weight :
-        under : 1
+        under : 0.1667
         over : 0
       lower_bound : -4.8
     alpha : 1
@@ -88,7 +88,7 @@ structures:
       initial : 0
       goal : 0
       weight :
-        under : 1
+        under : 0.1667
         over : 0
       lower_bound: -3.0
     alpha : 1
@@ -106,7 +106,7 @@ structures:
       initial : 0
       goal : 0
       weight :
-        under : 1
+        under : 0.1667
         over : 0
       lower_bound: -3.0
     alpha : 1
@@ -124,7 +124,7 @@ structures:
       initial : 0
       goal : 0
       weight :
-        under : 0.5
+        under : 0.1667
         over : 0
       lower_bound: -6.0
     alpha : 1
