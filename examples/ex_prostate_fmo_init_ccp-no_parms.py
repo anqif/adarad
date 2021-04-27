@@ -13,14 +13,14 @@ from adarad.utilities.plot_utils import *
 from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
 
-SHOW_PLOTS = True
+SHOW_PLOTS = False
 if SHOW_PLOTS:
 	matplotlib.use("TKAgg")
 
 # input_path = "C:/Users/Anqi/Documents/Software/adarad/examples/data/"
 # output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
-input_path = "/home/anqi/Documents/software/adarad/examples/data/"
-output_path = "/home/anqi/Documents/software/adarad/examples/output/"
+input_path = "/home/anqif/adarad/examples/data/"
+output_path = "/home/anqif/adarad/examples/output/"
 fig_path = output_path + "figures/"
 
 # output_prefix = output_path + "ex3_prostate_fmo_"
