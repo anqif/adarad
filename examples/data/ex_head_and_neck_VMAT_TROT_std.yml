@@ -1,6 +1,6 @@
 treatment_length : 35
-# dose_matrix: /media/datdisk3/anqif/test/frac_test/head_and_neck/head_and_neck_17_structs_10125_beams_mean-dose_matrix.npy
-dose_matrix: /home/anqi/Documents/software/adarad/examples/data/head_and_neck/head_and_neck_17_structs_10125_beams_mean-dose_matrix.npy
+dose_matrix: /home/anqif/adarad/examples/data/head_and_neck/head_and_neck_17_structs_10125_beams_mean-dose_matrix.npy
+# dose_matrix: /home/anqi/Documents/software/adarad/examples/data/head_and_neck/head_and_neck_17_structs_10125_beams_mean-dose_matrix.npy
 beams:
   lower_bound : 0
   upper_bound : 38
