@@ -337,7 +337,7 @@ def main():
 	# Warm start.
 	u.value = np.array(T*[u_stage_2_init])
 	h.value = h_stage_2_init
-	d_init = d_stage_2_init
+	d_lin = d_stage_2_init
 	h_tayl_slack.value = s_stage_2_init
 
 	obj_old = np.inf
@@ -349,11 +349,11 @@ def main():
 		# Health dynamics for PTV.
 		constrs_var = []
 		for t in range(T):
-			# For PTV, use first-order Taylor expansion of dose around d_init.
-			# constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_init[t,is_target], multiply(beta[t,is_target], d_init[t,is_target])) \
+			# For PTV, use first-order Taylor expansion of dose around d_lin.
+			# constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_lin[t,is_target], multiply(beta[t,is_target], d_lin[t,is_target])) \
 			#											   + gamma[t,is_target] - h_tayl_slack[t,is_target]]
-			constrs_var += [h[t+1,is_target] == h[t,is_target] - u[t]*multiply(alpha[t,is_target], d_static[t,is_target]).value - multiply(2*u[t]*d_static[t,is_target] - d_init[t,is_target],
-												multiply(beta[t,is_target], d_init[t,is_target])) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
+			constrs_var += [h[t+1,is_target] == h[t,is_target] - u[t]*multiply(alpha[t,is_target], d_static[t,is_target]).value - multiply(2*u[t]*d_static[t,is_target] - d_lin[t,is_target],
+												multiply(beta[t,is_target], d_lin[t,is_target])) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
 		constrs = constrs_con + constrs_var
 		prob_2b = Problem(Minimize(obj), constrs)
 
@@ -371,7 +371,7 @@ def main():
 			break
 
 		obj_old = prob_2b.value
-		d_init = d.value
+		d_lin = d.value
 	end = time()
 	prob_2b_runtime = end - start
 
@@ -473,7 +473,7 @@ def main():
 	h_tayl_slack.value = s_stage_2
 
 	obj_old = np.inf
-	d_init = d_stage_2
+	d_lin = d_stage_2
 	prob_main_setup_time = 0
 	prob_main_solve_time = 0
 
@@ -483,8 +483,8 @@ def main():
 		constrs_var = []
 		for t in range(T):
 			# For PTV, use first-order Taylor expansion of dose around d_parm.
-			constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_init[t,is_target], \
-												multiply(beta[t,is_target], d_init[t,is_target])) + gamma[t, is_target] - h_tayl_slack[t, is_target]]
+			constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_lin[t,is_target], \
+												multiply(beta[t,is_target], d_lin[t,is_target])) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
 		constrs = constrs_con + constrs_var
 		prob_main = Problem(Minimize(obj), constrs)
 
@@ -502,7 +502,7 @@ def main():
 			break
 
 		obj_old = prob_main.value
-		d_init = d.value
+		d_lin = d.value
 	end = time()
 	prob_main_runtime = end - start
 
