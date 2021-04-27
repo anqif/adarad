@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.use("TKAgg")
+# matplotlib.use("TKAgg")
 from time import time
 
 import cvxpy
@@ -12,6 +12,10 @@ from adarad.init_funcs import *
 from adarad.utilities.plot_utils import *
 from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
+
+SHOW_PLOTS = True
+if SHOW_PLOTS:
+	matplotlib.use("TKAgg")
 
 # input_path = "C:/Users/Anqi/Documents/Software/adarad/examples/data/"
 # output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
@@ -278,9 +282,9 @@ def main():
 
 	# Plot optimal dose and health over time.
 	plot_treatment(d_stage_2_init, stepsize = 10, bounds = (dose_lower, dose_upper), title="Treatment Dose vs. Time",
-				   color = colors[0], one_idx = True)
+				   color = colors[0], one_idx = True, show = SHOW_PLOTS)
 	plot_health(h_stage_2_init, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
-				title = "Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True)
+				title = "Health Status vs. Time", label = "Treated", color = colors[0], one_idx = True, show = SHOW_PLOTS)
 
 	# raise RuntimeError("Stop 1")
 
@@ -425,9 +429,9 @@ def main():
 
 	# Plot optimal dose and health over time.
 	plot_treatment(d_stage_2, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", 
-				color = colors[0], one_idx = True, filename = init_fig_prefix + "doses.png")
+				color = colors[0], one_idx = True, filename = init_fig_prefix + "doses.png", show = SHOW_PLOTS)
 	plot_health(h_stage_2, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time",
-				label = "Treated", color = colors[0], one_idx = True, filename = init_fig_prefix + "health.png")
+				label = "Treated", color = colors[0], one_idx = True, filename = init_fig_prefix + "health.png", show = SHOW_PLOTS)
 
 	# raise RuntimeError("Stop 2")
 
@@ -535,9 +539,9 @@ def main():
 
 	# Plot optimal dose and health over time.
 	plot_treatment(d_main, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Treatment Dose vs. Time", one_idx = True, 
-			   filename = final_fig_prefix + "doses.png")
+			   filename = final_fig_prefix + "doses.png", show = SHOW_PLOTS)
 	plot_health(h_main, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", 
-			  label = "Treated", color = colors[0], one_idx = True, filename = final_fig_prefix + "health.png")
+			  label = "Treated", color = colors[0], one_idx = True, filename = final_fig_prefix + "health.png", show = SHOW_PLOTS)
 
 if __name__ == "__main__":
 	main()
