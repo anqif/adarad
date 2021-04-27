@@ -175,7 +175,8 @@ def main():
 	plt.step(*form_step_xy(np.arange(K), dose_upper[-1,:], buf = 0.5), where = "mid", lw = 1, ls = "--", color = colors[1])
 	plt.title("Treatment Dose vs. Structure")
 	plt.xlim(-xlim_eps, K-1+xlim_eps)
-	plt.show()
+	if SHOW_PLOTS:
+		plt.show()
 
 	health_bounds_fin = np.zeros(K)
 	health_bounds_fin[is_target] = health_upper[-1,is_target]
@@ -184,7 +185,8 @@ def main():
 	plt.step(*form_step_xy(np.arange(K), health_bounds_fin, buf = 0.5), where = "mid", lw = 1, ls = "--", color = colors[1])
 	plt.title("Health Status vs. Structure")
 	plt.xlim(-xlim_eps, K-1+xlim_eps)
-	plt.show()
+	if SHOW_PLOTS:
+		plt.show()
 
 	# raise RuntimeError("Stop 0")
 
