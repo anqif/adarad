@@ -13,22 +13,22 @@ from adarad.utilities.plot_utils import *
 from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
 
-SHOW_PLOTS = True
+SHOW_PLOTS = False
 if SHOW_PLOTS:
 	matplotlib.use("TKAgg")
 
 # input_path = "C:/Users/Anqi/Documents/Software/adarad/examples/data/"
 # output_path = "C:/Users/Anqi/Documents/Software/adarad/examples/output/"
-input_path = "/home/anqi/Documents/software/adarad/examples/data/"
-output_path = "/home/anqi/Documents/software/adarad/examples/output/"
+input_path = "/home/anqif/adarad/examples/data/"
+output_path = "/home/anqif/adarad/examples/output/"
 fig_path = output_path + "figures/"
 
 # output_prefix = output_path + "ex3_prostate_fmo_"
-output_prefix = output_path + "ex3_prostate_fmo_full_no_parms"
+output_prefix = output_path + "ex3_prostate_fmo_full_no_parms_"
 init_prefix = output_prefix + "init_"
 final_prefix = output_prefix + "ccp_"
 
-fig_prefix = fig_path + "ex3_prostate_fmo_full_no_parms"
+fig_prefix = fig_path + "ex3_prostate_fmo_full_no_parms_"
 init_fig_prefix = fig_prefix + "init_"
 final_fig_prefix = fig_prefix + "ccp_"
 
@@ -153,21 +153,6 @@ def main():
 	print("Setup Time:", prob_1.solver_stats.setup_time)
 	print("Solve Time:", prob_1.solver_stats.solve_time)
 
-	# Compare with AdaRad package.
-	# prob_1_ada, b_1_ada, h_1_ada, d_1_ada, h_actual_1_ada, h_slack_1_ada = \
-	# 	build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx_ada, t_static = 0, slack_oar_weight = h_lo_slack_weight)
-	# prob_1_ada.solve(solver = "MOSEK")
-	# if prob_1_ada.status not in SOLUTION_PRESENT:
-	# 	raise RuntimeError("AdaRad Stage 1: Solver failed with status {0}".format(prob_1_ada.status))
-	#
-	# print("Compare with AdaRad")
-	# print("Difference in Objective:", np.abs(prob_1.value - prob_1_ada.value))
-	# print("Normed Difference in Beam:", np.linalg.norm(b_static - b_1_ada.value))
-	# print("Normed Difference in Dose:", np.linalg.norm(d_stage_1 - d_1_ada.value))
-	# print("Normed Difference in Health:", np.linalg.norm(h.value - h_1_ada.value))
-	# print("Normed Difference in Health Slack:", np.linalg.norm(h_lo_slack.value - h_slack_1_ada[~is_target].value))
-	# print("AdaRad Solve Time:", prob_1_ada.solver_stats.solve_time)
-
 	# Plot optimal dose and health per structure.
 	xlim_eps = 0.5
 	plt.bar(range(K), d_stage_1, width = 0.8)
@@ -175,7 +160,8 @@ def main():
 	plt.step(*form_step_xy(np.arange(K), dose_upper[-1,:], buf = 0.5), where = "mid", lw = 1, ls = "--", color = colors[1])
 	plt.title("Treatment Dose vs. Structure")
 	plt.xlim(-xlim_eps, K-1+xlim_eps)
-	plt.show()
+	if SHOW_PLOTS:
+		plt.show()
 
 	health_bounds_fin = np.zeros(K)
 	health_bounds_fin[is_target] = health_upper[-1,is_target]
@@ -184,7 +170,8 @@ def main():
 	plt.step(*form_step_xy(np.arange(K), health_bounds_fin, buf = 0.5), where = "mid", lw = 1, ls = "--", color = colors[1])
 	plt.title("Health Status vs. Structure")
 	plt.xlim(-xlim_eps, K-1+xlim_eps)
-	plt.show()
+	if SHOW_PLOTS:
+		plt.show()
 
 	# raise RuntimeError("Stop 0")
 
@@ -263,23 +250,6 @@ def main():
 	print("Setup Time:", prob_2a.solver_stats.setup_time)
 	print("Solve Time:", prob_2a.solver_stats.solve_time)
 
-	# Compare with AdaRad package.
-	# prob_2a_ada, u_2a_ada, b_2a_ada, h_2a_ada, d_2a_ada, h_lin_dyn_slack_2a_ada, h_lin_bnd_slack_2a_ada = \
-	# 	build_scale_lin_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx_ada, b_1_ada.value, use_dyn_slack = True,
-	# 		slack_dyn_weight = h_tayl_slack_weight, use_bnd_slack = True, slack_bnd_weight = h_lo_slack_weight)
-	# prob_2a_ada.solve(solver = "MOSEK")
-	# if prob_2a_ada.status not in SOLUTION_PRESENT:
-	# 	raise RuntimeError("AdaRad Stage 2a: Solver failed with status {0}".format(prob_2a_ada.status))
-	#
-	# print("Compare with AdaRad")
-	# print("Difference in Objective:", np.abs(prob_2a.value - prob_2a_ada.value))
-	# print("Normed Difference in Beam:", np.linalg.norm(u_stage_2_init*b_static - b_2a_ada.value))
-	# print("Normed Difference in Dose:", np.linalg.norm(d_stage_2_init - d_2a_ada.value))
-	# print("Normed Difference in Health:", np.linalg.norm(h.value - h_2a_ada.value))
-	# print("Normed Difference in Health Slack (Dynamics):", np.linalg.norm(s_stage_2_init - h_lin_dyn_slack_2a_ada.value))
-	# print("Normed Difference in Health Slack (Bound):", np.linalg.norm(h_lo_slack.value - h_lin_bnd_slack_2a_ada[:,~is_target].value))
-	# print("AdaRad Solve Time:", prob_2a_ada.solver_stats.solve_time)
-
 	# Plot optimal dose and health over time.
 	plot_treatment(d_stage_2_init, stepsize = 10, bounds = (dose_lower, dose_upper), title="Treatment Dose vs. Time",
 				   color = colors[0], one_idx = True, show = SHOW_PLOTS)
@@ -335,7 +305,7 @@ def main():
 	# Warm start.
 	u.value = np.array(T*[u_stage_2_init])
 	h.value = h_stage_2_init
-	d_init = d_stage_2_init
+	d_lin = d_stage_2_init
 	h_tayl_slack.value = s_stage_2_init
 
 	obj_old = np.inf
@@ -347,11 +317,11 @@ def main():
 		# Health dynamics for PTV.
 		constrs_var = []
 		for t in range(T):
-			# For PTV, use first-order Taylor expansion of dose around d_init.
-			# constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_init[t,is_target], multiply(beta[t,is_target], d_init[t,is_target])) \
+			# For PTV, use first-order Taylor expansion of dose around d_lin.
+			# constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_lin[t,is_target], multiply(beta[t,is_target], d_lin[t,is_target])) \
 			#											   + gamma[t,is_target] - h_tayl_slack[t,is_target]]
-			constrs_var += [h[t+1,is_target] == h[t,is_target] - u[t]*multiply(alpha[t,is_target], d_static[t,is_target]).value - multiply(2*u[t]*d_static[t,is_target] - d_init[t,is_target],
-												multiply(beta[t,is_target], d_init[t,is_target])) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
+			constrs_var += [h[t+1,is_target] == h[t,is_target] - u[t]*multiply(alpha[t,is_target], d_static[t,is_target]).value - multiply(2*u[t]*d_static[t,is_target] - d_lin[t,is_target],
+												multiply(beta[t,is_target], d_lin[t,is_target])) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
 		constrs = constrs_con + constrs_var
 		prob_2b = Problem(Minimize(obj), constrs)
 
@@ -369,7 +339,7 @@ def main():
 			break
 
 		obj_old = prob_2b.value
-		d_init = d.value
+		d_lin = d.value
 	end = time()
 	prob_2b_runtime = end - start
 
@@ -401,25 +371,6 @@ def main():
 	print("Total Solve Time:", solve_time)
 	print("Total (Setup + Solve) Time:", setup_time + solve_time)
 	print("Total Runtime:", run_time)
-
-	# Compare with AdaRad package.
-	# prob_2b_ada, u_2b_ada, b_2b_ada, h_2b_ada, d_2b_ada, d_parm_2b_ada, h_dyn_slack_2b_ada, h_bnd_slack_2b_ada = \
-	# 	build_scale_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx_ada, b_static, use_dyn_slack = True,
-	# 		slack_dyn_weight = h_tayl_slack_weight, use_bnd_slack = True, slack_bnd_weight = h_lo_slack_weight)
-	#
-	# result_2b_ada = ccp_solve(prob_2b_ada, d_2b_ada, d_parm_2b_ada, d_2a_ada.value, h_dyn_slack_2b_ada, max_iter = ccp_max_iter,
-	# 					ccp_eps = ccp_eps, solver = "MOSEK", warm_start = True)
-	# if result_2b_ada["status"] not in SOLUTION_PRESENT:
-	# 	raise RuntimeError("Stage 2b: CCP solve failed with status {0}".format(result_2b_ada["status"]))
-	#
-	# print("Compare with AdaRad")
-	# print("Difference in Objective:", np.abs(prob_2b.value - prob_2b_ada.value))
-	# print("Normed Difference in Beam:", np.linalg.norm(b_stage_2 - b_2b_ada.value))
-	# print("Normed Difference in Dose:", np.linalg.norm(d_stage_2 - d_2b_ada.value))
-	# print("Normed Difference in Health:", np.linalg.norm(h.value - h_2b_ada.value))
-	# print("Normed Difference in Health Slack (Dynamics):", np.linalg.norm(s_stage_2 - h_dyn_slack_2b_ada.value))
-	# print("Normed Difference in Health Slack (Bound):", np.linalg.norm(h_lo_slack.value - h_bnd_slack_2b_ada[:,~is_target].value))
-	# print("AdaRad Solve Time:", result_2b_ada["solve_time"])
 
 	# Save to file.
 	np.save(init_prefix + "beams.npy", b_stage_2)
@@ -471,7 +422,7 @@ def main():
 	h_tayl_slack.value = s_stage_2
 
 	obj_old = np.inf
-	d_init = d_stage_2
+	d_lin = d_stage_2
 	prob_main_setup_time = 0
 	prob_main_solve_time = 0
 
@@ -481,8 +432,8 @@ def main():
 		constrs_var = []
 		for t in range(T):
 			# For PTV, use first-order Taylor expansion of dose around d_parm.
-			constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_init[t,is_target], \
-												multiply(beta[t,is_target], d_init[t,is_target])) + gamma[t, is_target] - h_tayl_slack[t, is_target]]
+			constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_lin[t,is_target], \
+												multiply(beta[t,is_target], d_lin[t,is_target])) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
 		constrs = constrs_con + constrs_var
 		prob_main = Problem(Minimize(obj), constrs)
 
@@ -500,7 +451,7 @@ def main():
 			break
 
 		obj_old = prob_main.value
-		d_init = d.value
+		d_lin = d.value
 	end = time()
 	prob_main_runtime = end - start
 
