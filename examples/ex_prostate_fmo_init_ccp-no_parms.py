@@ -3,6 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 # matplotlib.use("TKAgg")
 from time import time
+# from timeit import default_timer as time
 
 import cvxpy
 from cvxpy import *
@@ -318,10 +319,10 @@ def main():
 		constrs_var = []
 		for t in range(T):
 			# For PTV, use first-order Taylor expansion of dose around d_lin.
-			# constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_lin[t,is_target], multiply(beta[t,is_target], d_lin[t,is_target])) \
-			#											   + gamma[t,is_target] - h_tayl_slack[t,is_target]]
-			constrs_var += [h[t+1,is_target] == h[t,is_target] - u[t]*multiply(alpha[t,is_target], d_static[t,is_target]).value - multiply(2*u[t]*d_static[t,is_target] - d_lin[t,is_target],
-												multiply(beta[t,is_target], d_lin[t,is_target])) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
+			# constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_lin[t,is_target], \
+			# 										multiply(beta[t,is_target], d_lin[t,is_target]).value) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
+			constrs_var += [h[t+1,is_target] == h[t,is_target] - u[t]*multiply(alpha[t,is_target], d_static[t,is_target]).value - multiply(2*u[t]*d_static[t,is_target] - d_lin[t,is_target], \
+													multiply(beta[t,is_target], d_lin[t,is_target]).value) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
 		constrs = constrs_con + constrs_var
 		prob_2b = Problem(Minimize(obj), constrs)
 
@@ -433,7 +434,7 @@ def main():
 		for t in range(T):
 			# For PTV, use first-order Taylor expansion of dose around d_parm.
 			constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d[t,is_target]) - multiply(2*d[t,is_target] - d_lin[t,is_target], \
-												multiply(beta[t,is_target], d_lin[t,is_target])) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
+													multiply(beta[t,is_target], d_lin[t,is_target]).value) + gamma[t,is_target] - h_tayl_slack[t,is_target]]
 		constrs = constrs_con + constrs_var
 		prob_main = Problem(Minimize(obj), constrs)
 

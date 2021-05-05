@@ -1,9 +1,12 @@
+import os.path
+from time import time
+# from timeit import default_timer as time
+
 import numpy as np
 import numpy.linalg as LA
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use("TKAgg")
-from time import time
 
 import cvxpy
 from cvxpy import *
@@ -115,10 +118,10 @@ def main():
 	for t in range(T):
 		# For OAR, use linear-quadratic model with lossless relaxation.
 		constrs_con += [h[t+1,~is_target] <= h[t,~is_target] - multiply(alpha[t,~is_target], d_tld[t,~is_target])
-						- multiply(beta[t,~is_target], square(d_tld[t,~is_target])) + gamma[t,~is_target]]
+							- multiply(beta[t,~is_target], square(d_tld[t,~is_target])) + gamma[t,~is_target]]
 	# Additional constraints.
 	constrs_con += [d_tld <= dose_upper, d_tld >= dose_lower,
-				h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
+					h[1:,is_target] <= health_upper[:,is_target], h[1:,~is_target] >= health_lower[:,~is_target]]
 	prob_h_dict = {"h": h, "h_slack": h_slack, "d_tld": d_tld}
 
 	# Initialize main loop.
@@ -139,8 +142,8 @@ def main():
 		procs[-1].start()
 
 	# Solve using ADMM.
-	admm_max_iter = 20   # 1000
-	eps_abs = 1e-6   # Absolute stopping tolerance.
+	admm_max_iter = 1000   # 20, 1000
+	eps_abs = 1e-2   # 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 
 	# print("ADMM: Solving dynamic problem...")
@@ -181,9 +184,9 @@ def main():
 			for t in range(T):
 				# For PTV, use first-order Taylor expansion of dose around d_parm.
 				constrs_var += [h[t+1,is_target] == h[t,is_target] - multiply(alpha[t,is_target], d_tld[t,is_target])
-													- multiply(2*d_tld[t,is_target] - d_tayl_val[t,is_target],
-													multiply(beta[t,is_target], d_tayl_val[t,is_target]))
-													+ gamma[t,is_target] - h_slack[t,is_target]]
+														- multiply(2*d_tld[t,is_target] - d_tayl_val[t,is_target],
+														multiply(beta[t,is_target], d_tayl_val[t,is_target]).value)
+														+ gamma[t,is_target] - h_slack[t,is_target]]
 			prob_h = Problem(Minimize(obj), constrs_con + constrs_var)
 
 			# Solve linearized problem.
@@ -270,10 +273,16 @@ def main():
 	plot_residuals(r_prim_admm, r_dual_admm, semilogy = True)
 
 	# Compare optimal health and dose over time.
-	h_ccp = np.load(final_ccp_prefix + "health.npy")
-	d_ccp = np.load(final_ccp_prefix + "doses.npy")
-	h_curves += [{"h": h_ccp, "label": "Treated (CCP)", "kwargs": {"color": colors[2]}}]
-	d_curves  = [{"d": d_ccp, "label": "Dose Plan (CCP)", "kwargs": {"color": colors[2]}}]
+	h_ccp_path = final_ccp_prefix + "health.npy"
+	if os.path.exists(h_ccp_path):
+		h_ccp = np.load(h_ccp_path)
+		h_curves += [{"h": h_ccp, "label": "Treated (CCP)", "kwargs": {"color": colors[2]}}]
+
+	d_curves = []
+	d_ccp_path = final_ccp_prefix + "doses.npy"
+	if os.path.exists(d_ccp_path):
+		d_ccp = np.load(d_ccp_path)
+		d_curves += [{"d": d_ccp, "label": "Dose Plan (CCP)", "kwargs": {"color": colors[2]}}]
 
 	plot_treatment(d_admm, curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper), 
 					title = "Treatment Dose vs. Time", label = "Dose Plan (ADMM)", color = colors[0], one_idx = True,
