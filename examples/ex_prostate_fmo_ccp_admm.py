@@ -89,7 +89,7 @@ def main():
 	h_prog = health_prog_act(h_init, T, gamma=gamma)
 	h_curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
-	# CCP: Dynamic optimal control problem.
+	# CCP: Dynamic optimal control seq_cvx.
 	# Define variables.
 	b = Variable((T,n), nonneg=True)
 	d = vstack([A_list[t] @ b[t] for t in range(T)])
@@ -129,13 +129,13 @@ def main():
 	max_iter_ccp = 15
 	eps_ccp = 1e-3
 
-	print("CCP: Solving dynamic problem...")
+	print("CCP: Solving dynamic seq_cvx...")
 	k = 0
 	solve_time_ccp = 0
 	obj_old = np.inf
 	d_parm.value = d_init_ccp
 	while k < max_iter_ccp:
-		# Solve linearized problem.
+		# Solve linearized seq_cvx.
 		prob_ccp.solve(solver = "MOSEK", warm_start = True)
 		if prob_ccp.status not in SOLUTION_PRESENT:
 			raise RuntimeError("CCP: Solver failed on iteration {0} with status {1}".format(k, prob_ccp.status))
@@ -181,7 +181,7 @@ def main():
 	# plot_health(h_ccp, curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "CCP: Health Status vs. Time",
 	# 			label = "Treated", color = colors[0], one_idx = True, filename = final_ccp_prefix + "health.png")
 
-	# ADMM: Dynamic optimal control problem.
+	# ADMM: Dynamic optimal control seq_cvx.
 	rho = Parameter(pos=True)
 	u = Parameter((T,K))
 
@@ -238,7 +238,7 @@ def main():
 	eps_abs = 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 
-	print("ADMM: Solving dynamic problem...")
+	print("ADMM: Solving dynamic seq_cvx...")
 	rho.value = rho_init
 	u.value = u_init
 	d_tld_var_val = d_init_admm
@@ -267,7 +267,7 @@ def main():
 		prob_h_dict["d_tayl_parm"].value = d_tld_var_val_old   # TODO: What dose point should we linearize PTV health dynamics around?
 
 		for l in range(max_iter_ccp):
-			# Solve linearized problem.
+			# Solve linearized seq_cvx.
 			prob_h_dict["prob"].solve(solver = "MOSEK", warm_start = True)
 			if prob_h_dict["prob"].status not in SOLUTION_PRESENT:
 				raise RuntimeError("ADMM CCP: Solver failed on ADMM iteration {0}, CCP iteration {1} with status {2}".format(k, l, prob_h_dict["prob"].status))

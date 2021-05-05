@@ -16,10 +16,3 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with AdaRad. If not, see <http://www.gnu.org/licenses/>.
 """
-
-from adarad.case import Case
-from adarad.medicine.patient import Anatomy, Structure
-from adarad.medicine.physics import Physics, BeamSet
-from adarad.medicine.prescription import Prescription, StructureRx
-from adarad.visualization.plotter import CasePlotter
-# from adarad.optimization.admm.quad_admm_funcs import dyn_quad_treat_admm, mpc_quad_treat_admm

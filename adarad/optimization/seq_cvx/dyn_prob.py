@@ -1,9 +1,8 @@
-import cvxpy
 import numpy as np
 from cvxpy import *
 
-from adarad.problem.penalty import dose_penalty, health_penalty
-from adarad.problem.constraint import rx_to_quad_constrs, rx_to_constrs
+from adarad.optimization.penalty import dose_penalty, health_penalty
+from adarad.optimization.constraint import rx_to_quad_constrs, rx_to_constrs
 
 # Full objective function.
 def dyn_quad_obj(d_var, h_var, patient_rx):
@@ -25,7 +24,7 @@ def dyn_quad_obj(d_var, h_var, patient_rx):
 def form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_taylor = True, use_slack = False, slack_weight = 0):
     T_treat, K = d.shape
 
-    # Health dynamics for treatment stage.
+    # Health dynamics for optimization stage.
     h_lin = h[:-1] - multiply(alpha, d) + gamma[:T_treat]
     h_quad = h_lin - multiply(beta, square(d))
 
@@ -91,7 +90,7 @@ def form_taylor_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov
     return form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov = T_recov, use_taylor = True, 
                             use_slack = use_slack, slack_weight = slack_weight)
 
-# Construct optimal control problem.
+# Construct optimal control seq_cvx.
 def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_slack = False, slack_weight = 0):
     T_treat = len(A_list)
     K, n = A_list[0].shape

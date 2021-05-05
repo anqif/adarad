@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 
-from adarad.medicine.case import Case
+from adarad.case import Case
 from adarad.visualization.history import RunRecord
 from adarad.utilities.plot_utils import plot_single, plot_slacks, plot_residuals
 from adarad.utilities.data_utils import line_segments
@@ -233,7 +233,7 @@ class CasePlotter(object):
 
     def plot_treatment(self, result, plot_rec_div=False, plot_saved=False, saved_plans_kw=dict(), *args, **kwargs):
         d = result.doses if isinstance(result, RunRecord) else result
-        T_treat_lab = self.T_treat if plot_rec_div else None   # Vertical line dividing treatment/recovery phases.
+        T_treat_lab = self.T_treat if plot_rec_div else None   # Vertical line dividing optimization/recovery phases.
         bounds = self.case.prescription.dose_bounds_to_mats()
 
         curves = []
@@ -245,7 +245,7 @@ class CasePlotter(object):
 
     def plot_health(self, result, plot_rec_div=False, plot_untreated=True, plot_saved=False, untreated_kw=dict(), saved_plans_kw=dict(), *args, **kwargs):
         h = result.health if isinstance(result, RunRecord) else result
-        T_treat_lab = self.T_treat if plot_rec_div else None   # Vertical line dividing treatment/recovery phases.
+        T_treat_lab = self.T_treat if plot_rec_div else None   # Vertical line dividing optimization/recovery phases.
         bounds = self.case.prescription.health_bounds_to_mats()
 
         curves = []

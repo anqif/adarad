@@ -40,7 +40,7 @@ def main(datapath = ""):
     #                             admm_max_iter=500, use_admm=True)
     print("Solve status: {}".format(status2))
 
-    # Compare old and new treatment plans.
+    # Compare old and new optimization plans.
     caseviz.plot_treatment(result2, stepsize=10, label="New Plan", plot_saved=True)
     caseviz.plot_health(result2, stepsize=10, label="New Plan", plot_saved=True)
 
@@ -54,4 +54,4 @@ def main(datapath = ""):
     #                     untreated_kw=untreated_kw, saved_plans_kw=saved_plans_kw, color=colors[2])
 
 if __name__ == '__main__':
-    main(datapath = "/home/anqi/Documents/software/adarad/examples/data/")
+    main(datapath = "/home/anqi/Documents/software/adarad/examples/data/ex3_implement/")

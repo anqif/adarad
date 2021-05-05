@@ -171,7 +171,7 @@ def plot_beams(b, angles, offsets, n_grid, stepsize = 10, maxcols = 5, standardi
 # Plot health curves.
 plot_health = lambda h, *args, **kwargs: plot_single(h, "h", one_shift = False, *args, **kwargs)
 
-# Plot treatment curves.
+# Plot optimization curves.
 plot_treatment = lambda d, *args, **kwargs: plot_single(d, "d", one_shift = True, *args, **kwargs)
 
 def plot_stacked(v_list, maxcols = 5, T_treat = None, title = None, ylim = None, show = True, filename = None, figsize = (16,16), *args, **kwargs):
@@ -288,7 +288,7 @@ def plot_internal(h, axs, varname, curves = [], stepsize = 10, maxcols = 5, T_tr
 		# ax.set_title("${0}_{{{1}}}(t)$".format(varname, indices[i]))
 		# ax.set_title("$s = {{{0}}}$".format(indices[i]))
 		
-		# Label transition from treatment to recovery period.
+		# Label transition from optimization to recovery period.
 		xt = np.arange(T_start, T_end - 1, stepsize)
 		xt = np.append(xt, T_end - 1)
 		if T_treat is not None and T_treat < T:

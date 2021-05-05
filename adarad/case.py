@@ -6,8 +6,8 @@ from adarad.medicine.patient import Anatomy, Structure
 from adarad.medicine.prescription import Prescription, StructureRx
 from adarad.visualization.history import RunRecord
 
-from adarad.quad_funcs import dyn_quad_treat
-from adarad.quad_admm_funcs import dyn_quad_treat_admm
+from adarad.optimization.seq_cvx.quad_funcs import dyn_quad_treat
+from adarad.optimization.admm.quad_admm_funcs import dyn_quad_treat_admm
 from adarad.utilities.data_utils import check_slack_parms
 from adarad.utilities.read_utils import *
 

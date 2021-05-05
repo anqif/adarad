@@ -2,12 +2,12 @@ import cvxpy.settings as cvxpy_s
 from cvxpy import SolverError
 from collections import Counter
 
-from adarad.ccp_funcs import ccp_solve
-from adarad.init_funcs import dyn_init_dose
-from adarad.problem.constraint import rx_slice
+from adarad.optimization.ccp_funcs import ccp_solve
+from adarad.optimization.dose_init.dose_init import dyn_init_dose
+from adarad.optimization.constraint import rx_slice
 
-from adarad.problem.dyn_quad_prob import build_dyn_quad_prob, dyn_quad_obj
-from adarad.problem.slack_quad_prob import build_dyn_slack_quad_prob
+from adarad.optimization.seq_cvx.dyn_prob import build_dyn_quad_prob, dyn_quad_obj
+from adarad.optimization.seq_cvx.slack_prob import build_dyn_slack_quad_prob
 from adarad.utilities.data_utils import *
 
 def print_quad_results(result, is_target, slack_dict=None):
@@ -54,7 +54,7 @@ def dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 	if ccp_verbose:
 		print("Initial dose per fraction: {0}".format(d_init[0]))
 	
-	# Build problem for treatment stage.
+	# Build seq_cvx for optimization stage.
 	prob, b, h, d, d_parm, h_dyn_slack = build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov,
 															 use_slack, slack_weight)
 	result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, ccp_verbose, full_hist, max_iter = max_iter, ccp_eps = ccp_eps, 
@@ -144,7 +144,7 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 		# Drop prescription for previous periods.
 		rx_cur = rx_slice(patient_rx, t_s, T_treat, squeeze = False)
 
-		# Solve optimal control problem from current period forward.
+		# Solve optimal control seq_cvx from current period forward.
 		T_left = T_treat - t_s
 		if use_mpc_slack:
 			prob, b, h, d, d_parm, h_dyn_slack = build_dyn_slack_quad_prob(T_left * [A_list[t_s]], np.row_stack(T_left * [alpha[t_s]]), np.row_stack(T_left * [beta[t_s]]),
@@ -176,7 +176,7 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 		# 	result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, *args, **kwargs)
 		# 	status = result["status"]
 		# 	if status not in cvxpy_s.SOLUTION_PRESENT:
-		# 		raise RuntimeError("Solver failed on slack problem with status {0}".format(status))
+		# 		raise RuntimeError("Solver failed on slack seq_cvx with status {0}".format(status))
 		
 		if mpc_verbose:
 			print("\nStart Time:", t_s)

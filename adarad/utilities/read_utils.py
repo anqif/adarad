@@ -14,7 +14,7 @@ def load_dose_matrix(data, T, K):
         A_list = T * [A_list]
     elif isinstance(A_list, list):
         if len(A_list) != T:
-            raise ValueError("List of dose matrices must equal treatment length")
+            raise ValueError("List of dose matrices must equal optimization length")
 
         m, n = A_list[0].shape
         for A in A_list:

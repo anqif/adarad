@@ -1,17 +1,15 @@
-import numpy as np
 import matplotlib
 matplotlib.use("TKAgg")
 
-from adarad.init_funcs import dyn_init_dose
-from adarad.quad_funcs import dyn_quad_treat
-from adarad.quad_admm_funcs import dyn_quad_treat_admm
+from adarad.optimization.dose_init.dose_init import dyn_init_dose
+from adarad.optimization.seq_cvx.quad_funcs import dyn_quad_treat
 from adarad.utilities.plot_utils import *
 from adarad.utilities.data_utils import line_integral_mat, health_prog_act
 
 from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
-	T = 20           # Length of treatment.
+	T = 20           # Length of optimization.
 	n_grid = 1000
 	offset = 5       # Displacement between beams (pixels).
 	n_angle = 20     # Number of angles.
@@ -82,7 +80,7 @@ def main(figpath = "", datapath = ""):
 	print("Initial dose per fraction: {0}".format(d_init[0]))
 	h_equal = health_prog_act(h_init, T, alpha, beta, gamma, d_init, patient_rx["is_target"])
 
-	# Plot initial beam, health, and treatment curves.
+	# Plot initial beam, health, and optimization curves.
 	plot_beams(res_init["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
 			   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Initial Stage: Beam Intensities vs. Time", one_idx = True,
 			   structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
@@ -90,11 +88,11 @@ def main(figpath = "", datapath = ""):
 				label = "Treated", color = colors[0], one_idx = True)
 	plot_treatment(d_init, stepsize = 10, bounds = (dose_lower, dose_upper), title = "Initial Stage: Treatment Dose vs. Time", one_idx = True)
 
-	# Dynamic treatment.
+	# Dynamic optimization.
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
 								 max_iter = 15, solver = "MOSEK", ccp_verbose = True, d_init = d_init)
 
-	# Plot dynamic beam, health, and treatment curves.
+	# Plot dynamic beam, health, and optimization curves.
 	h_curves += [{"h": h_equal, "label": "Initial", "kwargs": {"color": colors[2]}}]
 	d_curves  = [{"d": d_init, "label": "Initial", "kwargs": {"color": colors[2]}}]
 	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,

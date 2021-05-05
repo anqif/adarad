@@ -69,7 +69,7 @@ health_lower[:,1:] = H_other
 health_upper[T_treat-1,0] = H_target
 # patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
 
-# Dynamic treatment using CCP.
+# Dynamic optimization using CCP.
 res_dynamic = bed_ccp_dyn_treat(A_list, alphas, betas, h_init, patient_rx, T_recov, health_map = health_map, solver = "MOSEK")
 print("Dynamic Treatment using CCP")
 print("Status:", res_dynamic["status"])
@@ -77,6 +77,6 @@ print("Objective:", res_dynamic["obj"])
 print("Solve Time:", res_dynamic["solve_time"])
 print("Iterations:", res_dynamic["num_iters"])
 
-# Plot dynamic health and treatment curves.
+# Plot dynamic health and optimization curves.
 plot_health(res_dynamic["health"], curves = curves, stepsize = 10, T_treat = T_treat)
 plot_treatment(res_dynamic["doses"], stepsize = 10, T_treat = T_treat)

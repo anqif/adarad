@@ -53,7 +53,7 @@ def run_beam_proc(pipe, A, beam_lower, beam_upper, dose_upper, dose_lower, rho):
 		c_penalty = (rho/2.0)*sum_squares(d - d_tld_val - u_val)
 		prob = Problem(Minimize(d_penalty + c_penalty), constrs)
 
-		# Solve problem.
+		# Solve seq_cvx.
 		prob.solve(solver = "MOSEK", warm_start = True)
 		if prob.status not in SOLUTION_PRESENT:
 			raise RuntimeError("ADMM: Solver failed on beam subproblem with status {0}".format(prob.status))
@@ -100,7 +100,7 @@ def main():
 	h_prog = health_prog_act(h_init, T, gamma=gamma)
 	h_curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
-	# ADMM: Dynamic optimal control problem.
+	# ADMM: Dynamic optimal control seq_cvx.
 	# Health subproblem.
 	h = Variable((T+1,K))
 	d_tld = Variable((T,K), nonneg=True)
@@ -145,8 +145,8 @@ def main():
 	eps_abs = 1e-2   # 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 
-	# print("ADMM: Solving dynamic problem...")
-	print("ADMM: Solving problem with rho = {0}".format(rho))
+	# print("ADMM: Solving dynamic seq_cvx...")
+	print("ADMM: Solving seq_cvx with rho = {0}".format(rho))
 	u_val = u_init
 	d_tld_var_val = d_init_admm
 	d_tld_var_val_old = d_init_admm
@@ -188,7 +188,7 @@ def main():
 														+ gamma[t,is_target] - h_slack[t,is_target]]
 			prob_h = Problem(Minimize(obj), constrs_con + constrs_var)
 
-			# Solve linearized problem.
+			# Solve linearized seq_cvx.
 			prob_h.solve(solver = "MOSEK", warm_start = True)
 			if prob_h.status not in SOLUTION_PRESENT:
 				raise RuntimeError("ADMM CCP: Solver failed on ADMM iteration {0}, CCP iteration {1} with status {2}".format(k, l, prob_h.status))

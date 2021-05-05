@@ -1,10 +1,7 @@
-import numpy as np
 import matplotlib
 matplotlib.use("TKAgg")
-from matplotlib.colors import LogNorm
 
-from adarad.quad_funcs import dyn_quad_treat, mpc_quad_treat
-from adarad.quad_admm_funcs import dyn_quad_treat_admm, mpc_quad_treat_admm
+from adarad.optimization.seq_cvx.quad_funcs import dyn_quad_treat, mpc_quad_treat
 from adarad.utilities.plot_utils import *
 from adarad.utilities.data_utils import line_integral_mat, health_prog_act
 
@@ -13,7 +10,7 @@ from example_utils import simple_structures, simple_colormap
 def main(figpath = "", datapath = ""):
 	np.random.seed(1)
 
-	T = 20           # Length of treatment.
+	T = 20           # Length of optimization.
 	n_grid = 1000
 	offset = 5       # Displacement between beams (pixels).
 	n_angle = 20     # Number of angles.
@@ -101,7 +98,7 @@ def main(figpath = "", datapath = ""):
 	patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
 	# patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
-	# Dynamic treatment.
+	# Dynamic optimization.
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_slack = True,
 								 slack_weight = 1e4, max_iter = 15, solver = "MOSEK", ccp_verbose = True)
 	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map,
@@ -117,7 +114,7 @@ def main(figpath = "", datapath = ""):
 	h_viol_dyn = health_viol(res_dynamic["health"][1:], patient_rx["health_constrs"], is_target)
 	print("Average Health Violation:", h_viol_dyn)
 
-	# Plot dynamic beam, health, and treatment curves.
+	# Plot dynamic beam, health, and optimization curves.
 	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1, cmap = transp_cmap(plt.cm.Reds, upper = 0.5),
 				title = "Beam Intensities vs. Time", one_idx = True, structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
 	plot_health(res_dynamic["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), title = "Health Status vs. Time", one_idx = True)
@@ -128,7 +125,7 @@ def main(figpath = "", datapath = ""):
 	# plot_health(res_dynamic["health"], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper), one_idx = True, filename = figpath + "ex2_health.png")
 	# plot_treatment(res_dynamic["doses"], stepsize = 10, bounds = (dose_lower, dose_upper), one_idx = True, filename = figpath + "ex2_doses.png")
 
-	# Dynamic treatment with MPC.
+	# Dynamic optimization with MPC.
 	print("\nStarting MPC algorithm...")
 	res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
 							 ccp_slack_weight = 1e4, use_mpc_slack = True, mpc_slack_weights = 1e4, max_iter = 100,   # max_iter = 15,
@@ -150,12 +147,12 @@ def main(figpath = "", datapath = ""):
 	h_viol_mpc = health_viol(res_mpc["health"][1:], patient_rx["health_constrs"], is_target)
 	print("Average Health Violation:", h_viol_mpc)
 
-	# Compare one-shot dynamic and MPC treatment results.
+	# Compare one-shot dynamic and MPC optimization results.
 	d_curves = [{"d": res_dynamic["doses"], "label": "Naive", "kwargs": {"color": colors[0]}}]
 	h_naive = [{"h": res_dynamic["health"], "label": "Treated (Naive)", "kwargs": {"color": colors[0]}}]
 	h_curves = h_naive + h_curves
 
-	# Plot dynamic MPC beam, health, and treatment curves.
+	# Plot dynamic MPC beam, health, and optimization curves.
 	plot_beams(res_mpc["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
 			   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Beam Intensities vs. Time", one_idx = True,
 			   structures = (x_grid, y_grid, regions), struct_kw = struct_kw)

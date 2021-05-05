@@ -5,16 +5,16 @@ from time import time
 from multiprocessing import Process, Pipe
 from collections import Counter
 
-from adarad.ccp_funcs import ccp_solve
-from adarad.init_funcs import dyn_init_dose
-from adarad.problem.constraint import rx_slice
+from adarad.optimization.ccp_funcs import ccp_solve
+from adarad.optimization.dose_init.dose_init import dyn_init_dose
+from adarad.optimization.constraint import rx_slice
 
-from adarad.problem.dyn_quad_prob import dyn_quad_obj
-from adarad.problem.slack_quad_prob_admm import *
+from adarad.optimization.seq_cvx.dyn_prob import dyn_quad_obj
+from adarad.optimization.admm.slack_prob_admm import *
 from adarad.utilities.data_utils import *
 
 def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
-    # Construct proximal dose problem.
+    # Construct proximal dose seq_cvx.
     prob_dose, b, d = build_dyn_slack_quad_prob_dose_period(A, patient_rx)
     d_new = Parameter(d.shape, value = np.zeros(d.shape))
     u = Parameter(d.shape, value = np.zeros(d.shape))
@@ -27,7 +27,7 @@ def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
         # Compute and send d_t^k.
         prox.solve(*args, **kwargs)
         if prox.status not in cvxpy_s.SOLUTION_PRESENT:
-            raise RuntimeError("Solver failed on slack problem with status {0}".format(prox.status))
+            raise RuntimeError("Solver failed on slack seq_cvx with status {0}".format(prox.status))
         pipe.send((d.value, prox.solver_stats.solve_time, prox.status))
 
         # Receive \tilde d_t^k.
@@ -96,7 +96,7 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         procs += [Process(target=run_slack_quad_dose_worker, args=(remote, A_list[t], rx_cur, rho) + args, kwargs=kwargs)]
         procs[-1].start()
 
-    # Proximal health problem.
+    # Proximal health seq_cvx.
     prob_health, h, d_tld, d_parm, h_dyn_slack = build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx,
                                                     T_treat, T_recov, use_ccp_slack, ccp_slack_weight, mpc_slack_weights)
     d_new = Parameter(d_tld.shape, value=np.zeros(d_tld.shape))
@@ -132,7 +132,7 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         result = ccp_solve(prox, d_tld, d_parm, d_init, max_iter = ccp_max_iter, ccp_eps = ccp_eps, ccp_verbose = ccp_verbose,
                            *args, **kwargs)
         if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
-            raise RuntimeError("CCP solve failed on slack problem with status {0}".format(result["status"]))
+            raise RuntimeError("CCP solve failed on slack seq_cvx with status {0}".format(result["status"]))
         solve_time += result["solve_time"]
         status_list.append(result["status"])
         for t in range(T_treat):

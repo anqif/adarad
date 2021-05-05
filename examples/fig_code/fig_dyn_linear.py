@@ -6,7 +6,7 @@ from adarad.utilities.data_utils import health_prognosis
 from adarad.utilities.plot_utils import plot_health
 
 def main(savepath = ""):
-    T = 20   # Length of treatment.
+    T = 20   # Length of optimization.
     K = 2    # Number of structures.
 
     # Health dynamics matrices.

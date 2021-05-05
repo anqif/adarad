@@ -5,17 +5,17 @@ from time import time
 from multiprocessing import Process, Pipe
 from collections import Counter
 
-from adarad.init_funcs import dyn_init_dose
-from adarad.ccp_funcs import ccp_solve
-from adarad.problem.constraint import rx_slice
+from adarad.optimization.dose_init.dose_init import dyn_init_dose
+from adarad.optimization.ccp_funcs import ccp_solve
+from adarad.optimization.constraint import rx_slice
 
-from adarad.quad_admm_slack_funcs import dyn_quad_treat_admm_slack
-from adarad.problem.dyn_quad_prob import dyn_quad_obj
-from adarad.problem.dyn_quad_prob_admm import *
+from adarad.optimization.admm.quad_admm_slack_funcs import dyn_quad_treat_admm_slack
+from adarad.optimization.seq_cvx.dyn_prob import dyn_quad_obj
+from adarad.optimization.admm.dyn_prob_admm import *
 from adarad.utilities.data_utils import *
 
 def run_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
-    # Construct proximal dose problem.
+    # Construct proximal dose seq_cvx.
     prob_dose, b, d = build_dyn_quad_prob_dose_period(A, patient_rx)
     d_new = Parameter(d.shape, value = np.zeros(d.shape))
     u = Parameter(d.shape, value = np.zeros(d.shape))
@@ -101,7 +101,7 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
         procs += [Process(target=run_quad_dose_worker, args=(remote, A_list[t], rx_cur, rho) + args, kwargs=kwargs)]
         procs[-1].start()
 
-    # Proximal health problem.
+    # Proximal health seq_cvx.
     prob_health, h, d_tld, d_parm, h_dyn_slack = build_dyn_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat,
                                                                             T_recov, use_slack, slack_weight)
     d_new = Parameter(d_tld.shape, value=np.zeros(d_tld.shape))
@@ -246,7 +246,7 @@ def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
         # Drop prescription for previous periods.
         rx_cur = rx_slice(patient_rx, t_s, T_treat, squeeze=False)
 
-        # Solve optimal control problem from current period forward.
+        # Solve optimal control seq_cvx from current period forward.
         # TODO: Warm start next ADMM solve, or better yet, rewrite so no teardown/rebuild process between ADMM solves.
         T_left = T_treat - t_s
         if use_mpc_slack:

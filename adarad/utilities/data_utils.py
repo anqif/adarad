@@ -272,7 +272,7 @@ def check_quad_vectors(alpha, beta, gamma, K, T_treat, T_recov = 0, is_range = F
 	return alpha, beta, gamma
 
 def check_prog_parms(alpha, beta, gamma, doses, K, T, is_range = False):
-	# Defaults to no treatment.
+	# Defaults to no optimization.
 	if doses is None:
 		if alpha is None and beta is None:
 			alpha = np.zeros((T, K))
@@ -323,11 +323,11 @@ def check_slack_parms(use_slack, slack_weight, default_slack=1):
 			warn("use_slack is False, but slack_weight is non-zero")
 	return use_slack, slack_weight
 
-# Health prognosis with a given treatment.
+# Health prognosis with a given optimization.
 def health_prognosis(h_init, T, F_list, G_list = None, q_list = None, r_list = None, doses = None, health_map = lambda h,d,t: h):
 	K = h_init.shape[0]
 
-	# Defaults to no treatment.
+	# Defaults to no optimization.
 	if doses is None:
 		if G_list is None and q_list is None:
 			G_list = T*[np.zeros((K,K))]

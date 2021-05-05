@@ -35,7 +35,7 @@ def ccp_solve(prob, d, d_parm, d_init = None, h_slack = Constant(0), ccp_verbose
 		if ccp_verbose and k % iter_print == 0:
 			print("Iteration:", k)
 
-		# Solve linearized problem.
+		# Solve linearized seq_cvx.
 		d_parm.value = d_cur
 		prob.solve(*args, **kwargs)
 		if prob.status not in cvxpy_s.SOLUTION_PRESENT:

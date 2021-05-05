@@ -1,16 +1,14 @@
-import numpy as np
 import matplotlib
 matplotlib.use("TKAgg")
 
-from adarad.quad_funcs import dyn_quad_treat
-from adarad.quad_admm_funcs import dyn_quad_treat_admm
+from adarad.optimization.seq_cvx.quad_funcs import dyn_quad_treat
 from adarad.utilities.plot_utils import *
 from adarad.utilities.data_utils import line_integral_mat, health_prog_act
 
 from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
-	T = 20           # Length of treatment.
+	T = 20           # Length of optimization.
 	n_grid = 1000
 	offset = 5       # Displacement between beams (pixels).
 	n_angle = 20     # Number of angles.
@@ -75,7 +73,7 @@ def main(figpath = "", datapath = ""):
 	patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
 	# patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
-	# Dynamic treatment.
+	# Dynamic optimization.
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
 								 max_iter = 15, solver = "MOSEK", ccp_verbose = True, auto_init = False, full_hist = True)
 	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
@@ -87,7 +85,7 @@ def main(figpath = "", datapath = ""):
 	print("Solve Time:", res_dynamic["solve_time"])
 	print("Iterations:", res_dynamic["num_iters"])
 
-	# Plot dynamic beam, health, and treatment curves.
+	# Plot dynamic beam, health, and optimization curves.
 	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True)
 	# plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
 	#		   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Beam Intensities vs. Time", one_idx = True,

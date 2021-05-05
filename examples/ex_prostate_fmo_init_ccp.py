@@ -1,14 +1,10 @@
-import numpy as np
 import matplotlib
-import matplotlib.pyplot as plt
+
 matplotlib.use("TKAgg")
 from time import time
 
-import cvxpy
-from cvxpy import *
 from cvxpy.settings import SOLUTION_PRESENT
 
-from adarad.init_funcs import *
 from adarad.utilities.plot_utils import *
 from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
@@ -84,7 +80,7 @@ def main():
 				  	  "dose_constrs": {"lower": dose_lower, "upper": dose_upper},
 				  	  "health_constrs": {"lower": health_lower, "upper": health_upper}}
 
-	# Stage 1: Static beam problem.
+	# Stage 1: Static beam seq_cvx.
 	# Define variables.
 	b = Variable((n,), nonneg=True)
 	d = A_list[t_s] @ b
@@ -123,8 +119,8 @@ def main():
 	constrs = [b <= np.sum(beam_upper, axis=0), d <= np.sum(dose_upper, axis=0), h_ptv <= health_upper[-1,is_target],
 			   h_oar >= health_lower[-1,~is_target] - h_lo_slack]
 
-	# Solve problem.
-	print("Stage 1: Solving problem...")
+	# Solve seq_cvx.
+	print("Stage 1: Solving seq_cvx...")
 	prob_1 = Problem(Minimize(obj), constrs)
 	prob_1.solve(solver = "MOSEK")
 	if prob_1.status not in SOLUTION_PRESENT:
@@ -183,7 +179,7 @@ def main():
 
 	# raise RuntimeError("Stop 0")
 
-	# Stage 2a: Dynamic scaling problem with constant factor.
+	# Stage 2a: Dynamic scaling seq_cvx with constant factor.
 	u = Variable(nonneg=True)
 	b = u*b_static
 	# d = vstack([A_list[t] @ b for t in range(T)])
@@ -232,8 +228,8 @@ def main():
 	# Warm start.
 	u.value = 1
 
-	# Solve problem.
-	print("Stage 2: Solving initial problem...")
+	# Solve seq_cvx.
+	print("Stage 2: Solving initial seq_cvx...")
 	prob_2a = Problem(Minimize(obj), constrs)
 	prob_2a.solve(solver = "MOSEK", warm_start = True)
 	if prob_2a.status not in SOLUTION_PRESENT:
@@ -283,7 +279,7 @@ def main():
 
 	# raise RuntimeError("Stop 1")
 
-	# Stage 2b: Dynamic scaling problem with time-varying factors.
+	# Stage 2b: Dynamic scaling seq_cvx with time-varying factors.
 	# Define variables.
 	u = Variable((T,), nonneg=True)
 	b = vstack([u[t]*b_static for t in range(T)])
@@ -332,7 +328,7 @@ def main():
 	prob_2b = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.
-	print("Stage 2: Solving dynamic problem with CCP...")
+	print("Stage 2: Solving dynamic seq_cvx with CCP...")
 	ccp_max_iter = 20
 	ccp_eps = 1e-3
 
@@ -348,7 +344,7 @@ def main():
 
 	start = time()
 	for k in range(ccp_max_iter):
-		# Solve linearized problem.
+		# Solve linearized seq_cvx.
 		prob_2b.solve(solver = "MOSEK", warm_start = True)
 		if prob_2b.status not in SOLUTION_PRESENT:
 			raise RuntimeError("Stage 2 CCP: Solver failed on iteration {0} with status {1}".format(k, prob_2b.status))
@@ -428,7 +424,7 @@ def main():
 
 	# raise RuntimeError("Stop 2")
 
-	# Main Stage: Dynamic optimal control problem.
+	# Main Stage: Dynamic optimal control seq_cvx.
 	# Define variables.
 	b = Variable((T,n), nonneg=True)
 	d = vstack([A_list[t] @ b[t] for t in range(T)])
@@ -460,7 +456,7 @@ def main():
 	prob_main = Problem(Minimize(obj), constrs)
 
 	# Solve using CCP.
-	print("Main Stage: Solving dynamic problem with CCP...")
+	print("Main Stage: Solving dynamic seq_cvx with CCP...")
 	ccp_max_iter = 20
 	ccp_eps = 1e-3
 
@@ -476,7 +472,7 @@ def main():
 
 	start = time()
 	for k in range(ccp_max_iter):
-		# Solve linearized problem.
+		# Solve linearized seq_cvx.
 		prob_main.solve(solver = "MOSEK", warm_start = True)
 		if prob_main.status not in SOLUTION_PRESENT:
 			raise RuntimeError("Main Stage CCP: Solver failed on iteration {0} with status {1}".format(k, prob_main.status))

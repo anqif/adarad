@@ -98,7 +98,7 @@ def main():
 	h_prog = health_prog_act(h_init, T, gamma=gamma)
 	h_curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
-	# ADMM: Dynamic optimal control problem.
+	# ADMM: Dynamic optimal control seq_cvx.
 	rho = Parameter(pos=True)
 	u = Parameter((T,K))
 
@@ -157,8 +157,8 @@ def main():
 	eps_abs = 1e-6   # Absolute stopping tolerance.
 	eps_rel = 1e-3   # Relative stopping tolerance.
 
-	# print("ADMM: Solving dynamic problem...")
-	print("ADMM: Solving problem with rho = {0}".format(rho_init))
+	# print("ADMM: Solving dynamic seq_cvx...")
+	print("ADMM: Solving seq_cvx with rho = {0}".format(rho_init))
 	rho.value = rho_init
 	u.value = u_init
 	d_tld_var_val = d_init_admm
@@ -189,7 +189,7 @@ def main():
 		prob_h_dict["d_tayl_parm"].value = d_tld_var_val_old   # TODO: What dose point should we linearize PTV health dynamics around?
 
 		for l in range(max_iter_ccp):
-			# Solve linearized problem.
+			# Solve linearized seq_cvx.
 			prob_h_dict["prob"].solve(solver = "MOSEK", warm_start = True)
 			if prob_h_dict["prob"].status not in SOLUTION_PRESENT:
 				raise RuntimeError("ADMM CCP: Solver failed on ADMM iteration {0}, CCP iteration {1} with status {2}".format(k, l, prob_h_dict["prob"].status))

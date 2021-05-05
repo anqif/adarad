@@ -1,10 +1,10 @@
 from cvxpy import *
 
-from adarad.problem.dyn_quad_prob import dyn_quad_obj
-from adarad.problem.penalty import rx_to_slack_quad_penalty
-from adarad.problem.constraint import rx_to_constrs
+from adarad.optimization.seq_cvx.dyn_prob import dyn_quad_obj
+from adarad.optimization.penalty import rx_to_slack_quad_penalty
+from adarad.optimization.constraint import rx_to_constrs
 
-# Construct optimal control problem with slack health/dose constraints.
+# Construct optimal control seq_cvx with slack health/dose constraints.
 def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_h_dyn_slack = False,
                               h_dyn_slack_weight = 0, h_bnd_slack_weights = 1):
     T_treat = len(A_list)
@@ -21,7 +21,7 @@ def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_
     # Objective function.
     obj = dyn_quad_obj(d, h, patient_rx)
 
-    # Health dynamics for treatment stage.
+    # Health dynamics for optimization stage.
     h_lin = h[:-1] - multiply(alpha, d) + gamma[:T_treat]
     h_quad = h_lin - multiply(beta, square(d))
     h_taylor = h_lin - multiply(multiply(beta, d_parm), 2*d - d_parm)
@@ -68,6 +68,6 @@ def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_
             obj += rx_to_slack_quad_penalty(h_r, patient_rx["recov_constrs"], patient_rx["is_target"], h_bnd_slack_weights)
         constrs += constrs_r
 
-    # Final problem.
+    # Final seq_cvx.
     prob = Problem(Minimize(obj), constrs)
     return prob, b, h, d, d_parm, h_dyn_slack

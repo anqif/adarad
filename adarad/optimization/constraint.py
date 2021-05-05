@@ -156,3 +156,74 @@ def rx_to_quad_constrs(expr, rx_dict, is_target, struct_dim = 1, slack_lower = 0
         if c_upper is not None:
             constrs.append(c_upper)
     return constrs
+
+# Health bound constraints for PTV.
+def rx_to_ptv_constrs(h_ptv, rx_dict_ptv, slack_upper = 0):
+    constrs = []
+
+    # Lower bound.
+    if "lower" in rx_dict_ptv and not np.all(np.isneginf(rx_dict_ptv["lower"])):
+        raise ValueError("Lower bound must be negative infinity for all targets")
+
+    # Upper bound.
+    if "upper" in rx_dict_ptv:
+        c_upper = rx_to_upper_constrs(h_ptv, rx_dict_ptv["upper"], only_ptv = True, slack = slack_upper)
+        if c_upper is not None:
+            constrs.append(c_upper)
+    return constrs
+
+# Health bound constraints for OAR.
+def rx_to_oar_constrs(h_oar, rx_dict_oar, slack_lower = 0):
+    constrs = []
+
+    # Lower bound.
+    if "lower" in rx_dict_oar:
+        c_lower = rx_to_lower_constrs(h_oar, rx_dict_oar["lower"], only_oar = True, slack = slack_lower)
+        if c_lower is not None:
+            constrs.append(c_lower)
+
+    # Upper bound.
+    if "upper" in rx_dict_oar and not np.all(np.isinf(rx_dict_oar["upper"])):
+        raise ValueError("Upper bound must be infinity for all non-targets")
+    return constrs
+
+# def rx_to_oar_constrs_slack(h_oar, rx_dict_oar):
+#     if "upper" in rx_dict_oar and not np.all(np.isinf(rx_dict_oar["upper"])):
+#         raise ValueError("Upper bound must be infinity for all non-targets")
+#
+#     constrs = []
+#     h_slack = Constant(0)
+#     if "lower" in rx_dict_oar:
+#         rx_lower = rx_dict_oar["lower"]
+#         if np.any(rx_lower == np.inf):
+#             raise ValueError("Lower bound cannot be infinity")
+#
+#         if np.isscalar(rx_lower):
+#             if np.isfinite(rx_lower):
+#                 h_slack = Variable(h_oar.shape, nonneg=True, name="OAR health lower bound slack")
+#                 constrs.append(h_oar >= rx_lower - h_slack)
+#         else:
+#             if rx_lower.shape != h_oar.shape:
+#                 raise ValueError("rx_lower must have dimensions {0}".format(h_oar.shape))
+#             is_finite = np.isfinite(rx_lower)
+#             if np.any(is_finite):
+#                 h_slack = Variable(h_oar.shape, nonneg=True, name="OAR health lower bound slack")
+#                 constrs.append(h_oar[is_finite] >= rx_lower[is_finite] - h_slack[is_finite])
+#     return constrs, h_slack
+
+def constr_sum_upper(expr, upper, T_treat):
+    n = expr.shape[0]
+    if np.isscalar(upper):
+        if np.isfinite(upper):
+            return [expr <= T_treat * upper]
+        else:
+            return []
+    elif upper.shape == (T_treat, n):
+        upper_sum = np.sum(upper, axis = 0)
+        is_finite = np.isfinite(upper_sum)
+        if np.any(is_finite):
+            return [expr[is_finite] <= upper_sum[is_finite]]
+        else:
+            return []
+    else:
+        raise TypeError("Upper bound must be a scalar or array with dimensions ({0},{1})".format(T_treat, n))

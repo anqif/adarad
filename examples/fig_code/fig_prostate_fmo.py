@@ -18,7 +18,7 @@ output_prefix = output_path + "ex3_"
 def main():
     # Import data.
     patient_bio, patient_rx, visuals = yaml_to_dict(data_path + "ex_prostate_FMO_stanford.yml")
-    d_init = np.load(init_prefix + "doses.npy")   # Post-initialization heuristic.
+    d_init = np.load(init_prefix + "doses.npy")   # Post-dose_init heuristic.
     h_init = np.load(init_prefix + "health.npy")
     d_admm = np.load(admm_prefix + "doses.npy")   # Final ADMM output.
     h_admm = np.load(admm_prefix + "health.npy")

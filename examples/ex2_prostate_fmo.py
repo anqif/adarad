@@ -1,15 +1,11 @@
-import numpy as np
-import matplotlib
 # matplotlib.use("TKAgg")
 
-from adarad.quad_funcs import dyn_quad_treat
-from adarad.quad_admm_funcs import dyn_quad_treat_admm
+from adarad.optimization.seq_cvx.quad_funcs import dyn_quad_treat
 
 from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
 from adarad.utilities.plot_utils import *
 
-from example_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	# Import data.
@@ -37,7 +33,7 @@ def main(figpath = "", datapath = ""):
 	h_prog = health_prog_act(h_init, T, gamma = gamma)
 	curves = [{"h": h_prog, "label": "Untreated", "kwargs": {"color": colors[1]}}]
 
-	# Dynamic treatment.
+	# Dynamic optimization.
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
 								 max_iter = 15, solver = "MOSEK", ccp_verbose = True)
 	# res_dynamic = dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, use_slack = True, slack_weight = 1e4,
@@ -54,7 +50,7 @@ def main(figpath = "", datapath = ""):
 	if "health_slacks" in res_dynamic:
 		plot_slacks(res_dynamic["health_slacks"], show = False, filename = figpath + figprefix + "slacks.png")
 
-	# Plot dynamic health and treatment curves.
+	# Plot dynamic health and optimization curves.
 	if "primal" in res_dynamic and "dual" in res_dynamic:
 		plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True, show = False, filename = figpath + figprefix + "residuals.png")
 	plot_health(res_dynamic["health"], curves = curves, stepsize = 10, bounds = (health_lower, health_upper), label = "Treated", 

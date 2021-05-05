@@ -1,7 +1,30 @@
 import cvxpy
 import numpy as np
 from cvxpy import *
-from collections import defaultdict
+
+# Pos penalty function.
+def pos_penalty(var, goal=None, weight=None):
+    if goal is None:
+        goal = np.zeros(var.shape)
+    if weight is None:
+        weight = np.ones(var.shape)
+    # if weight.shape[1] != var.shape[0]:
+    #    raise ValueError("weight must have {0} columns".format(var.shape[0]))
+    if np.any(weight < 0):
+        raise ValueError("weight must be nonnegative")
+    return weight @ pos(var - goal)
+
+# Neg penalty function.
+def neg_penalty(var, goal=None, weight=None):
+    if goal is None:
+        goal = np.zeros(var.shape)
+    if weight is None:
+        weight = np.ones(var.shape)
+    # if weight.shape[1] != var.shape[0]:
+    #    raise ValueError("weight must have {0} columns".format(var.shape[0]))
+    if np.any(weight < 0):
+        raise ValueError("weight must be nonnegative")
+    return weight @ neg(var - goal)
 
 # Sum-of-squares penalty function.
 def square_penalty(var, goal=None, weights=None):
