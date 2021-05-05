@@ -1,19 +1,16 @@
-import numpy as np
 import numpy.linalg as LA
 import cvxpy.settings as cvxpy_s
 
 from time import time
 from multiprocessing import Process, Pipe
-from collections import defaultdict, Counter
+from collections import Counter
 
 from adarad.ccp_funcs import ccp_solve
 from adarad.init_funcs import dyn_init_dose
-from adarad.mpc_funcs import print_results
-from adarad.problem.dyn_prob import rx_slice
+from adarad.problem.constraint import rx_slice
 
-from adarad.quadratic.dyn_quad_prob import dyn_quad_obj
-from adarad.quadratic.slack_quad_prob import slack_quad_penalty
-from adarad.quadratic.slack_quad_prob_admm import *
+from adarad.problem.dyn_quad_prob import dyn_quad_obj
+from adarad.problem.slack_quad_prob_admm import *
 from adarad.utilities.data_utils import *
 
 def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):

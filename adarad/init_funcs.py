@@ -1,12 +1,14 @@
-import cvxpy
 import numpy as np
 from warnings import warn
-import cvxpy.settings as cvxpy_s
+
+import cvxpy
 from cvxpy import *
+import cvxpy.settings as cvxpy_s
 
 from adarad.ccp_funcs import ccp_solve
-from adarad.problem.dyn_prob import *
-from adarad.quadratic.dyn_quad_prob import dyn_quad_obj, get_constrs_by_struct, rx_to_quad_constrs
+from adarad.problem.dyn_quad_prob import dyn_quad_obj
+from adarad.problem.penalty import dose_penalty, health_penalty
+from adarad.problem.constraint import *
 from adarad.utilities.data_utils import check_quad_vectors
 
 # Pos penalty function.
@@ -59,8 +61,8 @@ def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, u
     prob_1.solve(*args, **kwargs)
     if prob_1.status not in cvxpy_s.SOLUTION_PRESENT:
         raise RuntimeError("Stage 1: Solver failed with status {0}".format(prob_1.status))
-    setup_time += prob_1.solver_stats.setup_time
-    solve_time += prob_1.solver_stats.solve_time
+    setup_time += prob_1.solver_stats.setup_time if prob_1.solver_stats.setup_time else 0
+    solve_time += prob_1.solver_stats.solve_time if prob_1.solver_stats.solve_time else 0
     # b_static = b.value/T_treat   # Save optimal static beams.
     b_static = b.value
 
@@ -73,8 +75,8 @@ def dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, u
     prob_2a.solve(*args, **kwargs)
     if prob_2a.status not in cvxpy_s.SOLUTION_PRESENT:
         raise RuntimeError("Stage 2a: Initial solve failed with status {0}".format(prob_2a.status))
-    setup_time += prob_2a.solver_stats.setup_time
-    solve_time += prob_2a.solver_stats.solve_time
+    setup_time += prob_2a.solver_stats.setup_time if prob_2a.solver_stats.setup_time else 0
+    solve_time += prob_2a.solver_stats.solve_time if prob_2a.solver_stats.solve_time else 0
     d_init = d.value
     if init_verbose:
         print("Stage 2a: Optimal scaling factor = {0}".format(u.value))

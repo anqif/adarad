@@ -1,10 +1,7 @@
-import numpy as np
-import cvxpy
 from cvxpy import *
-from collections import defaultdict
 
-from adarad.problem.dyn_prob import dose_penalty, health_penalty, rx_to_constrs
-from adarad.quadratic.slack_quad_prob import rx_to_slack_quad_penalty
+from adarad.problem.penalty import dose_penalty, health_penalty, rx_to_slack_quad_penalty
+from adarad.problem.constraint import rx_to_constrs
 
 def build_dyn_slack_quad_prob_dose(A_list, patient_rx):
     T_treat = len(A_list)

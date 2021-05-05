@@ -2,7 +2,8 @@ import cvxpy
 import numpy as np
 from cvxpy import *
 
-from adarad.problem.dyn_prob import dose_penalty, health_penalty, rx_to_lower_constrs, rx_to_upper_constrs, rx_to_constrs
+from adarad.problem.penalty import dose_penalty, health_penalty
+from adarad.problem.constraint import rx_to_quad_constrs, rx_to_constrs
 
 # Full objective function.
 def dyn_quad_obj(d_var, h_var, patient_rx):
@@ -20,71 +21,6 @@ def dyn_quad_obj(d_var, h_var, patient_rx):
         h_penalty = health_penalty(h_var[t + 1], patient_rx["health_goal"][t], patient_rx["health_weights"])
         penalties.append(d_penalty + h_penalty)
     return sum(penalties)
-
-# Select constraint bound matrices by structure index.
-def get_constrs_by_struct(constrs, struct_idx, struct_dim = 1):
-    if struct_dim not in [0, 1]:
-        raise ValueError("struct_dim must be either 0 or 1")
-
-    constrs_s = {}
-    for key in constrs.keys():
-        if np.isscalar(constrs[key]):
-            constrs_s[key] = constrs[key]
-        else:
-            arr = constrs[key].copy()
-            constrs_s[key] = arr[struct_idx] if struct_dim == 0 else arr[:,struct_idx]
-    return constrs_s
-
-# Extract constraints from patient prescription.
-def rx_to_quad_constrs(expr, rx_dict, is_target, struct_dim = 1, slack_lower = 0, slack_upper = 0):
-    if struct_dim not in [0, 1]:
-        raise ValueError("struct_dim must be either 0 or 1")
-    is_slack_lo_scalar = slack_lower.is_scalar() if isinstance(slack_lower, Expression) else np.isscalar(slack_lower)
-    is_slack_hi_scalar = slack_upper.is_scalar() if isinstance(slack_upper, Expression) else np.isscalar(slack_upper)
-    constrs = []
-
-    # Lower bound.
-    if "lower" in rx_dict:
-        # rx_lower = rx_dict["lower"]
-        if struct_dim == 0:
-            rx_lower_ptv = rx_dict["lower"][is_target]
-            rx_lower_oar = rx_dict["lower"][~is_target]
-            slack_lower_oar = slack_lower if is_slack_lo_scalar else slack_lower[~is_target]
-            expr_oar = expr[~is_target]
-        else:
-            rx_lower_ptv = rx_dict["lower"][:,is_target]
-            rx_lower_oar = rx_dict["lower"][:,~is_target]
-            slack_lower_oar = slack_lower if is_slack_lo_scalar else slack_lower[:,~is_target]
-            expr_oar = expr[:,~is_target]
-
-        if not np.all(np.isneginf(rx_lower_ptv)):
-            raise ValueError("Lower bound must be negative infinity for all targets")
-
-        c_lower = rx_to_lower_constrs(expr_oar, rx_lower_oar, only_oar = True, slack = slack_lower_oar)
-        if c_lower is not None:
-            constrs.append(c_lower)
-
-    # Upper bound.
-    if "upper" in rx_dict:
-        # rx_upper = rx_dict["upper"]
-        if struct_dim == 0:
-            rx_upper_ptv = rx_dict["upper"][is_target]
-            rx_upper_oar = rx_dict["upper"][~is_target]
-            slack_upper_ptv = slack_upper if is_slack_hi_scalar else slack_upper[is_target]
-            expr_ptv = expr[is_target]
-        else:
-            rx_upper_ptv = rx_dict["upper"][:,is_target]
-            rx_upper_oar = rx_dict["upper"][:,~is_target]
-            slack_upper_ptv = slack_upper if is_slack_hi_scalar else slack_upper[:,is_target]
-            expr_ptv = expr[:,is_target]
-
-        if not np.all(np.isinf(rx_upper_oar)):
-            raise ValueError("Upper bound must be infinity for all non-targets")
-
-        c_upper = rx_to_upper_constrs(expr_ptv, rx_upper_ptv, only_ptv = True, slack = slack_upper_ptv)
-        if c_upper is not None:
-            constrs.append(c_upper)
-    return constrs
 
 def form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_taylor = True, use_slack = False, slack_weight = 0):
     T_treat, K = d.shape
