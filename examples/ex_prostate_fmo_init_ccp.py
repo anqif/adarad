@@ -44,8 +44,7 @@ def form_step_xy(x, y, buf = 0, shift = 0):
 
 def main():
 	# Problem data.
-	# patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford.yml")
-	patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford_full.yml")
+	patient_bio, patient_rx, visuals = yaml_to_dict(input_path + "ex_prostate_FMO_stanford.yml")
 
 	# Patient data.
 	A_list = patient_bio["dose_matrices"]

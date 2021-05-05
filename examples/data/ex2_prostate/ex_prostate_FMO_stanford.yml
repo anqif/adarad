@@ -1,8 +1,8 @@
 treatment_length : 45
-dose_matrix: /home/anqi/Documents/software/adarad/examples/data/prostate/prostate_7_structs_10000_beams_mean-dose_matrix.npy
+dose_matrix: /home/anqi/Documents/software/adarad/examples/data/ex2_prostate/prostate_7_structs_34848_beams_mean-dose_matrix.npy
 beams:
   lower_bound : 0
-  upper_bound : 0.1
+  upper_bound : 0.025
 structures:
   - name : Prostate
     is_target : Yes
@@ -33,7 +33,7 @@ structures:
       initial : 0
       goal : 0
       weight :
-        under : 1
+        under : 0.1667
         over : 0
       lower_bound : -4.8
     alpha : 1
@@ -51,7 +51,7 @@ structures:
       initial : 0
       goal : 0
       weight :
-        under : 1
+        under : 0.1667
         over : 0
       lower_bound : -4.8
     alpha : 1
@@ -69,7 +69,7 @@ structures:
       initial: 0
       goal: 0
       weight :
-        under : 1
+        under : 0.1667
         over : 0
       lower_bound : -4.8
     alpha : 1
@@ -87,7 +87,7 @@ structures:
       initial : 0
       goal : 0
       weight :
-        under : 1
+        under : 0.1667
         over : 0
       lower_bound: -3.0
     alpha : 1
@@ -105,7 +105,7 @@ structures:
       initial : 0
       goal : 0
       weight :
-        under : 1
+        under : 0.1667
         over : 0
       lower_bound: -3.0
     alpha : 1
@@ -123,7 +123,7 @@ structures:
       initial : 0
       goal : 0
       weight :
-        under : 0.5
+        under : 0.1667
         over : 0
       lower_bound: -6.0
     alpha : 1

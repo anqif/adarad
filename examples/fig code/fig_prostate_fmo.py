@@ -5,7 +5,7 @@ from adarad.utilities.plot_utils import *
 from adarad.utilities.file_utils import yaml_to_dict
 from adarad.utilities.data_utils import health_prog_act
 
-data_path = "/home/anqi/Documents/software/adarad/examples/data/"
+data_path = "/examples/data/"
 input_path = "/home/anqi/Documents/software/adarad/examples/output/kona64/"
 output_path = "/home/anqi/Documents/papers/adapt_rad_therapy/figures/"
 
@@ -17,7 +17,7 @@ output_prefix = output_path + "ex3_"
 
 def main():
     # Import data.
-    patient_bio, patient_rx, visuals = yaml_to_dict(data_path + "ex_prostate_FMO_stanford_full.yml")
+    patient_bio, patient_rx, visuals = yaml_to_dict(data_path + "ex_prostate_FMO_stanford.yml")
     d_init = np.load(init_prefix + "doses.npy")   # Post-initialization heuristic.
     h_init = np.load(init_prefix + "health.npy")
     d_admm = np.load(admm_prefix + "doses.npy")   # Final ADMM output.
