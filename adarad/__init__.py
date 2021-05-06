@@ -21,5 +21,5 @@ from adarad.case import Case
 from adarad.medicine.patient import Anatomy, Structure
 from adarad.medicine.physics import Physics, BeamSet
 from adarad.medicine.prescription import Prescription, StructureRx
-from adarad.visualization.plotter import CasePlotter
+from adarad.visualization.plotter import CasePlotter, StructMap
 # from adarad.optimization.admm.quad_admm_funcs import dyn_quad_treat_admm, mpc_quad_treat_admm

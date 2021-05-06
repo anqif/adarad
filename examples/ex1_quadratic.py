@@ -90,7 +90,7 @@ def main(figpath = "", datapath = ""):
 	# plot_slacks(res_dynamic["health_slack"], title = "Health Dynamics Slack vs. Iteration")
 	# plot_slacks(res_dynamic["health_slack"], filename = figpath + "ex_cardioid_lq_ccp_slacks.png")
 
-	# Plot dynamic beam, health, and optimization curves.
+	# Plot dynamic beam, health, and treatment curves.
 	# plot_residuals(res_dynamic["primal"], res_dynamic["dual"], semilogy = True)
 	plot_beams(res_dynamic["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
 			   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Beam Intensities vs. Time", one_idx = True,

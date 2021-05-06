@@ -1,6 +1,4 @@
 import adarad, numpy
-import matplotlib.pyplot as plt
-
 from adarad import Case, CasePlotter
 from adarad import BeamSet
 
@@ -13,9 +11,9 @@ def main(datapath = ""):
     case.physics.dose_matrix = numpy.load(datapath + "patient_01-dose_mat.npy")
 
     # Solve using ADMM algorithm.
-    status, result = case.plan(use_slack=True, slack_weight=1e4, max_iter=15, solver="MOSEK", ccp_verbose=True)
-    # status, result = case.plan(use_slack=True, slack_weight=1e4, ccp_max_iter=15, solver="MOSEK", rho=5,
-    #                           admm_max_iter=500, use_admm=True, admm_verbose=True)
+    # status, result = case.plan(use_slack=True, slack_weight=1e4, max_iter=15, solver="MOSEK", ccp_verbose=True)
+    status, result = case.plan(use_slack=True, slack_weight=1e4, ccp_max_iter=15, solver="MOSEK", rho=5,
+                               admm_max_iter=500, use_admm=True, admm_verbose=True)
     print("Solve status: {}".format(status))
     print("Solve time: {}".format(result.solver_stats.solve_time))
     print("Iterations: {}".format(result.solver_stats.num_iters))
@@ -31,13 +29,13 @@ def main(datapath = ""):
     # Save plan for later comparison.
     case.save_plan("Old Plan")
 
-    # Constraint allows maximum of 10 Gy on the PTV.
+    # Constraint allows maximum of 10 Gy/session on the PTV.
     case.prescription["PTV"].dose_upper = 10
 
     # Re-plan the case with new dose constraint.
-    status2, result2 = case.plan(use_slack=True, slack_weight=1e4, max_iter=15, solver="MOSEK", ccp_verbose=True)
-    # status2, result2 = case.plan(use_slack=True, slack_weight=1e4, ccp_max_iter=15, solver="ECOS", rho=5,
-    #                             admm_max_iter=500, use_admm=True)
+    # status2, result2 = case.plan(use_slack=True, slack_weight=1e4, max_iter=15, solver="MOSEK", ccp_verbose=True)
+    status2, result2 = case.plan(use_slack=True, slack_weight=1e4, ccp_max_iter=15, solver="MOSEK", rho=5,
+                                 admm_max_iter=500, use_admm=True)
     print("Solve status: {}".format(status2))
 
     # Compare old and new optimization plans.

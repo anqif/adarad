@@ -9,13 +9,21 @@ from adarad.visualization.plot_funcs import plot_single, plot_slacks, plot_resid
 from adarad.utilities.beam_utils import line_segments
 
 class StructMap(object):
-    def __init__(self, x, y, regions):
+    def __init__(self, regions, xy_grid = None):
+        if not (isinstance(regions, np.ndarray) and regions.ndim == 2):
+            raise TypeError("regions must be a 2-D matrix")
+        if xy_grid is None:
+            x_lin = np.linspace(-1, 1, regions.shape[1])
+            y_lin = np.linspace(-1, 1, regions.shape[0])
+            x, y = np.meshgrid(x_lin, y_lin)
+        else:
+            if not ((isinstance(xy_grid, tuple) or isinstance(xy_grid, list)) and len(xy_grid) == 2):
+                raise TypeError("xy_grid must be a tuple containing two 2-D matrices")
+            x, y = xy_grid
         if not (isinstance(x, np.ndarray) and x.ndim == 2):
             raise TypeError("x must be a 2-D matrix")
         if not (isinstance(y, np.ndarray) and y.ndim == 2):
             raise TypeError("y must be a 2-D matrix")
-        if not (isinstance(regions, np.ndarray) and regions.ndim == 2):
-            raise TypeError("regions must be a 2-D matrix")
         if x.shape != regions.shape or y.shape != regions.shape:
             raise TypeError("x, y, and regions must have same dimensions")
         self.x = x
@@ -114,7 +122,7 @@ class CasePlotter(object):
         levels = np.arange(lmin, lmax + 2) - 0.5
 
         ctf = plt.contourf(self.struct_map.x, self.struct_map.y, self.struct_map.regions + int(self.__one_idx), levels=levels,
-                           *args, **kwargs)
+                           *args, **kwargs, **self.struct_kw)
 
         plt.axhline(0, lw=1, ls=':', color="grey")
         plt.axvline(0, lw=1, ls=':', color="grey")
