@@ -1,11 +1,10 @@
 # matplotlib.use("TKAgg")
 
 from adarad.optimization.seq_cvx.quad_funcs import dyn_quad_treat
+from adarad.medicine.prognosis import health_prog_act
+from adarad.visualization.plot_funcs import *
 
-from adarad.utilities.file_utils import yaml_to_dict
-from adarad.utilities.data_utils import health_prog_act
-from adarad.utilities.plot_utils import *
-
+from examples.utilities.yaml_utils import yaml_to_dict
 
 def main(figpath = "", datapath = ""):
 	# Import data.

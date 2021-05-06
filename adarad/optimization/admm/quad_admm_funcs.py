@@ -5,6 +5,7 @@ from time import time
 from multiprocessing import Process, Pipe
 from collections import Counter
 
+from adarad.medicine.prognosis import health_prog_act, health_prog_act_range, health_prog_est
 from adarad.optimization.dose_init.dose_init import dyn_init_dose
 from adarad.optimization.ccp_funcs import ccp_solve
 from adarad.optimization.constraint import rx_slice

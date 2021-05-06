@@ -2,12 +2,11 @@ import matplotlib
 # matplotlib.use("TKAgg")
 from time import time
 # from timeit import default_timer as time
-
 from cvxpy.settings import SOLUTION_PRESENT
 
-from adarad.utilities.plot_utils import *
-from adarad.utilities.file_utils import yaml_to_dict
-from adarad.utilities.data_utils import health_prog_act
+from adarad.medicine.prognosis import health_prog_act
+from adarad.visualization.plot_funcs import *
+from examples.utilities.yaml_utils import yaml_to_dict
 
 SHOW_PLOTS = False
 if SHOW_PLOTS:

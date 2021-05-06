@@ -3,8 +3,9 @@ matplotlib.use("TKAgg")
 
 from adarad.optimization.dose_init.dose_init import dyn_init_dose
 from adarad.optimization.seq_cvx.quad_funcs import dyn_quad_treat
-from adarad.utilities.plot_utils import *
-from adarad.utilities.data_utils import line_integral_mat, health_prog_act
+from adarad.visualization.plot_funcs import *
+from adarad.utilities.beam_utils import line_integral_mat
+from adarad.medicine.prognosis import health_prog_act
 
 from example_utils import simple_structures, simple_colormap
 

@@ -1,10 +1,9 @@
-import numpy as np
 import matplotlib
 matplotlib.use("TKAgg")
 
-from adarad.utilities.plot_utils import *
-from adarad.utilities.data_utils import line_integral_mat
-from example_utils import simple_structures, simple_colormap
+from adarad.visualization.plot_funcs import *
+from adarad.utilities.beam_utils import line_integral_mat
+from examples.utilities.simple_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	n_grid = 1000
@@ -30,9 +29,10 @@ def main(figpath = "", datapath = ""):
 	S = len(beam_sls)
 	for i in range(S):
 		beams[beam_sls[i]] = 1.0
-		filename = figpath + figprefix + str(i+1)
-		plot_struct_beams(x_grid, y_grid, regions, beams, angles, offs_vec, n_grid, beam_kw = beam_kw, one_idx = True, 
-						  filename = filename, **struct_kw)
+		plot_struct_beams(x_grid, y_grid, regions, beams, angles, offs_vec, n_grid, beam_kw = beam_kw, one_idx = True)
+		# filename = figpath + figprefix + str(i+1)
+		# plot_struct_beams(x_grid, y_grid, regions, beams, angles, offs_vec, n_grid, beam_kw = beam_kw, one_idx = True,
+		#				  filename = filename, **struct_kw)
 
 if __name__ == '__main__':
 	main(figpath = "C:/Users/Anqi/Documents/Software/adarad/examples/output/figures/",

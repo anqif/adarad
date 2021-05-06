@@ -2,20 +2,18 @@ import os.path
 from time import time
 # from timeit import default_timer as time
 
-import numpy as np
 import numpy.linalg as LA
 import matplotlib
-import matplotlib.pyplot as plt
+
 matplotlib.use("TKAgg")
 
-import cvxpy
 from cvxpy import *
 from cvxpy.settings import SOLUTION_PRESENT
 from multiprocessing import Process, Pipe
 
-from adarad.utilities.plot_utils import *
-from adarad.utilities.file_utils import yaml_to_dict
-from adarad.utilities.data_utils import health_prog_act
+from adarad.medicine.prognosis import health_prog_act
+from adarad.visualization.plot_funcs import *
+from examples.utilities.yaml_utils import yaml_to_dict
 
 INIT_FROM_FILE = True
 input_path = "/home/anqi/Documents/software/adarad/examples/data/"

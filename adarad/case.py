@@ -9,7 +9,7 @@ from adarad.visualization.history import RunRecord
 from adarad.optimization.seq_cvx.quad_funcs import dyn_quad_treat
 from adarad.optimization.admm.quad_admm_funcs import dyn_quad_treat_admm
 from adarad.utilities.data_utils import check_slack_parms
-from adarad.utilities.read_utils import *
+from adarad.utilities.file_utils import *
 
 class Case(object):
     def __init__(self, path=None, anatomy=None, physics=None, prescription=None):

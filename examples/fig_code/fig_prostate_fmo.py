@@ -1,9 +1,6 @@
-import matplotlib
-import matplotlib.pyplot as plt
-
-from adarad.utilities.plot_utils import *
-from adarad.utilities.file_utils import yaml_to_dict
-from adarad.utilities.data_utils import health_prog_act
+from adarad.visualization.plot_funcs import *
+from examples.utilities.yaml_utils import yaml_to_dict
+from adarad.medicine.prognosis import health_prog_act
 
 data_path = "/examples/data/"
 input_path = "/home/anqi/Documents/software/adarad/examples/output/kona64/"

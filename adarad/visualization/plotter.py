@@ -5,8 +5,8 @@ from matplotlib.colors import Normalize
 
 from adarad.case import Case
 from adarad.visualization.history import RunRecord
-from adarad.utilities.plot_utils import plot_single, plot_slacks, plot_residuals
-from adarad.utilities.data_utils import line_segments
+from adarad.visualization.plot_funcs import plot_single, plot_slacks, plot_residuals
+from adarad.utilities.beam_utils import line_segments
 
 class StructMap(object):
     def __init__(self, x, y, regions):
