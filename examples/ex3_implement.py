@@ -12,8 +12,8 @@ def main(datapath = ""):
 
     # Solve using ADMM algorithm.
     # status, result = case.plan(use_slack=True, slack_weight=1e4, max_iter=15, solver="MOSEK", ccp_verbose=True)
-    status, result = case.plan(use_slack=True, slack_weight=1e4, ccp_max_iter=15, solver="MOSEK", rho=5,
-                               admm_max_iter=500, use_admm=True, admm_verbose=True)
+    status, result = case.plan(use_admm=True, use_slack=True, slack_weight=1e4, ccp_max_iter=15, solver="MOSEK", rho=5,
+                               admm_max_iter=500, admm_verbose=True)
     print("Solve status: {}".format(status))
     print("Solve time: {}".format(result.solver_stats.solve_time))
     print("Iterations: {}".format(result.solver_stats.num_iters))
@@ -34,8 +34,8 @@ def main(datapath = ""):
 
     # Re-plan the case with new dose constraint.
     # status2, result2 = case.plan(use_slack=True, slack_weight=1e4, max_iter=15, solver="MOSEK", ccp_verbose=True)
-    status2, result2 = case.plan(use_slack=True, slack_weight=1e4, ccp_max_iter=15, solver="MOSEK", rho=5,
-                                 admm_max_iter=500, use_admm=True)
+    status2, result2 = case.plan(use_admm=True, use_slack=True, slack_weight=1e4, ccp_max_iter=15, solver="MOSEK", rho=5,
+                                 admm_max_iter=500)
     print("Solve status: {}".format(status2))
 
     # Compare old and new optimization plans.

@@ -317,6 +317,7 @@ def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy =
     if (r_primal is not None and r_dual is not None) and len(r_primal) != len(r_dual):
         raise ValueError("Primal and dual residual vectors must have same length")
 
+    # TODO: Handle case when r_primal and r_dual are lists of 1-D arrays (e.g., for ADMM + MPC).
     if normalize:
         r_primal = r_primal/r_primal[0] if r_primal[0] != 0 else r_primal
         r_dual = r_dual/r_dual[0] if r_dual[0] != 0 else r_dual
@@ -351,6 +352,7 @@ def plot_slacks(slack, title = None, semilogy = False, show = True, filename = N
     fig = plt.figure()
     fig.set_size_inches(*figsize)
 
+    # TODO: Handle case when slack is a list of 1-D arrays (e.g., for ADMM + MPC).
     if semilogy:
         plt.semilogy(range(len(slack)), slack, *args, **kwargs)
     else:

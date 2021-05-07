@@ -1,12 +1,12 @@
 import numpy as np
 from adarad.medicine.prognosis import health_prog_act
 
-
 class Structure(object):
     def __init__(self, name, is_target=False, health_init=0, alpha=0, beta=0, gamma=0):
         self.name = str(name)
         self.is_target = bool(is_target)
         self.health_init = health_init
+        # TODO: Define optional health status map (for stochastic example).
         self.model_parms = {"alpha": alpha, "beta": beta, "gamma": gamma}
 
     @property

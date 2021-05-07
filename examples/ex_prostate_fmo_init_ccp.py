@@ -2,6 +2,8 @@ import matplotlib
 matplotlib.use("TKAgg")
 from time import time
 
+import cvxpy
+from cvxpy import *
 from cvxpy.settings import SOLUTION_PRESENT
 
 from adarad.medicine.prognosis import health_prog_act

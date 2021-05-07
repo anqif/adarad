@@ -6,8 +6,8 @@ from adarad.medicine.patient import Anatomy, Structure
 from adarad.medicine.prescription import Prescription, StructureRx
 from adarad.visualization.history import RunRecord
 
-from adarad.optimization.seq_cvx.quad_funcs import dyn_quad_treat
-from adarad.optimization.admm.quad_admm_funcs import dyn_quad_treat_admm
+from adarad.optimization.seq_cvx.quad_funcs import dyn_quad_treat, mpc_quad_treat
+from adarad.optimization.admm.quad_admm_funcs import dyn_quad_treat_admm, mpc_quad_treat_admm
 from adarad.utilities.data_utils import check_slack_parms
 from adarad.utilities.file_utils import *
 
@@ -173,7 +173,7 @@ class Case(object):
             raise RuntimeError("{0} is not the name of a saved plan".format(name))
         del self.__saved_plans[name]
 
-    def plan(self, use_admm=False, use_slack=None, slack_weight=None, *args, **kwargs):
+    def plan(self, use_admm=False, use_mpc=False, use_slack=None, slack_weight=None, *args, **kwargs):
         if self.physics.dose_matrix is None:
             raise RuntimeError("case.physics.dose_matrix is undefined")
         elif isinstance(self.physics.dose_matrix, list):
@@ -185,20 +185,24 @@ class Case(object):
 
         model_parms = self.anatomy.model_parms_to_mat(T=self.prescription.T_treat)
         use_slack, slack_weight = check_slack_parms(use_slack, slack_weight, default_slack=1)
-        run_rec = RunRecord(use_admm=use_admm, use_slack=use_slack, slack_weight=slack_weight)
+        run_rec = RunRecord(use_admm=use_admm, use_mpc=use_mpc, use_slack=use_slack, slack_weight=slack_weight)
 
+        if use_admm and use_mpc:
+            treat_func = mpc_quad_treat_admm
+        elif use_admm and not use_mpc:
+            treat_func = dyn_quad_treat_admm
+        elif not use_admm and use_mpc:
+            treat_func = mpc_quad_treat
+        else:
+            treat_func = dyn_quad_treat
+
+        result = treat_func(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
+                            self.anatomy.health_init, self.__gather_rx(), use_slack=use_slack,
+                            slack_weight=slack_weight, *args, **kwargs)
+        # Save ADMM residuals.
         if use_admm:
-            result = dyn_quad_treat_admm(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
-                                         self.anatomy.health_init, self.__gather_rx(), use_slack=use_slack,
-                                         slack_weight=slack_weight, *args, **kwargs)
-
-            # Save ADMM residuals.
             run_rec.output.residuals["primal"] = result["primal"]
             run_rec.output.residuals["dual"] = result["dual"]
-        else:
-            result = dyn_quad_treat(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
-                                    self.anatomy.health_init, self.__gather_rx(), use_slack=use_slack,
-                                    slack_weight=slack_weight, *args, **kwargs)
 
         self.__gather_optimal_vars(result, run_rec.output)
         self.__gather_solver_stats(result, run_rec.solver_stats)

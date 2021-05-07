@@ -111,8 +111,8 @@ def main(figpath = "", datapath = ""):
 
 	# Dynamic optimization with MPC.
 	print("\nStarting MPC algorithm...")
-	res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_ccp_slack = True,
-							 ccp_slack_weight = 1e4, use_mpc_slack = True, mpc_slack_weights = 1e4, max_iter = 100,
+	res_mpc = mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_slack= True,
+							 slack_weight= 1e4, use_mpc_slack = True, mpc_slack_weights = 1e4, max_iter = 100,
 							 solver = "MOSEK", mpc_verbose = True, auto_init = False, full_hist = True)
 	print("\nMPC Treatment")
 	print("Status:", res_mpc["status"])

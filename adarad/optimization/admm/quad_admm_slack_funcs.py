@@ -46,7 +46,7 @@ def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
     pipe.send((b.value, d_val))
 
 def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, health_map = lambda h,d,t: h, d_init = None,
-                              auto_init = False, use_ccp_slack = False, ccp_slack_weight = 0, mpc_slack_weights = 1, partial_results = False,
+                              auto_init = False, use_slack = False, slack_weight = 0, mpc_slack_weights = 1, partial_results = False,
                               admm_verbose = False, *args, **kwargs):
     T_treat = len(A_list)
     K, n = A_list[0].shape
@@ -78,8 +78,8 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         if auto_init:
             if admm_verbose:
                 print("Calculating initial dose...")
-            result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_ccp_slack,
-                                        ccp_slack_weight, *args, **kwargs)
+            result_init = dyn_init_dose(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov, use_slack,
+                                        slack_weight, *args, **kwargs)
             d_init = result_init["doses"]
             solve_time += result_init["solve_time"]
         else:
@@ -98,8 +98,9 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         procs[-1].start()
 
     # Proximal health seq_cvx.
-    prob_health, h, d_tld, d_parm, h_dyn_slack = build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx,
-                                                    T_treat, T_recov, use_ccp_slack, ccp_slack_weight, mpc_slack_weights)
+    prob_health, h, d_tld, d_parm, h_dyn_slack = \
+        build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov, use_slack, slack_weight,
+                                         mpc_slack_weights)
     d_new = Parameter(d_tld.shape, value=np.zeros(d_tld.shape))
     u = Parameter(d_tld.shape, value=np.zeros(d_tld.shape))
     penalty = (rho / 2) * sum_squares(d_tld - d_new + u)
@@ -191,8 +192,8 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
     health_est = health_prog_est(h_init, T_treat + T_recov, alpha_pad, beta_pad, gamma, doses_all, doses_parms,
                                  patient_rx["is_target"], health_map)
     obj = dyn_quad_obj(d_val, health_proj[:(T_treat + 1)], patient_rx).value
-    if use_ccp_slack:
-        obj += ccp_slack_weight*np.sum(h_dyn_slack.value)
+    if use_slack:
+        obj += slack_weight * np.sum(h_dyn_slack.value)
     return {"obj": obj, "status": status, "total_time": end - start, "solve_time": solve_time, "num_iters": k,
             "primal": np.array(r_prim[:k]), "dual": np.array(r_dual[:k]), "beams": beams_all, "doses": doses_all,
             "health": health_proj, "health_opt": health_opt_recov, "health_est": health_est}

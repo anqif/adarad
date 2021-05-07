@@ -4,7 +4,7 @@ from adarad.optimization.seq_cvx.dyn_prob import dyn_quad_obj
 from adarad.optimization.penalty import rx_to_slack_quad_penalty
 from adarad.optimization.constraint import rx_to_constrs
 
-# Construct optimal control seq_cvx with slack health/dose constraints.
+# Construct optimal control problem with slack health/dose constraints.
 def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_h_dyn_slack = False,
                               h_dyn_slack_weight = 0, h_bnd_slack_weights = 1):
     T_treat = len(A_list)
