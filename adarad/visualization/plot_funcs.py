@@ -348,24 +348,61 @@ def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy =
         fig.savefig(filename, bbox_inches = "tight", dpi = 300)
 
 # Plot slack in health dynamics constraint.
-def plot_slacks(slack, title = None, semilogy = False, show = True, filename = None, figsize = (12,8), *args, **kwargs):
-    fig = plt.figure()
+def plot_slacks(slack, title = None, semilogy = False, show = True, filename = None, figsize = (12,8), maxcols = 5, *args, **kwargs):
+    if isinstance(slack, np.ndarray):
+        slack = [slack]
+    if not isinstance(slack, list):
+        raise TypeError("slack must be a 1-D array or list of 1-D arrays")
+
+    T = len(slack)
+    rows = 1 if T <= maxcols else int(np.ceil(T / maxcols))
+    cols = min(T, maxcols)
+
+    fig, axs = plt.subplots(rows, cols, sharey = True)
     fig.set_size_inches(*figsize)
 
-    # TODO: Handle case when slack is a list of 1-D arrays (e.g., for ADMM + MPC).
-    if semilogy:
-        plt.semilogy(range(len(slack)), slack, *args, **kwargs)
-    else:
-        plt.plot(range(len(slack)), slack, *args, **kwargs)
-
-    # plt.gca().set_xlim(0, len(slack))
-    plt.gca().set_ylim(bottom = 0)
-
+    fig.add_subplot(111, frameon = False)
+    plt.tick_params(labelcolor = "none", which = "both", top = False, bottom = False, left = False, right = False)
     plt.xlabel("Iteration (s)")
-    plt.ylabel("Total Slack")
+    plt.ylabel("Total Health Slack")
+    # fig.text(0.5, 0.04, "Iteration (s)", ha='center')
+    # fig.text(0.06, 0.5, "Total Health Slack", va='center', rotation='vertical')
+
+    # Determine plot dimensions.
+    if hasattr(axs, "shape"):
+        if len(axs.shape) == 1:
+            ax_type = 1
+        else:
+            ax_type = 2
+    else:
+        ax_type = 0
+
+    for t in range(T):
+        if ax_type == 0:
+            ax = axs
+        elif ax_type == 1:
+            ax = axs[t]
+        else:
+            ax = axs[int(t / maxcols), t % maxcols]
+
+        n_iters = len(slack[t])
+        if semilogy:
+            ax.semilogy(range(n_iters), slack[t], *args, **kwargs)
+        else:
+            ax.plot(range(n_iters), slack[t], *args, **kwargs)
+
+        if T != 1:
+            ax.set_title("$t = {{{0}}}$".format(t))
+        # ax.set_xlim(0, n_iters)
+        ax.set_ylim(bottom = 0)
+
+    # Hide unused subplots.
+    left = axs.size - T if hasattr(axs, "size") else 0
+    for col in range(left):
+        axs[-1,maxcols-1-col].set_axis_off()
 
     if title:
-        plt.title(title)
+        plt.suptitle(title)
     if show:
         plt.show()
     if filename is not None:

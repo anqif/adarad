@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
-from data_utils import *
+from adarad.utilities.beam_utils import *
 
 n = 1000
 d = 50

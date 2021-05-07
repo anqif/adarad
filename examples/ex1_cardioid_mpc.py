@@ -17,8 +17,8 @@ def main(datapath = ""):
     # Define actual (stochastic) health dynamics mapping.
     h_noise = 0.1*numpy.random.randn(case.prescription.T_treat, case.anatomy.n_structures)
     case.anatomy.structures[0].health_map = lambda h,d,t: numpy.maximum(h + h_noise[t,0], 0)   # PTV: h_t >= 0.
-    for s in range(1, case.anatomy.n_structures):
-        case.anatomy.structures[s].health_map = lambda h,d,t,s=s: numpy.minimum(h + h_noise[t,s], 0)   # OAR: h_t <= 0.
+    for k in range(1,case.anatomy.n_structures):
+        case.anatomy.structures[k].health_map = lambda h,d,t,k=k: numpy.minimum(h + h_noise[t,k], 0)   # OAR: h_t <= 0.
 
     # Import anatomical structure data.
     struct_dict = numpy.load(datapath + "cardioid_5_structs_1000_beams-regions.p", allow_pickle = True)
