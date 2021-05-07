@@ -7,7 +7,7 @@ from adarad.visualization.plot_funcs import *
 from adarad.utilities.beam_utils import line_integral_mat
 from adarad.medicine.prognosis import health_prog_act
 
-from example_utils import simple_structures, simple_colormap
+from examples.utilities.simple_utils import simple_structures, simple_colormap
 
 def main(figpath = "", datapath = ""):
 	T = 20           # Length of optimization.
