@@ -186,6 +186,7 @@ class Case(object):
         model_parms = self.anatomy.model_parms_to_mat(T=self.prescription.T_treat)
         use_slack, slack_weight = check_slack_parms(use_slack, slack_weight, default_slack=1)
         run_rec = RunRecord(use_admm=use_admm, use_mpc=use_mpc, use_slack=use_slack, slack_weight=slack_weight)
+        health_map = kwargs.pop("health_map", self.anatomy.health_map)
 
         if use_admm and use_mpc:
             treat_func = mpc_quad_treat_admm
@@ -197,7 +198,7 @@ class Case(object):
             treat_func = dyn_quad_treat
 
         result = treat_func(dose_matrices, model_parms["alpha"], model_parms["beta"], model_parms["gamma"],
-                            self.anatomy.health_init, self.__gather_rx(), use_slack=use_slack,
+                            self.anatomy.health_init, self.__gather_rx(), health_map=health_map, use_slack=use_slack,
                             slack_weight=slack_weight, *args, **kwargs)
         # Save ADMM residuals.
         if use_admm:
