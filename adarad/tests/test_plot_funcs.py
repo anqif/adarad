@@ -7,7 +7,6 @@ class TestPlotFuncs(BaseTest):
 
     def setUp(self):
         np.random.seed(1)
-
         num_iters = [50, 100, 200, 250, 40, 60, 80, 100]
         self.vec_single_1 = np.random.randn(50)
         self.vec_single_2 = np.random.randn(50)

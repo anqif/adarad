@@ -311,37 +311,85 @@ def plot_internal(h, axs, varname, curves = [], stepsize = 10, maxcols = 5, T_tr
         # fig.legend(handles = [ltreat, lnone], labels = ["Treated", "Untreated"], loc = "center right", borderaxespad = 1)
 
 # Plot primal and dual residuals.
-def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy = False, show = True, filename = None, figsize = (12,8), *args, **kwargs):
+def plot_residuals(r_primal, r_dual, normalize = False, title = None, semilogy = False, show = True, filename = None, figsize = (12,8), maxcols = 5, *args, **kwargs):
     if r_primal is None and r_dual is None:
-        raise ValueError("Both primal and dual residuals are None")
-    if (r_primal is not None and r_dual is not None) and len(r_primal) != len(r_dual):
-        raise ValueError("Primal and dual residual vectors must have same length")
+        raise ValueError("r_primal or r_dual must be specified")
+    if r_primal is not None:
+        if isinstance(r_primal, np.ndarray):
+            r_primal = [r_primal]
+        if not isinstance(r_primal, list):
+            raise TypeError("r_primal must be a 1-D array or list of 1-D arrays")
+    if r_dual is not None:
+        if isinstance(r_dual, np.ndarray):
+            r_dual = [r_dual]
+        if not isinstance(r_dual, list):
+            raise TypeError("r_dual must be a 1-D array or list of 1-D arrays")
+    if r_primal is not None and r_dual is not None:
+        if len(r_primal) != len(r_dual):
+            raise ValueError("r_primal and r_dual must have same length")
+        for r_p, r_d in zip(r_primal, r_dual):
+            if len(r_p) != len(r_d):
+                raise ValueError("r_prim and r_dual must contain vectors with same corresponding lengths")
+
+    if normalize:
+        r_primal = [r_p/r_p[0] if r_p[0] != 0 else r_p for r_p in r_primal]
+        r_dual = [r_d/r_d[0] if r_d[0] != 0 else r_d for r_d in r_dual]
 
     # TODO: Handle case when r_primal and r_dual are lists of 1-D arrays (e.g., for ADMM + MPC).
-    if normalize:
-        r_primal = r_primal/r_primal[0] if r_primal[0] != 0 else r_primal
-        r_dual = r_dual/r_dual[0] if r_dual[0] != 0 else r_dual
+    T = len(r_primal) if r_primal is not None else len(r_dual)
+    rows = 1 if T <= maxcols else int(np.ceil(T / maxcols))
+    cols = min(T, maxcols)
 
-    fig = plt.figure()
+    fig, axs = plt.subplots(rows, cols, sharey=True)
     fig.set_size_inches(*figsize)
-    if semilogy:
-        if r_primal is not None:
-            plt.semilogy(range(len(r_primal)), r_primal, label = "Primal Residual", *args, **kwargs)
-        if r_dual is not None:
-            plt.semilogy(range(len(r_dual)), r_dual, label = "Dual Residual", *args, **kwargs)
-    else:
-        if r_primal is not None:
-            plt.plot(range(len(r_primal)), r_primal, label = "Primal Residual", *args, **kwargs)
-        if r_dual is not None:
-            plt.plot(range(len(r_dual)), r_dual, label = "Dual Residual", *args, **kwargs)
-
-    plt.legend()
-    plt.xlabel("Iteration")
+    plt.xlabel("Iteration (s)")
     # plt.ylabel("$||r|| _2$")
     plt.ylabel("$\ell_2$-norm of Residual")
 
+    fig.add_subplot(111, frameon=False)
+    plt.tick_params(labelcolor="none", which="both", top=False, bottom=False, left=False, right=False)
+
+    # Determine plot dimensions.
+    if hasattr(axs, "shape"):
+        if len(axs.shape) == 1:
+            ax_type = 1
+        else:
+            ax_type = 2
+    else:
+        ax_type = 0
+
+    for t in range(T):
+        if ax_type == 0:
+            ax = axs
+        elif ax_type == 1:
+            ax = axs[t]
+        else:
+            ax = axs[int(t / maxcols), t % maxcols]
+
+        if semilogy:
+            if r_primal is not None:
+                ax.semilogy(range(len(r_primal[t])), r_primal[t], label = "Primal Residual", *args, **kwargs)
+            if r_dual is not None:
+                ax.semilogy(range(len(r_dual[t])), r_dual[t], label = "Dual Residual", *args, **kwargs)
+        else:
+            if r_primal is not None:
+                ax.plot(range(len(r_primal[t])), r_primal[t], label = "Primal Residual", *args, **kwargs)
+            if r_dual is not None:
+                ax.plot(range(len(r_dual[t])), r_dual[t], label = "Dual Residual", *args, **kwargs)
+
+        if T != 1:
+            ax.set_title("$t = {{{0}}}$".format(t))
+
+    # Hide unused subplots.
+    left = axs.size - T if hasattr(axs, "size") else 0
+    for col in range(left):
+        axs[-1, maxcols - 1 - col].set_axis_off()
+
+    # TODO: Need to pass in handles if primal/dual residual missing in t = T.
+    ax.legend(loc = "upper right", borderaxespad = 1)
+
     if title:
-        plt.title(title)
+        plt.suptitle(title)
     if show:
         plt.show()
     if filename is not None:
