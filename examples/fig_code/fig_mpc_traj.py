@@ -6,9 +6,9 @@ from adarad.visualization.plot_funcs import *
 from adarad.utilities.beam_utils import line_integral_mat
 from adarad.medicine.prognosis import health_prog_act
 
-from examples.utilities.simple_utils import simple_structures, simple_colormap
+from examples.utilities.simple_utils import simple_structures
 
-def main(figpath = "", datapath = ""):
+def main():
 	np.random.seed(1)
 
 	T = 20           # Length of optimization.
@@ -20,9 +20,6 @@ def main(figpath = "", datapath = ""):
 
 	# Display structures.
 	x_grid, y_grid, regions = simple_structures(n_grid, n_grid)
-	struct_kw = simple_colormap(one_idx = True)
-	# plot_structures(x_grid, y_grid, regions, title = "Anatomical Structures", one_idx = True, **struct_kw)
-	# plot_structures(x_grid, y_grid, regions, one_idx = True, filename = figpath + "ex_cardioid5_structures.png", **struct_kw)
 
 	# Problem data.
 	K = np.unique(regions).size   # Number of structures.
@@ -40,8 +37,6 @@ def main(figpath = "", datapath = ""):
 	mu = 0
 	sigma = 0.1
 	h_noise = mu + sigma*np.random.randn(T,K)
-	# health_map = lambda h,t: h
-	# health_map = lambda h,t: h + h_noise[t]
 
 	# PTV: h_t >= 0.
 	def health_map_ptv(h, d, t):
@@ -70,7 +65,6 @@ def main(figpath = "", datapath = ""):
 	w_hi = np.array([1] + (K-1)*[0])
 	rx_health_weights = [w_lo, w_hi]
 	rx_health_goal = np.zeros((T,K))
-	# rx_dose_weights = np.array([0.01, 1, 1, 1, 0.001])
 	rx_dose_weights = np.array([1, 1, 1, 1, 0.25])
 	rx_dose_goal = np.zeros((T,K))
 	patient_rx = {"is_target": is_target, "dose_goal": rx_dose_goal, "dose_weights": rx_dose_weights,
@@ -94,10 +88,7 @@ def main(figpath = "", datapath = ""):
 	health_lower[:,4] = -3.0
 	health_upper[:15,0] = 2.0    # Upper bound on PTV for t = 1,...,15.
 	health_upper[15:,0] = 0.05   # Upper bound on PTV for t = 16,...,20.
-
-	# TODO: Check lower bound for PTV always -Inf and upper bound for OAR always Inf.
 	patient_rx["health_constrs"] = {"lower": health_lower, "upper": health_upper}
-	# patient_rx["health_constrs"] = {"lower": health_lower[:,~is_target], "upper": health_upper[:,is_target]}
 
 	# Dynamic optimization.
 	res_dynamic = dyn_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, health_map = health_map, use_slack = True,
@@ -129,30 +120,13 @@ def main(figpath = "", datapath = ""):
 	h_naive = [{"h": res_dynamic["health"], "label": "Treated (Naive)", "kwargs": {"color": colors[0]}}]
 	h_curves = h_naive + h_curves
 
-	# Plot dynamic MPC beam, health, and optimization curves.
-	# plot_beams(res_mpc["beams"], angles = angles, offsets = offs_vec, n_grid = n_grid, stepsize = 1,
-	#		   cmap = transp_cmap(plt.cm.Reds, upper = 0.5), title = "Beam Intensities vs. Time", one_idx = True,
-	#		   structures = (x_grid, y_grid, regions), struct_kw = struct_kw)
-
 	print("Plotting results for all iterations")
 	for i in range(T):
-		# plot_health(res_mpc["health_hist"][i], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
-		#		label = "Treated (MPC)", color = colors[2], one_idx = True)
-		# plot_treatment(res_mpc["doses_hist"][i], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper),
-		#		label = "MPC", color = colors[2], one_idx = True)
-
-		# plot_health(res_mpc["health_hist"][i], curves = h_curves, stepsize = 10, bounds = (health_lower, health_upper),
-		#			label = "Treated (MPC)", color = colors[2], one_idx = True, filename = figpath + "ex2_mpc_health_iter_{0}.png".format(i+1))
-		# plot_treatment(res_mpc["doses_hist"][i], curves = d_curves, stepsize = 10, bounds = (dose_lower, dose_upper),
-		#			label = "MPC", color = colors[2], one_idx = True, filename = figpath + "ex2_mpc_doses_iter_{0}.png".format(i+1))
-
 		h_dict = {"v": res_mpc["health_hist"][i], "varname": "h", "curves": h_curves, "stepsize": 10, 
 				  "bounds": (health_lower, health_upper), "label": "Treated (MPC)", "color": colors[2], "one_idx": True, "one_shift": False}
 		d_dict = {"v": res_mpc["doses_hist"][i], "varname": "d", "curves": d_curves, "stepsize": 10, 
 				  "bounds": (dose_lower, dose_upper), "label": "MPC", "color": colors[2], "one_idx": True, "one_shift": True}
-		# plot_stacked([h_dict, d_dict], title = "Health Status and Treatment Dose vs. Time", figsize = (16,10))
-		plot_stacked([h_dict, d_dict], figsize = (16,10), show = False, filename = figpath + "ex2_mpc_health_doses_iter_{0}.png".format(i+1))
+		plot_stacked([h_dict, d_dict], title = "Health Status and Treatment Dose vs. Time", figsize = (16,10))
 
 if __name__ == '__main__':
-	main(figpath = "C:/Users/Anqi/Documents/Software/adarad/examples/output/figures/movie/",
-		 datapath = "C:/Users/Anqi/Documents/Software/adarad/examples/data/")
+	main()

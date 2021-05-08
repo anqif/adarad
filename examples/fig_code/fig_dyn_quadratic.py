@@ -5,7 +5,7 @@ matplotlib.use("TKAgg")
 from adarad.medicine.prognosis import health_prog_act
 from adarad.visualization.plot_funcs import plot_health
 
-def main(figpath = ""):
+def main():
     T = 20   # Length of optimization.
     K = 2    # Number of structures.
 
@@ -30,8 +30,8 @@ def main(figpath = ""):
     health_upper[:,0] = np.inf
 
     # Plot health trajectory.
-    plot_health(h_prog, stepsize = 5, bounds = (health_lower, health_upper), title = "Health Status vs. Time", one_idx = True)
-    # plot_health(h_prog, stepsize = 5, bounds = (health_lower, health_upper), one_idx = True, ylim = (-2.0, 1.0), filename = figpath + "fig_health_dyn_quad.png")
+    plot_health(h_prog, stepsize = 5, bounds = (health_lower, health_upper), title = "Health Status vs. Time",
+                one_idx = True, ylim = (-2.0, 1.0))
 
 if __name__ == '__main__':
-    main(figpath = "/home/anqi/Dropbox/Research/Fractionation/Figures/")
+    main()

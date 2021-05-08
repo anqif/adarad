@@ -3,7 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use("TKAgg")
 
-def main(figpath = ""):
+def main():
 	# Problem parameters.
 	alpha = 0.25
 	beta = 0.5
@@ -31,8 +31,6 @@ def main(figpath = ""):
 	plt.xlabel("$d_{ti}$")
 	plt.legend()
 	plt.show()
-
-	fig1.savefig(figpath + "health_dyn_lin_1.png", bbox_inches = "tight", dpi = 300)
 	
 	# Linearization.
 	d_lin_idx = int(0.35*len(d))
@@ -58,8 +56,6 @@ def main(figpath = ""):
 	ax.set_xticklabels([int(x) for x in x_locs] + ["$d_{ti}^s$"])
 	plt.legend()
 	plt.show()
-
-	fig2.savefig(figpath + "health_dyn_lin_2.png", bbox_inches = "tight", dpi = 300)
 
 	# Linearization with slack.
 	slack = 5
@@ -94,7 +90,5 @@ def main(figpath = ""):
 	# plt.text(d_shift + 0.25, f_hat_slack[d_shift_idx] + slack/3, "$\delta_{ti}$", color = "limegreen", size = "large")
 	plt.show()
 
-	fig3.savefig(figpath + "health_dyn_lin_3.png", bbox_inches = "tight", dpi = 300)
-
 if __name__ == '__main__':
-	main(figpath = "C:/Users/Anqi/Documents/Software/adarad/examples/output/figures/")
+	main()
