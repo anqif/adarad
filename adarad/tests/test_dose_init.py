@@ -44,7 +44,6 @@ class TestDoseInit(BaseTest):
 
         # Anatomical structures.
         x_grid, y_grid, regions = simple_structures(n_grid, n_grid)
-        struct_kw = simple_colormap(one_idx=True)
         K = np.unique(regions).size  # Number of structures.
 
         A, angles, offs_vec = line_integral_mat(regions, angles=n_angle, n_bundle=n_bundle, offset=offset)

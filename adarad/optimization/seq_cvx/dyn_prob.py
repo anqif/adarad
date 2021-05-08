@@ -90,7 +90,7 @@ def form_taylor_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov
     return form_dyn_constrs(b, h, d, alpha, beta, gamma, h_init, patient_rx, T_recov = T_recov, use_taylor = True, 
                             use_slack = use_slack, slack_weight = slack_weight)
 
-# Construct optimal control seq_cvx.
+# Construct optimal control problem.
 def build_dyn_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_slack = False, slack_weight = 0):
     T_treat = len(A_list)
     K, n = A_list[0].shape

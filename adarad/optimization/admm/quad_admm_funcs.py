@@ -16,7 +16,7 @@ from adarad.optimization.admm.dyn_prob_admm import *
 from adarad.utilities.data_utils import *
 
 def run_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
-    # Construct proximal dose seq_cvx.
+    # Construct proximal dose problem.
     prob_dose, b, d = build_dyn_quad_prob_dose_period(A, patient_rx)
     d_new = Parameter(d.shape, value = np.zeros(d.shape))
     u = Parameter(d.shape, value = np.zeros(d.shape))
@@ -104,7 +104,7 @@ def dyn_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
         procs += [Process(target=run_quad_dose_worker, args=(remote, A_list[t], rx_cur, rho) + args, kwargs=kwargs)]
         procs[-1].start()
 
-    # Proximal health seq_cvx.
+    # Proximal health problem.
     prob_health, h, d_tld, d_parm, h_dyn_slack = \
         build_dyn_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov, use_slack, slack_weight)
     d_new = Parameter(d_tld.shape, value=np.zeros(d_tld.shape))
@@ -270,7 +270,7 @@ def mpc_quad_treat_admm(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov 
         # Drop prescription for previous periods.
         rx_cur = rx_slice(patient_rx, t_s, T_treat, squeeze=False)
 
-        # Solve optimal control seq_cvx from current period forward.
+        # Solve optimal control problem from current period forward.
         # TODO: Warm start next ADMM solve, or better yet, rewrite so no teardown/rebuild process between ADMM solves.
         T_left = T_treat - t_s
         if use_mpc_slack:

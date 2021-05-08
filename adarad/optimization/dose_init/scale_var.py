@@ -4,7 +4,7 @@ from cvxpy import *
 from adarad.optimization.seq_cvx.dyn_prob import dyn_quad_obj
 from adarad.optimization.constraint import rx_to_constrs, rx_to_quad_constrs
 
-# Scaled beam seq_cvx with b_t = u_t*b^{static}, where u_t >= 0 are scaling factors and b^{static} is a beam constant.
+# Scaled beam problem with b_t = u_t*b^{static}, where u_t >= 0 are scaling factors and b^{static} is a beam constant.
 def build_scale_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_static, use_dyn_slack=False,
                           dyn_slack_weight=0, use_bnd_slack=True, bnd_slack_weight=1):
     T_treat = len(A_list)

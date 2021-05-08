@@ -1,7 +1,7 @@
 from adarad.optimization.penalty import *
 from adarad.optimization.constraint import *
 
-# Objective function for static seq_cvx.
+# Objective function for static problem.
 def dyn_stat_obj(d_var, h_var, patient_rx):
     K = d_var.shape[0]
     if h_var.shape[0] != K:
@@ -15,7 +15,7 @@ def dyn_stat_obj(d_var, h_var, patient_rx):
     h_penalty = health_penalty(h_var, patient_rx["health_goal"], patient_rx["health_weights"])
     return d_penalty + h_penalty
 
-# Static optimal control seq_cvx in session t_static.
+# Static optimal control problem in session t_static.
 # OAR health status is linear-quadratic, while PTV health status is linear (beta = 0) with an optional slack term.
 def build_stat_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, t_static=0, slack_oar_weight=1):
     T_treat = len(A_list)

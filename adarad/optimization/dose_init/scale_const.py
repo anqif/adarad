@@ -5,7 +5,7 @@ from warnings import warn
 from adarad.optimization.penalty import dose_penalty, health_penalty
 from adarad.optimization.constraint import rx_to_constrs, rx_to_quad_constrs
 
-# Objective function for constant scaled seq_cvx.
+# Objective function for constant scaled problem.
 def dyn_scale_const_obj(u_var, d_static, h_var, patient_rx, fast_ssq = False):
     T_plus_1, K = h_var.shape
     T = T_plus_1 - 1

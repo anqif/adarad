@@ -68,6 +68,6 @@ def build_dyn_slack_quad_prob(A_list, alpha, beta, gamma, h_init, patient_rx, T_
             obj += rx_to_slack_quad_penalty(h_r, patient_rx["recov_constrs"], patient_rx["is_target"], h_bnd_slack_weights)
         constrs += constrs_r
 
-    # Final seq_cvx.
+    # Final problem.
     prob = Problem(Minimize(obj), constrs)
     return prob, b, h, d, d_parm, h_dyn_slack

@@ -15,7 +15,7 @@ from adarad.optimization.admm.slack_prob_admm import *
 from adarad.utilities.data_utils import *
 
 def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
-    # Construct proximal dose seq_cvx.
+    # Construct proximal dose problem.
     prob_dose, b, d = build_dyn_slack_quad_prob_dose_period(A, patient_rx)
     d_new = Parameter(d.shape, value = np.zeros(d.shape))
     u = Parameter(d.shape, value = np.zeros(d.shape))
@@ -28,7 +28,7 @@ def run_slack_quad_dose_worker(pipe, A, patient_rx, rho, *args, **kwargs):
         # Compute and send d_t^k.
         prox.solve(*args, **kwargs)
         if prox.status not in cvxpy_s.SOLUTION_PRESENT:
-            raise RuntimeError("Solver failed on slack seq_cvx with status {0}".format(prox.status))
+            raise RuntimeError("Solver failed on slack problem with status {0}".format(prox.status))
         pipe.send((d.value, prox.solver_stats.solve_time, prox.status))
 
         # Receive \tilde d_t^k.
@@ -97,7 +97,7 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         procs += [Process(target=run_slack_quad_dose_worker, args=(remote, A_list[t], rx_cur, rho) + args, kwargs=kwargs)]
         procs[-1].start()
 
-    # Proximal health seq_cvx.
+    # Proximal health problem.
     prob_health, h, d_tld, d_parm, h_dyn_slack = \
         build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_treat, T_recov, use_slack, slack_weight,
                                          mpc_slack_weights)
@@ -134,7 +134,7 @@ def dyn_quad_treat_admm_slack(A_list, alpha, beta, gamma, h_init, patient_rx, T_
         result = ccp_solve(prox, d_tld, d_parm, d_init, max_iter = ccp_max_iter, ccp_eps = ccp_eps, ccp_verbose = ccp_verbose,
                            *args, **kwargs)
         if result["status"] not in cvxpy_s.SOLUTION_PRESENT:
-            raise RuntimeError("CCP solve failed on slack seq_cvx with status {0}".format(result["status"]))
+            raise RuntimeError("CCP solve failed on slack problem with status {0}".format(result["status"]))
         solve_time += result["solve_time"]
         status_list.append(result["status"])
         for t in range(T_treat):

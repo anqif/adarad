@@ -25,7 +25,7 @@ def build_dyn_slack_quad_prob_dose(A_list, patient_rx):
     if "dose_constrs" in patient_rx:
         constrs += rx_to_constrs(d, patient_rx["dose_constrs"])
 
-    # Final seq_cvx.
+    # Final problem.
     prob = Problem(Minimize(obj), constrs)
     return prob, b, d
 
@@ -48,7 +48,7 @@ def build_dyn_slack_quad_prob_dose_period(A, patient_rx):
     if "dose_constrs" in patient_rx:
         constrs += rx_to_constrs(d_t, patient_rx["dose_constrs"])
 
-    # Final seq_cvx.
+    # Final problem.
     prob = Problem(Minimize(obj), constrs)
     return prob, b_t, d_t
 
@@ -105,6 +105,6 @@ def build_dyn_slack_quad_prob_health(alpha, beta, gamma, h_init, patient_rx, T_t
             obj += rx_to_slack_quad_penalty(h_r, patient_rx["recov_constrs"], patient_rx["is_target"], mpc_slack_weights)
         constrs += constrs_r
 
-    # Final seq_cvx.
+    # Final problem.
     prob = Problem(Minimize(obj), constrs)
     return prob, h, d, d_parm, h_dyn_slack

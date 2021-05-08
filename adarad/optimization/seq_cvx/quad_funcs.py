@@ -148,7 +148,7 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 		# Drop prescription for previous periods.
 		rx_cur = rx_slice(patient_rx, t_s, T_treat, squeeze = False)
 
-		# Solve optimal control seq_cvx from current period forward.
+		# Solve optimal control problem from current period forward.
 		T_left = T_treat - t_s
 		if use_mpc_slack:
 			prob, b, h, d, d_parm, h_dyn_slack = build_dyn_slack_quad_prob(T_left * [A_list[t_s]], np.row_stack(T_left * [alpha[t_s]]), np.row_stack(T_left * [beta[t_s]]),
@@ -180,7 +180,7 @@ def mpc_quad_treat(A_list, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, 
 		# 	result = ccp_solve(prob, d, d_parm, d_init, h_dyn_slack, *args, **kwargs)
 		# 	status = result["status"]
 		# 	if status not in cvxpy_s.SOLUTION_PRESENT:
-		# 		raise RuntimeError("Solver failed on slack seq_cvx with status {0}".format(status))
+		# 		raise RuntimeError("Solver failed on slack problem with status {0}".format(status))
 		
 		if mpc_verbose:
 			print("\nStart Time:", t_s)
