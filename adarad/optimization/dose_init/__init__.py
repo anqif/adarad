@@ -16,3 +16,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with AdaRad. If not, see <http://www.gnu.org/licenses/>.
 """
+
+from adarad.optimization.dose_init.dose_init import dyn_init_dose
+from adarad.optimization.dose_init.static import build_stat_init_prob
+from adarad.optimization.dose_init.scale_const import build_scale_lin_init_prob, build_scale_const_init_prob
+from adarad.optimization.dose_init.scale_var import build_scale_init_prob

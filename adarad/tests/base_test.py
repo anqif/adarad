@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class BaseTest(TestCase):
     # AssertAlmostEqual for lists.
-    def assertItemsAlmostEqual(self, a, b, places=4):
+    def assertItemsAlmostEqual(self, a, b, places: int = 5) -> None:
         if np.isscalar(a):
             a = [a]
         else:
@@ -18,6 +18,13 @@ class BaseTest(TestCase):
             self.assertAlmostEqual(a[i], b[i], places)
 
     # Overridden method to assume lower accuracy.
-    def assertAlmostEqual(self, a, b, places=4):
-        super(BaseTest, self).assertAlmostEqual(a.real, b.real, places=places)
-        super(BaseTest, self).assertAlmostEqual(a.imag, b.imag, places=places)
+    def assertAlmostEqual(self, a, b, places: int = 5, delta=None) -> None:
+        super(BaseTest, self).assertAlmostEqual(a, b, places=places, delta=delta)
+
+    def mat_to_list(self, mat):
+        """Convert a numpy matrix to a list.
+        """
+        if isinstance(mat, (np.matrix, np.ndarray)):
+            return np.asarray(mat).flatten('F').tolist()
+        else:
+            return mat

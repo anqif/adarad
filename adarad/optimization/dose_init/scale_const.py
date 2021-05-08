@@ -43,18 +43,19 @@ def dyn_scale_const_obj(u_var, d_static, h_var, patient_rx, fast_ssq = False):
             penalties.append(d_penalty + h_penalty)
         return sum(penalties)
 
-# Scaled beam seq_cvx with constant scaling factor (u >= 0), linear model (beta_t = 0) of PTV health status,
+# Scaled beam problem with constant scaling factor (u >= 0), linear model (beta_t = 0) of PTV health status,
 # and slack in lower bound on OAR health status.
 def build_scale_lin_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_static, use_dyn_slack = False,
-                              slack_dyn_weight = 0, use_bnd_slack = True, slack_bnd_weight = 1):
-    prob, u, b, h, d, d_parm, h_dyn_slack, h_bnd_slack = build_scale_const_init_prob(A_list, alpha, beta, gamma, h_init,
-        patient_rx, b_static, use_taylor = False, use_dyn_slack = use_dyn_slack, slack_dyn_weight = slack_dyn_weight,
-        use_bnd_slack = use_bnd_slack, slack_bnd_weight = slack_bnd_weight)
+                              dyn_slack_weight = 0, use_bnd_slack = True, bnd_slack_weight = 1):
+    prob, u, b, h, d, d_parm, h_dyn_slack, h_bnd_slack = \
+        build_scale_const_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_static, use_taylor = False,
+                                    use_dyn_slack = use_dyn_slack, dyn_slack_weight= dyn_slack_weight,
+                                    use_bnd_slack = use_bnd_slack, bnd_slack_weight= bnd_slack_weight)
     return prob, u, b, h, d, h_dyn_slack, h_bnd_slack
 
-# Scaled beam seq_cvx with b_t = u*b^{static}, where u >= 0 is a scaling factor and b^{static} is a beam constant.
+# Scaled beam problem with b_t = u*b^{static}, where u >= 0 is a scaling factor and b^{static} is a beam constant.
 def build_scale_const_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, b_static, use_taylor = True,
-                                use_dyn_slack = False, slack_dyn_weight = 0, use_bnd_slack = True, slack_bnd_weight = 1):
+                                use_dyn_slack = False, dyn_slack_weight = 0, use_bnd_slack = True, bnd_slack_weight = 1):
     T_treat = len(A_list)
     K, n = A_list[0].shape
     if h_init.shape[0] != K:
@@ -89,16 +90,17 @@ def build_scale_const_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx, 
             patient_rx_bcond["beam_constrs"]["upper"] = np.min(rx_b["upper"], axis = 0)
 
     # Form constraints with slack.
-    constrs, d_parm, obj_slack, h_dyn_slack, h_bnd_slack = form_scale_const_constrs(b, h, u, d_static, alpha, beta, gamma,
-            h_init, patient_rx_bcond, T_recov = 0, use_taylor = use_taylor, use_dyn_slack = use_dyn_slack,
-            slack_dyn_weight = slack_dyn_weight, use_bnd_slack = use_bnd_slack, slack_bnd_weight = slack_bnd_weight)
+    constrs, d_parm, obj_slack, h_dyn_slack, h_bnd_slack = \
+        form_scale_const_constrs(b, h, u, d_static, alpha, beta, gamma, h_init, patient_rx_bcond, T_recov = 0,
+                                 use_taylor = use_taylor, use_dyn_slack = use_dyn_slack, dyn_slack_weight= dyn_slack_weight,
+                                 use_bnd_slack = use_bnd_slack, bnd_slack_weight= bnd_slack_weight)
 
     obj = obj_base + obj_slack
     prob = Problem(Minimize(obj), constrs)
     return prob, u, b, h, d, d_parm, h_dyn_slack, h_bnd_slack
 
 def form_scale_const_constrs(b, h, u, d_static, alpha, beta, gamma, h_init, patient_rx, T_recov = 0, use_taylor = True,
-                             use_dyn_slack = False, slack_dyn_weight = 0, use_bnd_slack = True, slack_bnd_weight = 1):
+                             use_dyn_slack = False, dyn_slack_weight = 0, use_bnd_slack = True, bnd_slack_weight = 1):
     T_treat, K = d_static.shape
 
     # Health dynamics for optimization stage.
@@ -114,7 +116,7 @@ def form_scale_const_constrs(b, h, u, d_static, alpha, beta, gamma, h_init, pati
     # Allow slack in PTV health dynamics constraints.
     if use_dyn_slack:
         h_dyn_slack = Variable((T_treat, K), nonneg=True, name="health dynamics slack")
-        obj_dyn_slack = slack_dyn_weight*sum(h_dyn_slack)   # TODO: Set slack weight relative to overall health penalty.
+        obj_dyn_slack = dyn_slack_weight * sum(h_dyn_slack)   # TODO: Set slack weight relative to overall health penalty.
         h_approx -= h_dyn_slack
     else:
         h_dyn_slack = Constant(np.zeros((T_treat, K)))
@@ -139,7 +141,7 @@ def form_scale_const_constrs(b, h, u, d_static, alpha, beta, gamma, h_init, pati
     # Allow slack in OAR health lower bound constraints.
     if use_bnd_slack:
         h_bnd_slack = Variable((T_treat + T_recov, K), nonneg=True, name="health bound slack")
-        obj_bnd_slack = slack_bnd_weight * sum(h_bnd_slack)
+        obj_bnd_slack = bnd_slack_weight * sum(h_bnd_slack)
     else:
         h_bnd_slack = Constant(np.zeros((T_treat + T_recov, K)))
         obj_bnd_slack = 0

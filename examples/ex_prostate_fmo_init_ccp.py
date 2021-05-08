@@ -81,7 +81,7 @@ def main():
 				  	  "dose_constrs": {"lower": dose_lower, "upper": dose_upper},
 				  	  "health_constrs": {"lower": health_lower, "upper": health_upper}}
 
-	# Stage 1: Static beam seq_cvx.
+	# Stage 1: Static beam problem.
 	# Define variables.
 	b = Variable((n,), nonneg=True)
 	d = A_list[t_s] @ b
@@ -258,7 +258,7 @@ def main():
 	# Compare with AdaRad package.
 	# prob_2a_ada, u_2a_ada, b_2a_ada, h_2a_ada, d_2a_ada, h_lin_dyn_slack_2a_ada, h_lin_bnd_slack_2a_ada = \
 	# 	build_scale_lin_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx_ada, b_1_ada.value, use_dyn_slack = True,
-	# 		slack_dyn_weight = h_tayl_slack_weight, use_bnd_slack = True, slack_bnd_weight = h_lo_slack_weight)
+	# 		dyn_slack_weight = h_tayl_slack_weight, use_bnd_slack = True, bnd_slack_weight = h_lo_slack_weight)
 	# prob_2a_ada.solve(solver = "MOSEK")
 	# if prob_2a_ada.status not in SOLUTION_PRESENT:
 	# 	raise RuntimeError("AdaRad Stage 2a: Solver failed with status {0}".format(prob_2a_ada.status))
@@ -395,7 +395,7 @@ def main():
 	# Compare with AdaRad package.
 	# prob_2b_ada, u_2b_ada, b_2b_ada, h_2b_ada, d_2b_ada, d_parm_2b_ada, h_dyn_slack_2b_ada, h_bnd_slack_2b_ada = \
 	# 	build_scale_init_prob(A_list, alpha, beta, gamma, h_init, patient_rx_ada, b_static, use_dyn_slack = True,
-	# 		slack_dyn_weight = h_tayl_slack_weight, use_bnd_slack = True, slack_bnd_weight = h_lo_slack_weight)
+	# 		dyn_slack_weight = h_tayl_slack_weight, use_bnd_slack = True, bnd_slack_weight = h_lo_slack_weight)
 	#
 	# result_2b_ada = ccp_solve(prob_2b_ada, d_2b_ada, d_parm_2b_ada, d_2a_ada.value, h_dyn_slack_2b_ada, max_iter = ccp_max_iter,
 	# 					ccp_eps = ccp_eps, solver = "MOSEK", warm_start = True)

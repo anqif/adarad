@@ -16,3 +16,5 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with AdaRad. If not, see <http://www.gnu.org/licenses/>.
 """
+
+from adarad.optimization.ccp_funcs import ccp_solve
