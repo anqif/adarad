@@ -1,5 +1,6 @@
 import adarad, numpy
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 from adarad import Case, CasePlotter, StructMap, BeamSet
 from adarad.visualization.plot_funcs import transp_cmap
@@ -65,4 +66,6 @@ def main(datapath = ""):
                                     untreated_kw = {"color": colors[1]}, saved_plans_kw = {"color": colors[0]})
 
 if __name__ == '__main__':
-    main(datapath = "/home/anqi/Documents/software/adarad/examples/data/ex1_cardioid/")
+    base_path = Path(__file__).parent
+    file_path = (base_path / "data/ex1_cardioid").resolve()
+    main(datapath = file_path.__str__() + "/")

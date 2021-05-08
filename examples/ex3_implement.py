@@ -2,6 +2,8 @@ import adarad, numpy
 from adarad import Case, CasePlotter
 from adarad import BeamSet
 
+from pathlib import Path
+
 def main(datapath = ""):
     # Construct the clinical case.
     # case = Case(datapath + "patient_01-case.yml")
@@ -52,4 +54,6 @@ def main(datapath = ""):
     #                     untreated_kw=untreated_kw, saved_plans_kw=saved_plans_kw, color=colors[2])
 
 if __name__ == '__main__':
-    main(datapath = "/home/anqi/Documents/software/adarad/examples/data/ex3_implement/")
+    base_path = Path(__file__).parent
+    file_path = (base_path / "data/ex3_implement").resolve()
+    main(datapath = file_path.__str__() + "/")
