@@ -123,10 +123,12 @@ def main():
 	print("Plotting results for all iterations")
 	for i in range(T):
 		h_dict = {"v": res_mpc["health_hist"][i], "varname": "h", "curves": h_curves, "stepsize": 10, 
-				  "bounds": (health_lower, health_upper), "label": "Treated (MPC)", "color": colors[2], "one_idx": True, "one_shift": False}
+				  "bounds": (health_lower, health_upper), "label": "Treated (MPC)", "color": colors[2], "one_idx": True,
+				  "one_shift": False}
 		d_dict = {"v": res_mpc["doses_hist"][i], "varname": "d", "curves": d_curves, "stepsize": 10, 
 				  "bounds": (dose_lower, dose_upper), "label": "MPC", "color": colors[2], "one_idx": True, "one_shift": True}
-		plot_stacked([h_dict, d_dict], title = "Health Status and Treatment Dose vs. Time", figsize = (16,10))
+		plot_stacked([h_dict, d_dict], title = "Health Status and Treatment Dose vs. Time ($t = {{{0}}}$)".format(i),
+					 figsize = (16,10))
 
 if __name__ == '__main__':
 	main()

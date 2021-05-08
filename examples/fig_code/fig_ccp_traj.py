@@ -83,7 +83,8 @@ def main():
 				  "one_shift": False}
 		d_dict = {"v": res_dynamic["doses_hist"][i], "varname": "d", "stepsize": 10, "bounds": (dose_lower, dose_upper), 
 				  "one_idx": True, "one_shift": True}
-		plot_stacked([h_dict, d_dict], title = "Health Status and Treatment Dose vs. Time", figsize = (16,10))
+		plot_stacked([h_dict, d_dict], title = "Health Status and Treatment Dose vs. Time ($s = {{{0}}}$)".format(i),
+					 figsize = (16,10))
 
 if __name__ == '__main__':
 	main()
