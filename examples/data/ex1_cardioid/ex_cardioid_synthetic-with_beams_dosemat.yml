@@ -1,10 +1,14 @@
 treatment_length : 20
-dose_matrix: /home/anqi/Documents/software/adarad/examples/data/ex3_implement/patient_01-dose_mat.npy
+dose_matrix: ~/data/cardioid_5_structs_1000_beams-dose_matrix.npy
+visualization:
+  beam_angles: ~/data/cardioid_5_structs_1000_beams-angles.npy
+  beam_offsets: ~/data/cardioid_5_structs_1000_beams-offsets.npy
+  structure_regions: ~/data/cardioid_5_structs_1000_beams-regions.p
 beams:
   lower_bound : 0
   upper_bound : 1.0
 structures: 
-  - name : PTV
+  - name : Target
     is_target : True
     dose : 
       goal : 0
@@ -22,7 +26,7 @@ structures:
     beta : 0.001
     gamma : 0.05
 
-  - name : Cochlea
+  - name : Organ 1
     is_target : False
     dose :
       goal : 0
@@ -39,7 +43,7 @@ structures:
     beta : 0.05
     gamma : 0
 
-  - name : Parotid
+  - name : Organ 2
     is_target : False
     dose :
       goal : 0
@@ -56,7 +60,7 @@ structures:
     beta : 0.025
     gamma : 0
 
-  - name : Larynx
+  - name : Organ 3
     is_target : False
     dose :
       goal : 0
@@ -87,5 +91,5 @@ structures:
         over : 0
       lower_bound : -3.0
     alpha : 0.005
-    beta : 0.0005
+    beta : 0.00005
     gamma : 0

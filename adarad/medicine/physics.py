@@ -25,7 +25,8 @@ class BeamSet(object):
 
 class Physics(object):
     def __init__(self, dose_matrix=None, beams=None, beam_lower=0, beam_upper=np.inf):
-        K, n = self.check_dose_matrix(dose_matrix)
+        if dose_matrix:
+            K, n = self.check_dose_matrix(dose_matrix)
         self.__dose_matrix = dose_matrix
 
         if isinstance(beams, BeamSet):
@@ -63,6 +64,8 @@ class Physics(object):
         K, n = self.check_dose_matrix(data)
         if self.beams is not None and self.beams.n_beams != n:
             raise ValueError("data must be a matrix with {0} columns".format(n))
+        if not isinstance(data, list):
+            self.__dose_matrix = [data]
         self.__dose_matrix = data
 
     @property
@@ -78,10 +81,11 @@ class Physics(object):
         else:
             beams_new = BeamSet(data)
 
-        if isinstance(self.__dose_matrix, list):
-            K, n = self.__dose_matrix[0].shape
-        else:
-            K, n = self.__dose_matrix.shape
-        if beams_new.n_beams != n:
-            raise ValueError("data must define a set of {0} beams".format(n))
+        if self.__dose_matrix is not None:
+            if isinstance(self.__dose_matrix, list):
+                K, n = self.__dose_matrix[0].shape
+            else:
+                K, n = self.__dose_matrix.shape
+            if beams_new.n_beams != n:
+                raise ValueError("data must define a set of {0} beams".format(n))
         self.__beams = beams_new

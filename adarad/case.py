@@ -62,7 +62,7 @@ class Case(object):
         if K == 0:
             raise ValueError("Case profile must contain at least one structure")
         A_list = load_dose_matrix(data, T, K)
-        n = A_list[0].shape[1]
+        n = A_list[0].shape[1] if A_list else None
 
         struct_list = []
         struct_rx_list = []

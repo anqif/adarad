@@ -69,15 +69,15 @@ class CasePlotter(object):
 
     @property
     def T_treat(self):
-        return self.case.prescription.T_treat
+        return self.__case.prescription.T_treat
 
     @property
     def beam_angles(self):
-        return self.case.physics.beams.angles
+        return self.__case.physics.beams.angles if self.__case.physics.beams is not None else None
 
     @property
     def beam_offsets(self):
-        return self.__case.physics.beams.offsets
+        return self.__case.physics.beams.offsets if self.__case.physics.beams is not None else None
 
     @property
     def figsize(self):
@@ -142,6 +142,8 @@ class CasePlotter(object):
                          n_grid=None, plot_anatomy=True, plot_saved=False, *args, **kwargs):
         if plot_saved:
             raise NotImplementedError
+        if self.beam_offsets is None or self.beam_offsets is None:
+            raise NotImplementedError("plot_beams requires the treatment beams to be defined using BeamSet")
         if plot_anatomy and self.struct_map is None:
             raise ValueError("struct_map must be defined in order to plot anatomical structures")
         if self.struct_map is not None and n_grid is None:
