@@ -11,8 +11,7 @@ def main(datapath = ""):
     # Construct the clinical case.
     # case = Case(datapath + "ex_cardioid_synthetic-with_beams_dosemat.yml")
     case = Case(datapath + "ex_cardioid_synthetic-no_beams_dosemat.yml")
-    A = numpy.load(datapath + "cardioid_5_structs_1000_beams-dose_matrix.npy")
-    case.physics.dose_matrix = case.prescription.T_treat*[A]
+    case.physics.dose_matrix = numpy.load(datapath + "cardioid_5_structs_1000_beams-dose_matrix.npy")
     case.physics.beams = BeamSet(angles = 20, bundles = 50, offset = 5)
 
     # Import anatomical structure data.

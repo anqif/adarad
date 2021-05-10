@@ -6,8 +6,7 @@ from adarad import Case, CasePlotter
 def main(datapath = ""):
     # Construct the clinical case.
     case = Case(datapath + "ex_prostate_FMO_stanford.yml")
-    A = numpy.load(datapath + "prostate_7_structs_34848_beams_mean-dose_matrix.npy")
-    case.physics.dose_matrix = case.prescription.T_treat*[A]
+    case.physics.dose_matrix = numpy.load(datapath + "prostate_7_structs_34848_beams_mean-dose_matrix.npy")
 
     # Solve using ADMM algorithm.
     status, result = case.plan(use_admm = True, solver = "MOSEK", rho = 80.0, eps_abs = 1e-2, eps_rel = 1e-3,

@@ -9,8 +9,7 @@ def main(datapath = ""):
     # case = Case(datapath + "patient_01-case-with_dose_mat.yml")
     case = Case()
     case.import_file(datapath + "patient_01-case-no_dose_mat.yml")
-    A = numpy.load(datapath + "patient_01-dose_mat.npy")
-    case.physics.dose_matrix = case.prescription.T_treat*[A]
+    case.physics.dose_matrix = numpy.load(datapath + "patient_01-dose_mat.npy")
     # case.physics.beams = BeamSet(angles = 20, bundles = 50, offset = 5)
 
     # Solve using ADMM algorithm.
